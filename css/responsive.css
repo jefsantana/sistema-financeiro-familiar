@@ -4,3 +4,86 @@
    dedicada exclusivamente a adaptar o layout
    para tablets e celulares.
    ========================================== */
+
+   /* ==========================================
+   RESPONSIVIDADE
+   Abordagem: Desktop First (usamos max-width,
+   "consertando" o layout conforme a tela diminui)
+   ========================================== */
+
+/* Escondido por padrão no desktop */
+.header__menu-toggle {
+  display: none;
+  font-size: 1.4rem;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* ==========================================
+   TABLET (telas até 1024px)
+   ========================================== */
+@media (max-width: 1024px) {
+  :root {
+    --largura-sidebar: 220px;
+  }
+
+  .content {
+    padding: var(--espaco-lg);
+  }
+}
+
+/* ==========================================
+   CELULAR (telas até 640px)
+   ========================================== */
+@media (max-width: 640px) {
+
+  /* O botão hambúrguer aparece */
+  .header__menu-toggle {
+    display: block;
+  }
+
+  /* Menu lateral vira "gaveta" escondida fora da tela */
+  .sidebar {
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+  }
+
+  /* Classe adicionada pelo JS quando o menu está aberto */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Conteúdo ocupa a tela inteira (sem espaço reservado pro menu) */
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Fundo escuro atrás do menu aberto */
+  .sidebar-overlay.active {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 50;
+  }
+
+  .header {
+    padding: var(--espaco-md);
+  }
+
+  .header__title {
+    font-size: 1.1rem;
+  }
+
+  .content {
+    padding: var(--espaco-md);
+  }
+}
