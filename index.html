@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Financeiro Familiar</title>
+
+  <!-- Nossos arquivos de estilo (CSS) -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- ===================== -->
+  <!-- MENU LATERAL (SIDEBAR) -->
+  <!-- ===================== -->
+  <nav class="sidebar" aria-label="Menu principal">
+    <div class="sidebar__logo">
+      <h1>💰 Finanças</h1>
+    </div>
+
+    <ul class="sidebar__menu">
+      <li><a href="#dashboard" class="sidebar__link" data-page="dashboard">📊 Dashboard</a></li>
+      <li><a href="#entradas" class="sidebar__link" data-page="entradas">💵 Entradas</a></li>
+      <li><a href="#gastos" class="sidebar__link" data-page="gastos">🧾 Gastos</a></li>
+      <li><a href="#categorias" class="sidebar__link" data-page="categorias">🏷️ Categorias</a></li>
+      <li><a href="#contasFixas" class="sidebar__link" data-page="contasFixas">📌 Contas Fixas</a></li>
+      <li><a href="#parcelamentos" class="sidebar__link" data-page="parcelamentos">🧩 Parcelamentos</a></li>
+      <li><a href="#cartoes" class="sidebar__link" data-page="cartoes">💳 Cartões</a></li>
+      <li><a href="#metas" class="sidebar__link" data-page="metas">🎯 Metas</a></li>
+      <li><a href="#relatorios" class="sidebar__link" data-page="relatorios">📈 Relatórios</a></li>
+      <li><a href="#configuracoes" class="sidebar__link" data-page="configuracoes">⚙️ Configurações</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===================== -->
+  <!-- CONTEÚDO PRINCIPAL     -->
+  <!-- ===================== -->
+  <div class="main">
+
+    <!-- CABEÇALHO -->
+    <header class="header">
+      <h2 class="header__title" id="pageTitle">Dashboard</h2>
+
+      <button class="header__theme-toggle" id="themeToggle" aria-label="Alternar modo claro/escuro">
+        🌙
+      </button>
+    </header>
+
+    <!-- ÁREA ONDE AS TELAS VÃO APARECER -->
+    <main class="content" id="content" aria-live="polite">
+      <p>Carregando...</p>
+    </main>
+
+  </div>
+
+  <!-- ===================== -->
+  <!-- ARQUIVOS JAVASCRIPT    -->
+  <!-- ===================== -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
