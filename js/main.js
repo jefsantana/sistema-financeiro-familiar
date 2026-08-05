@@ -7,7 +7,7 @@
 
 // Importando a função de cada módulo de tela
 import { renderDashboard } from './modules/dashboard.js';
-import { renderEntradas } from './modules/entradas.js';
+import { renderEntradas, iniciarEventosEntradas } from './modules/entradas.js';
 import { renderGastos } from './modules/gastos.js';
 import { renderCategorias } from './modules/categorias.js';
 import { renderContasFixas } from './modules/contasFixas.js';
@@ -15,6 +15,7 @@ import { renderParcelamentos } from './modules/parcelamentos.js';
 import { renderCartoes } from './modules/cartoes.js';
 import { renderMetas } from './modules/metas.js';
 import { renderRelatorios } from './modules/relatorios.js';
+
 
 // ------------------------------------------
 // ELEMENTOS DA PÁGINA QUE VAMOS MANIPULAR
@@ -118,6 +119,12 @@ async function carregarPagina() {
   // Atualiza o conteúdo principal, chamando a função da rota
   content.innerHTML = 'Carregando...';
   content.innerHTML = await rota.render();
+
+  // Depois de inserir o HTML na tela, verificamos se essa
+  // rota tem eventos específicos para "religar" (ex: formulários)
+  if (nomeRota === 'entradas') {
+    iniciarEventosEntradas();
+  }
 
   // Atualiza qual link do menu está "ativo" (destacado)
   atualizarLinkAtivo(nomeRota);

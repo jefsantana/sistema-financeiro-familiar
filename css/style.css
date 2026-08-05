@@ -130,3 +130,107 @@ body {
 .card__valor--perigo {
   color: var(--cor-perigo);
 }
+
+/* ---------- FORMULÁRIOS ---------- */
+.formulario {
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra);
+  padding: var(--espaco-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-md);
+  margin-bottom: var(--espaco-xl);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  flex: 1;
+  min-width: 180px;
+}
+
+.campo label {
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario);
+  font-weight: 600;
+}
+
+.campo input {
+  padding: var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-size: 1rem;
+}
+
+.campo input:focus {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 1px;
+}
+
+/* ---------- BOTÕES ---------- */
+.botao {
+  padding: var(--espaco-sm) var(--espaco-lg);
+  border-radius: var(--raio-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  align-self: flex-end;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.botao--primario {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+}
+
+.botao--primario:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+.botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- TABELAS ---------- */
+.titulo-lista {
+  margin-bottom: var(--espaco-md);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-md);
+  overflow: hidden;
+  box-shadow: var(--sombra);
+}
+
+.tabela th,
+.tabela td {
+  padding: var(--espaco-sm) var(--espaco-md);
+  text-align: left;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela th {
+  background-color: var(--cor-fundo);
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+}
+
+.valor-positivo {
+  color: var(--cor-sucesso);
+  font-weight: 600;
+}
+
+.texto-vazio {
+  color: var(--cor-texto-secundario);
+  font-style: italic;
+  margin-top: var(--espaco-md);
+}
