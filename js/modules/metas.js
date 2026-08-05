@@ -1,4 +1,5 @@
-import { buscarDados, salvarDados } from '../services/api.js';
+import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
 
 export async function renderMetas() {
   const metas = await buscarDados('Metas');
@@ -30,6 +31,7 @@ function montarLista(metas) {
     const percentual = Math.min(100, Math.round((Number(m.valorAtual) / Number(m.valorAlvo)) * 100));
     return `
       <div class="card" style="margin-bottom: var(--espaco-md);">
+        <button class="btn-excluir card__excluir" data-id="${m.id}" title="Excluir">${ICONE_LIXEIRA}</button>
         <p class="card__label">${m.descricao}</p>
         <p>R$ ${Number(m.valorAtual).toFixed(2)} de R$ ${Number(m.valorAlvo).toFixed(2)} (${percentual}%)</p>
         <div class="barra-progresso"><div class="barra-progresso__preenchida" style="width:${percentual}%"></div></div>
@@ -40,6 +42,7 @@ function montarLista(metas) {
 
 export function iniciarEventosMetas() {
   const form = document.getElementById('formMeta');
+  const lista = document.getElementById('listaMetas');
   if (!form) return;
 
   form.addEventListener('submit', async (evento) => {
@@ -59,9 +62,15 @@ export function iniciarEventosMetas() {
     form.reset();
 
     const atualizadas = await buscarDados('Metas');
-    document.getElementById('listaMetas').innerHTML = montarLista(atualizadas);
+    lista.innerHTML = montarLista(atualizadas);
 
     botao.disabled = false;
     botao.textContent = 'Salvar Meta';
+  });
+
+  ativarBotoesExcluir(lista, async function (id) {
+    await excluirDados('Metas', id);
+    const atualizadas = await buscarDados('Metas');
+    lista.innerHTML = montarLista(atualizadas);
   });
 }

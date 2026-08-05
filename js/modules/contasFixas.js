@@ -1,4 +1,5 @@
-import { buscarDados, salvarDados } from '../services/api.js';
+import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
 
 export async function renderContasFixas() {
   const contas = await buscarDados('ContasFixas');
@@ -36,11 +37,14 @@ function montarTabela(contas) {
       <td>${c.categoria}</td>
       <td>Dia ${c.diaVencimento}</td>
       <td class="valor-negativo">R$ ${Number(c.valor).toFixed(2)}</td>
+      <td class="tabela__acoes">
+        <button class="btn-excluir" data-id="${c.id}" title="Excluir">${ICONE_LIXEIRA}</button>
+      </td>
     </tr>
   `).join('');
   return `
     <table class="tabela">
-      <thead><tr><th>Descrição</th><th>Categoria</th><th>Vencimento</th><th>Valor</th></tr></thead>
+      <thead><tr><th>Descrição</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th></th></tr></thead>
       <tbody>${linhas}</tbody>
     </table>
   `;
@@ -48,6 +52,7 @@ function montarTabela(contas) {
 
 export function iniciarEventosContasFixas() {
   const form = document.getElementById('formContaFixa');
+  const lista = document.getElementById('listaContasFixas');
   if (!form) return;
 
   form.addEventListener('submit', async (evento) => {
@@ -68,9 +73,15 @@ export function iniciarEventosContasFixas() {
     form.reset();
 
     const atualizadas = await buscarDados('ContasFixas');
-    document.getElementById('listaContasFixas').innerHTML = montarTabela(atualizadas);
+    lista.innerHTML = montarTabela(atualizadas);
 
     botao.disabled = false;
     botao.textContent = 'Salvar Conta Fixa';
+  });
+
+  ativarBotoesExcluir(lista, async function (id) {
+    await excluirDados('ContasFixas', id);
+    const atualizadas = await buscarDados('ContasFixas');
+    lista.innerHTML = montarTabela(atualizadas);
   });
 }

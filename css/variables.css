@@ -1,63 +1,73 @@
-/* ==========================================
-   VARIÁVEIS CSS
-   Cores, espaçamentos e fontes do sistema.
-   Aqui é o "painel de controle" visual.
-   ========================================== */
-
-/* ---------- MODO CLARO (padrão) ---------- */
 :root {
-  /* Cores principais */
-  --cor-primaria: #2563eb;
-  --cor-primaria-hover: #1d4ed8;
-  --cor-sucesso: #16a34a;
-  --cor-perigo: #dc2626;
-  --cor-alerta: #f59e0b;
+  /* Paleta principal */
+  --cor-primaria: #7B61FF;
+  --cor-primaria-hover: #6A4EEA;
+  --cor-acento: #FF7A9C;
+  --cor-acento-hover: #F0648A;
 
-  /* Fundo e superfícies */
-  --cor-fundo: #f4f6f9;
-  --cor-superficie: #ffffff;
-  --cor-sidebar: #1e293b;
-  --cor-sidebar-hover: #334155;
+  --cor-sucesso: #10B981;
+  --cor-perigo: #EF4444;
+  --cor-alerta: #F59E0B;
+  --cor-info: #3B82F6;
 
-  /* Textos */
-  --cor-texto: #1e293b;
-  --cor-texto-secundario: #64748b;
-  --cor-texto-sidebar: #e2e8f0;
+  --cor-fundo: #F5F6FA;
+  --cor-superficie: #FFFFFF;
 
-  /* Bordas */
-  --cor-borda: #e2e8f0;
+  --cor-texto: #2D2D3A;
+  --cor-texto-secundario: #6B7280;
+  --cor-borda: #E5E7EB;
 
-  /* Espaçamentos (escala consistente) */
+  /* Sidebar (tom escuro derivado da primária) */
+  --cor-sidebar: #211D3A;
+  --cor-sidebar-hover: #2C2650;
+  --cor-sidebar-borda: #332C5C;
+  --cor-texto-sidebar: #B5AEDB;
+  --cor-texto-sidebar-ativo: #FFFFFF;
+
+  /* Tipografia */
+  --fonte-display: 'Sora', 'Inter', sans-serif;
+  --fonte-corpo: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --fonte-numeros: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* Espaçamentos */
   --espaco-xs: 4px;
   --espaco-sm: 8px;
   --espaco-md: 16px;
   --espaco-lg: 24px;
   --espaco-xl: 32px;
+  --espaco-2xl: 48px;
 
-  /* Bordas arredondadas */
-  --raio-sm: 6px;
-  --raio-md: 10px;
-  --raio-lg: 16px;
+  /* Raios */
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 18px;
 
-  /* Sombra padrão */
-  --sombra: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Sombras */
+  --sombra-sm: 0 1px 3px rgba(45, 45, 58, 0.06);
+  --sombra: 0 6px 20px rgba(45, 45, 58, 0.08);
+  --sombra-lg: 0 16px 40px rgba(45, 45, 58, 0.14);
 
-  /* Largura do menu lateral */
-  --largura-sidebar: 260px;
+  --largura-sidebar: 268px;
 }
 
-/* ---------- MODO ESCURO ---------- */
 [data-theme="dark"] {
-  --cor-fundo: #0f172a;
-  --cor-superficie: #1e293b;
-  --cor-sidebar: #020617;
-  --cor-sidebar-hover: #1e293b;
+  --cor-fundo: #14121F;
+  --cor-superficie: #1E1B2E;
+  --cor-sidebar: #14121F;
+  --cor-sidebar-hover: #201C33;
+  --cor-sidebar-borda: #2B2645;
 
-  --cor-texto: #f1f5f9;
-  --cor-texto-secundario: #94a3b8;
-  --cor-texto-sidebar: #cbd5e1;
+  --cor-texto: #EDEDF5;
+  --cor-texto-secundario: #9691B0;
+  --cor-texto-sidebar: #9691B0;
+  --cor-texto-sidebar-ativo: #FFFFFF;
 
-  --cor-borda: #334155;
+  --cor-borda: #2B2645;
 
-  --sombra: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --cor-sucesso: #34D399;
+  --cor-perigo: #F87171;
+
+  --sombra-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --sombra: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --sombra-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
 }

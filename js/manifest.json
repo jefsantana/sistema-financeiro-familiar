@@ -1,10 +1,10 @@
 {
-  "name": "Sistema Financeiro Familiar",
-  "short_name": "Finanças",
+  "name": "Controle Financeiro Jeferson e Raquel",
+  "short_name": "J&R Finanças",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f6f9",
-  "theme_color": "#2563eb",
+  "background_color": "#F5F6FA",
+  "theme_color": "#7B61FF",
   "icons": [
     { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }

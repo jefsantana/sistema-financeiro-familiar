@@ -1,4 +1,5 @@
-import { buscarDados, salvarDados } from '../services/api.js';
+import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
 
 export async function renderCategorias() {
   const categorias = await buscarDados('Categorias');
@@ -30,11 +31,14 @@ function montarTabela(categorias) {
     <tr>
       <td>${c.nome}</td>
       <td>${c.tipo === 'entrada' ? '💵 Entrada' : '🧾 Gasto'}</td>
+      <td class="tabela__acoes">
+        <button class="btn-excluir" data-id="${c.id}" title="Excluir">${ICONE_LIXEIRA}</button>
+      </td>
     </tr>
   `).join('');
   return `
     <table class="tabela">
-      <thead><tr><th>Nome</th><th>Tipo</th></tr></thead>
+      <thead><tr><th>Nome</th><th>Tipo</th><th></th></tr></thead>
       <tbody>${linhas}</tbody>
     </table>
   `;
@@ -42,6 +46,7 @@ function montarTabela(categorias) {
 
 export function iniciarEventosCategorias() {
   const form = document.getElementById('formCategoria');
+  const lista = document.getElementById('listaCategorias');
   if (!form) return;
 
   form.addEventListener('submit', async (evento) => {
@@ -57,9 +62,15 @@ export function iniciarEventosCategorias() {
     form.reset();
 
     const atualizadas = await buscarDados('Categorias');
-    document.getElementById('listaCategorias').innerHTML = montarTabela(atualizadas);
+    lista.innerHTML = montarTabela(atualizadas);
 
     botao.disabled = false;
     botao.textContent = 'Salvar Categoria';
+  });
+
+  ativarBotoesExcluir(lista, async function (id) {
+    await excluirDados('Categorias', id);
+    const atualizadas = await buscarDados('Categorias');
+    lista.innerHTML = montarTabela(atualizadas);
   });
 }

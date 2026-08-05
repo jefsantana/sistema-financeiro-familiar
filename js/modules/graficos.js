@@ -1,6 +1,12 @@
-// Gera uma barra horizontal simples (sem bibliotecas externas)
+// ==========================================
+// MÓDULO: GRÁFICOS
+// Funções para desenhar gráficos com SVG puro.
+// ==========================================
+
+/**
+ * Gera um gráfico de barras horizontais simples
+ */
 export function gerarGraficoBarras(dados, corVar) {
-  // dados = [{ label: 'Alimentação', valor: 350 }, ...]
   const maior = Math.max(...dados.map(d => d.valor), 1);
 
   return dados.map(d => {
@@ -15,4 +21,83 @@ export function gerarGraficoBarras(dados, corVar) {
       </div>
     `;
   }).join('');
+}
+
+const CORES_DONUT = ['#7B61FF', '#FF7A9C', '#10B981', '#F59E0B', '#3B82F6', '#EF4444'];
+
+/**
+ * Gera um gráfico de rosca (donut) com legenda,
+ * usando apenas SVG (sem bibliotecas externas)
+ * @param {Array} dados - [{ label: 'Moradia', valor: 1200 }, ...]
+ */
+export function gerarGraficoDonut(dados) {
+  const total = dados.reduce((soma, d) => soma + d.valor, 0);
+
+  if (total === 0) {
+    return '<p class="texto-vazio">Sem dados suficientes para exibir o gráfico ainda.</p>';
+  }
+
+  const raio = 68;
+  const circunferencia = 2 * Math.PI * raio;
+  let acumulado = 0;
+
+  const arcos = dados.map((d, i) => {
+    const percentual = d.valor / total;
+    const comprimento = percentual * circunferencia;
+    const svg = `
+      <circle cx="90" cy="90" r="${raio}" fill="none"
+        stroke="${CORES_DONUT[i % CORES_DONUT.length]}"
+        stroke-width="24"
+        stroke-dasharray="${comprimento} ${circunferencia - comprimento}"
+        stroke-dashoffset="${-acumulado}"
+        transform="rotate(-90 90 90)"></circle>
+    `;
+    acumulado += comprimento;
+    return svg;
+  }).join('');
+
+  const legenda = dados.map((d, i) => {
+    const percentual = Math.round((d.valor / total) * 100);
+    return `
+      <li class="legenda-item">
+        <span class="legenda-dot" style="background:${CORES_DONUT[i % CORES_DONUT.length]}"></span>
+        <span class="legenda-label">${d.label}</span>
+        <span class="legenda-percentual">${percentual}%</span>
+      </li>
+    `;
+  }).join('');
+
+  return `
+    <div class="donut-container">
+      <div class="donut-grafico">
+        <svg viewBox="0 0 180 180" width="180" height="180">${arcos}</svg>
+        <div class="donut-central">
+          <p class="donut-valor">R$ ${total.toFixed(2)}</p>
+          <p class="donut-legenda-total">Total</p>
+        </div>
+      </div>
+      <ul class="legenda-lista">${legenda}</ul>
+    </div>
+  `;
+}
+
+/**
+ * Agrupa uma lista de lançamentos por categoria, somando os valores.
+ * Se houver mais categorias que o limite, agrupa o restante em "Outros".
+ */
+export function agruparPorCategoria(lista, limite = 5) {
+  const mapa = {};
+  lista.forEach(item => {
+    const cat = item.categoria || 'Sem categoria';
+    mapa[cat] = (mapa[cat] || 0) + Number(item.valor);
+  });
+
+  const agrupado = Object.keys(mapa).map(label => ({ label, valor: mapa[label] }));
+  agrupado.sort((a, b) => b.valor - a.valor);
+
+  if (agrupado.length <= limite) return agrupado;
+
+  const principais = agrupado.slice(0, limite - 1);
+  const restante = agrupado.slice(limite - 1).reduce((soma, d) => soma + d.valor, 0);
+  return [...principais, { label: 'Outros', valor: restante }];
 }

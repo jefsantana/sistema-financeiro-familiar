@@ -45,3 +45,22 @@ export async function salvarDados(nomeAba, dados) {
     return null;
   }
 }
+
+/**
+ * Exclui um registro de uma aba, pelo ID
+ * @param {string} nomeAba
+ * @param {string} id
+ */
+export async function excluirDados(nomeAba, id) {
+  try {
+    const resposta = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', sheet: nomeAba, id: id })
+    });
+    const resultado = await resposta.json();
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao excluir dados:', erro);
+    return null;
+  }
+}

@@ -1,4 +1,4 @@
-import { renderDashboard } from './modules/dashboard.js';
+import { renderDashboard, iniciarEventosDashboard } from './modules/dashboard.js';
 import { renderEntradas, iniciarEventosEntradas } from './modules/entradas.js';
 import { renderGastos, iniciarEventosGastos } from './modules/gastos.js';
 import { renderCategorias, iniciarEventosCategorias } from './modules/categorias.js';
@@ -80,6 +80,7 @@ async function carregarPagina() {
   content.innerHTML = 'Carregando...';
   content.innerHTML = await rota.render();
 
+  if (nomeRota === 'dashboard') iniciarEventosDashboard();
   if (nomeRota === 'entradas') iniciarEventosEntradas();
   if (nomeRota === 'gastos') iniciarEventosGastos();
   if (nomeRota === 'categorias') iniciarEventosCategorias();
@@ -103,13 +104,8 @@ function atualizarLinkAtivo(nomeRota) {
 window.addEventListener('hashchange', carregarPagina);
 window.addEventListener('DOMContentLoaded', carregarPagina);
 
-// ------------------------------------------
-// PWA — registra o service worker (se existir)
-// ------------------------------------------
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      // Silencioso: se sw.js não existir ainda, ignora
-    });
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }

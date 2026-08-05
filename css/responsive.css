@@ -87,3 +87,12 @@
     padding: var(--espaco-md);
   }
 }
+
+@media (max-width: 640px) {
+  .header__eyebrow {
+    display: none;
+  }
+  .sidebar__logo h1 {
+    font-size: 1rem;
+  }
+}

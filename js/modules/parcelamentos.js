@@ -1,4 +1,5 @@
-import { buscarDados, salvarDados } from '../services/api.js';
+import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
 
 export async function renderParcelamentos() {
   const parcelamentos = await buscarDados('Parcelamentos');
@@ -45,12 +46,15 @@ function montarTabela(parcelamentos) {
           ${p.parcelaAtual}/${p.numeroParcelas}
           <div class="barra-progresso"><div class="barra-progresso__preenchida" style="width:${percentual}%"></div></div>
         </td>
+        <td class="tabela__acoes">
+          <button class="btn-excluir" data-id="${p.id}" title="Excluir">${ICONE_LIXEIRA}</button>
+        </td>
       </tr>
     `;
   }).join('');
   return `
     <table class="tabela">
-      <thead><tr><th>Descrição</th><th>Cartão</th><th>Valor Total</th><th>Progresso</th></tr></thead>
+      <thead><tr><th>Descrição</th><th>Cartão</th><th>Valor Total</th><th>Progresso</th><th></th></tr></thead>
       <tbody>${linhas}</tbody>
     </table>
   `;
@@ -58,6 +62,7 @@ function montarTabela(parcelamentos) {
 
 export function iniciarEventosParcelamentos() {
   const form = document.getElementById('formParcelamento');
+  const lista = document.getElementById('listaParcelamentos');
   if (!form) return;
 
   form.addEventListener('submit', async (evento) => {
@@ -79,9 +84,15 @@ export function iniciarEventosParcelamentos() {
     form.reset();
 
     const atualizados = await buscarDados('Parcelamentos');
-    document.getElementById('listaParcelamentos').innerHTML = montarTabela(atualizados);
+    lista.innerHTML = montarTabela(atualizados);
 
     botao.disabled = false;
     botao.textContent = 'Salvar Parcelamento';
+  });
+
+  ativarBotoesExcluir(lista, async function (id) {
+    await excluirDados('Parcelamentos', id);
+    const atualizados = await buscarDados('Parcelamentos');
+    lista.innerHTML = montarTabela(atualizados);
   });
 }
