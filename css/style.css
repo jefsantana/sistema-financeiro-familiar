@@ -93,3 +93,40 @@ body {
 .content {
   padding: var(--espaco-xl);
 }
+
+
+/* ---------- CARDS (Dashboard) ---------- */
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-lg);
+}
+
+.card {
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra);
+  padding: var(--espaco-lg);
+  flex: 1;
+  min-width: 200px;
+}
+
+.card__label {
+  color: var(--cor-texto-secundario);
+  font-size: 0.9rem;
+  margin-bottom: var(--espaco-sm);
+}
+
+.card__valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.card__valor--sucesso {
+  color: var(--cor-sucesso);
+}
+
+.card__valor--perigo {
+  color: var(--cor-perigo);
+}

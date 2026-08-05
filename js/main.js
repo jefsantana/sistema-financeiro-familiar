@@ -95,7 +95,7 @@ const rotas = {
 // ------------------------------------------
 // FUNÇÃO PRINCIPAL: carregar a página certa
 // ------------------------------------------
-function carregarPagina() {
+async function carregarPagina() {
   // Lê o hash da URL, removendo o "#" do começo
   // Exemplo: "#entradas" vira "entradas"
   const hashAtual = window.location.hash.replace('#', '');
@@ -116,7 +116,8 @@ function carregarPagina() {
   pageTitle.textContent = rota.titulo;
 
   // Atualiza o conteúdo principal, chamando a função da rota
-  content.innerHTML = rota.render();
+  content.innerHTML = 'Carregando...';
+  content.innerHTML = await rota.render();
 
   // Atualiza qual link do menu está "ativo" (destacado)
   atualizarLinkAtivo(nomeRota);
