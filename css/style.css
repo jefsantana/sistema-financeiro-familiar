@@ -1,0 +1,95 @@
+/* ==========================================
+   ESTILO GERAL DO SISTEMA
+   ========================================== */
+
+body {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  display: flex;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ---------- SIDEBAR (menu lateral) ---------- */
+.sidebar {
+  width: var(--largura-sidebar);
+  height: 100vh;
+  background-color: var(--cor-sidebar);
+  padding: var(--espaco-lg) var(--espaco-md);
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+}
+
+.sidebar__logo h1 {
+  color: #ffffff;
+  font-size: 1.4rem;
+  margin-bottom: var(--espaco-lg);
+  padding: 0 var(--espaco-sm);
+}
+
+.sidebar__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.sidebar__link {
+  display: block;
+  padding: var(--espaco-sm) var(--espaco-md);
+  color: var(--cor-texto-sidebar);
+  border-radius: var(--raio-sm);
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar__link:hover {
+  background-color: var(--cor-sidebar-hover);
+}
+
+.sidebar__link.active {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ---------- CONTEÚDO PRINCIPAL ---------- */
+.main {
+  margin-left: var(--largura-sidebar);
+  width: calc(100% - var(--largura-sidebar));
+  min-height: 100vh;
+}
+
+/* ---------- HEADER ---------- */
+.header {
+  background-color: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+  padding: var(--espaco-md) var(--espaco-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header__title {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.header__theme-toggle {
+  font-size: 1.3rem;
+  padding: var(--espaco-sm);
+  border-radius: var(--raio-sm);
+  transition: background-color 0.2s ease;
+}
+
+.header__theme-toggle:hover {
+  background-color: var(--cor-fundo);
+}
+
+/* ---------- ÁREA DE CONTEÚDO ---------- */
+.content {
+  padding: var(--espaco-xl);
+}
