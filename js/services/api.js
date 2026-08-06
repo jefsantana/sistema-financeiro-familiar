@@ -17,10 +17,6 @@ export async function buscarDados(nomeAba) {
   }
 }
 
-/**
- * Busca tudo que o Dashboard precisa numa única chamada,
- * em vez de 4 chamadas separadas — bem mais rápido.
- */
 export async function buscarDadosDashboard() {
   try {
     const resposta = await fetch(
@@ -30,7 +26,7 @@ export async function buscarDadosDashboard() {
     return await resposta.json();
   } catch (erro) {
     console.error('Erro ao buscar dados do dashboard:', erro);
-    return { entradas: [], gastos: [], contasFixas: [], pagamentos: [] };
+    return { entradas: [], gastos: [], contasFixas: [], pagamentos: [], parcelamentos: [], pagamentosParcelamentos: [] };
   }
 }
 
@@ -56,6 +52,23 @@ export async function excluirDados(nomeAba, id) {
     return await resposta.json();
   } catch (erro) {
     console.error('Erro ao excluir dados:', erro);
+    return null;
+  }
+}
+
+/**
+ * Atualiza campos específicos de um registro já existente
+ * (ex: avançar a parcela atual de um Parcelamento).
+ */
+export async function atualizarDados(nomeAba, id, campos) {
+  try {
+    const resposta = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update', sheet: nomeAba, id: id, campos: campos })
+    });
+    return await resposta.json();
+  } catch (erro) {
+    console.error('Erro ao atualizar dados:', erro);
     return null;
   }
 }

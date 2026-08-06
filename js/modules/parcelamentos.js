@@ -23,6 +23,10 @@ export async function renderParcelamentos() {
         <input type="number" id="parcelaAtual" name="parcelaAtual" min="1" required>
       </div>
       <div class="campo">
+        <label for="diaVencimento">Dia do vencimento</label>
+        <input type="number" id="diaVencimento" name="diaVencimento" min="1" max="31" required>
+      </div>
+      <div class="campo">
         <label for="cartao">Cartão (opcional)</label>
         <input type="text" id="cartao" name="cartao" placeholder="Ex: Nubank">
       </div>
@@ -42,6 +46,7 @@ function montarTabela(parcelamentos) {
         <td>${p.descricao}</td>
         <td>${p.cartao || '-'}</td>
         <td>${formatarMoeda(p.valorTotal)}</td>
+        <td>Dia ${p.diaVencimento || '-'}</td>
         <td>
           ${p.parcelaAtual}/${p.numeroParcelas}
           <div class="barra-progresso"><div class="barra-progresso__preenchida" style="width:${percentual}%"></div></div>
@@ -54,7 +59,7 @@ function montarTabela(parcelamentos) {
   }).join('');
   return `
     <table class="tabela">
-      <thead><tr><th>Descrição</th><th>Cartão</th><th>Valor Total</th><th>Progresso</th><th></th></tr></thead>
+      <thead><tr><th>Descrição</th><th>Cartão</th><th>Valor Total</th><th>Vencimento</th><th>Progresso</th><th></th></tr></thead>
       <tbody>${linhas}</tbody>
     </table>
   `;
@@ -75,6 +80,7 @@ export function iniciarEventosParcelamentos() {
       valorTotal: parseValorMonetario(fd.get('valorTotal')),
       numeroParcelas: Number(fd.get('numeroParcelas')),
       parcelaAtual: Number(fd.get('parcelaAtual')),
+      diaVencimento: Number(fd.get('diaVencimento')),
       cartao: fd.get('cartao') || ''
     };
 

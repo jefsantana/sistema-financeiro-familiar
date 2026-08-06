@@ -184,3 +184,68 @@
     height: 150px;
   }
 }
+
+@media (max-width: 640px) {
+  /* Cards: 2 por linha em telas médias de celular (mais compacto que 1 por linha) */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--espaco-sm);
+  }
+
+  .card {
+    padding: var(--espaco-md);
+  }
+
+  .card__label {
+    font-size: 0.72rem;
+  }
+
+  .card__valor {
+    font-size: 1.15rem;
+  }
+
+  /* Tabelas mais compactas no celular */
+  .tabela th,
+  .tabela td {
+    padding: 10px var(--espaco-sm);
+    font-size: 0.85rem;
+  }
+
+  .tabela {
+    min-width: 480px;
+  }
+
+  /* Botão flutuante de atalho para o formulário */
+  .fab-novo {
+    display: flex;
+  }
+}
+
+@media (max-width: 380px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Botão flutuante — escondido por padrão (só aparece no celular) */
+.fab-novo {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: var(--cor-primaria);
+  color: #FFFFFF;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--sombra-lg);
+  z-index: 40;
+}
+
+.fab-novo svg {
+  width: 24px;
+  height: 24px;
+}

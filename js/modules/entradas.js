@@ -23,6 +23,14 @@ export async function renderEntradas() {
         <label for="categoria">Categoria</label>
         <input type="text" id="categoria" name="categoria" required placeholder="Ex: Trabalho">
       </div>
+      <div class="campo">
+        <label for="pessoa">Quem lançou</label>
+        <select id="pessoa" name="pessoa" required>
+          <option value="">Selecione</option>
+          <option value="Jeferson">Jeferson</option>
+          <option value="Raquel">Raquel</option>
+        </select>
+      </div>
       <button type="submit" class="botao botao--primario">Salvar Entrada</button>
     </form>
 
@@ -39,6 +47,7 @@ function montarTabela(entradas) {
       <tr>
         <td>${entrada.descricao}</td>
         <td>${entrada.categoria}</td>
+        <td>${entrada.pessoa || '-'}</td>
         <td>${formatarData(entrada.data)}</td>
         <td class="valor-positivo">${formatarMoeda(entrada.valor)}</td>
         <td class="tabela__acoes">
@@ -51,7 +60,7 @@ function montarTabela(entradas) {
   return `
     <table class="tabela">
       <thead>
-        <tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Valor</th><th></th></tr>
+        <tr><th>Descrição</th><th>Categoria</th><th>Pessoa</th><th>Data</th><th>Valor</th><th></th></tr>
       </thead>
       <tbody>${linhas}</tbody>
     </table>
@@ -72,7 +81,8 @@ export function iniciarEventosEntradas() {
       descricao: dadosFormulario.get('descricao'),
       valor: parseValorMonetario(dadosFormulario.get('valor')),
       data: dadosFormulario.get('data'),
-      categoria: dadosFormulario.get('categoria')
+      categoria: dadosFormulario.get('categoria'),
+      pessoa: dadosFormulario.get('pessoa')
     };
 
     const botao = form.querySelector('button[type="submit"]');

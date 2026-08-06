@@ -27,6 +27,14 @@ export async function renderGastos() {
         <label for="cartao">Cartão (opcional)</label>
         <input type="text" id="cartao" name="cartao" placeholder="Ex: Nubank">
       </div>
+      <div class="campo">
+        <label for="pessoa">Quem gastou</label>
+        <select id="pessoa" name="pessoa" required>
+          <option value="">Selecione</option>
+          <option value="Jeferson">Jeferson</option>
+          <option value="Raquel">Raquel</option>
+        </select>
+      </div>
       <button type="submit" class="botao botao--primario">Salvar Gasto</button>
     </form>
 
@@ -44,6 +52,7 @@ function montarTabela(gastos) {
         <td>${gasto.descricao}</td>
         <td>${gasto.categoria}</td>
         <td>${gasto.cartao || '-'}</td>
+        <td>${gasto.pessoa || '-'}</td>
         <td>${formatarData(gasto.data)}</td>
         <td class="valor-negativo">${formatarMoeda(gasto.valor)}</td>
         <td class="tabela__acoes">
@@ -56,7 +65,7 @@ function montarTabela(gastos) {
   return `
     <table class="tabela">
       <thead>
-        <tr><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Data</th><th>Valor</th><th></th></tr>
+        <tr><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Pessoa</th><th>Data</th><th>Valor</th><th></th></tr>
       </thead>
       <tbody>${linhas}</tbody>
     </table>
@@ -78,7 +87,8 @@ export function iniciarEventosGastos() {
       valor: parseValorMonetario(dadosFormulario.get('valor')),
       data: dadosFormulario.get('data'),
       categoria: dadosFormulario.get('categoria'),
-      cartao: dadosFormulario.get('cartao') || ''
+      cartao: dadosFormulario.get('cartao') || '',
+      pessoa: dadosFormulario.get('pessoa')
     };
 
     const botao = form.querySelector('button[type="submit"]');

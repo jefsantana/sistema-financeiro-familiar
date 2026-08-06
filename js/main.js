@@ -79,6 +79,7 @@ async function carregarPagina() {
   pageTitle.textContent = rota.titulo;
   content.innerHTML = 'Carregando...';
   content.innerHTML = await rota.render();
+  atualizarBotaoFlutuante(nomeRota);
 
   if (nomeRota === 'dashboard') iniciarEventosDashboard();
   if (nomeRota === 'entradas') iniciarEventosEntradas();
@@ -108,4 +109,34 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
+}
+
+/**
+ * Mostra um botão flutuante no celular que rola a tela
+ * até o formulário da página atual, evitando ter que
+ * subir manualmente até o topo pra cadastrar algo.
+ */
+function atualizarBotaoFlutuante(nomeRota) {
+  let fab = document.getElementById('fabNovo');
+
+  const temFormulario = document.querySelector('form') !== null;
+
+  if (!temFormulario) {
+    if (fab) fab.remove();
+    return;
+  }
+
+  if (!fab) {
+    fab = document.createElement('button');
+    fab.id = 'fabNovo';
+    fab.className = 'fab-novo';
+    fab.setAttribute('aria-label', 'Ir para o formulário de cadastro');
+    fab.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+    document.body.appendChild(fab);
+  }
+
+  fab.onclick = function () {
+    document.querySelector('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector('form input')?.focus();
+  };
 }

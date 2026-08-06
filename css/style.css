@@ -604,3 +604,165 @@ body {
   background-color: var(--cor-borda);
   border-radius: 999px;
 }
+
+/* ---------- SAUDAÇÃO DO DASHBOARD ---------- */
+.dash-saudacao {
+  margin-bottom: var(--espaco-md);
+}
+
+.dash-saudacao h3 {
+  font-size: 1.3rem;
+}
+
+.dash-data {
+  color: var(--cor-texto-secundario);
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  margin-top: 2px;
+}
+
+/* ---------- CARDS DO DASHBOARD ---------- */
+.cards--dash {
+  flex-wrap: wrap;
+}
+
+.card__tendencia {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: var(--espaco-xs);
+}
+
+.card__tendencia--boa { color: var(--cor-sucesso); }
+.card__tendencia--ruim { color: var(--cor-perigo); }
+
+.painel__subtitulo {
+  font-family: var(--fonte-corpo);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+  margin-left: var(--espaco-sm);
+}
+
+/* ---------- GRÁFICO DE EVOLUÇÃO (linha) ---------- */
+.evolucao-legenda {
+  display: flex;
+  gap: var(--espaco-md);
+  justify-content: center;
+  margin-top: var(--espaco-sm);
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario);
+}
+
+.evolucao-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.evolucao-legenda i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ---------- ÚLTIMOS LANÇAMENTOS ---------- */
+.lancamento-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.lancamento-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.lancamento-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lancamento-icone--entrada { background-color: rgba(16, 185, 129, 0.12); }
+.lancamento-icone--gasto { background-color: rgba(239, 68, 68, 0.12); }
+
+.lancamento-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lancamento-descricao {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lancamento-data {
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+}
+
+/* ---------- GASTOS POR PESSOA ---------- */
+.pessoa-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.pessoa-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.pessoa-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--cor-primaria);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.pessoa-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pessoa-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--espaco-xs);
+}
+
+.pessoa-nome {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pessoa-valor {
+  font-family: var(--fonte-numeros);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pessoa-percentual {
+  font-family: var(--fonte-numeros);
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  width: 36px;
+  text-align: right;
+}
