@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
+import { formatarMoeda, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderMetas() {
   const metas = await buscarDados('Metas');
@@ -33,7 +33,7 @@ function montarLista(metas) {
       <div class="card" style="margin-bottom: var(--espaco-md);">
         <button class="btn-excluir card__excluir" data-id="${m.id}" title="Excluir">${ICONE_LIXEIRA}</button>
         <p class="card__label">${m.descricao}</p>
-        <p>R$ ${Number(m.valorAtual).toFixed(2)} de R$ ${Number(m.valorAlvo).toFixed(2)} (${percentual}%)</p>
+        <p>${formatarMoeda(m.valorAtual)} de ${formatarMoeda(m.valorAlvo)} (${percentual}%)</p>
         <div class="barra-progresso"><div class="barra-progresso__preenchida" style="width:${percentual}%"></div></div>
       </div>
     `;

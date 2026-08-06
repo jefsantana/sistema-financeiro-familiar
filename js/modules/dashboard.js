@@ -1,11 +1,10 @@
 // ==========================================
 // MÓDULO: DASHBOARD
-// Resumo financeiro, avisos de contas a vencer
-// e gráfico de gastos por categoria.
 // ==========================================
 
 import { buscarDados, salvarDados } from '../services/api.js';
 import { gerarGraficoDonut, agruparPorCategoria } from './graficos.js';
+import { formatarMoeda } from '../utils/helpers.js';
 
 export async function renderDashboard() {
   const [entradas, gastos, contasFixas, pagamentos] = await Promise.all([
@@ -27,15 +26,15 @@ export async function renderDashboard() {
     <div class="cards">
       <div class="card">
         <p class="card__label">Total de Entradas</p>
-        <p class="card__valor card__valor--sucesso">R$ ${totalEntradas.toFixed(2)}</p>
+        <p class="card__valor card__valor--sucesso">${formatarMoeda(totalEntradas)}</p>
       </div>
       <div class="card">
         <p class="card__label">Total de Gastos</p>
-        <p class="card__valor card__valor--perigo">R$ ${totalGastos.toFixed(2)}</p>
+        <p class="card__valor card__valor--perigo">${formatarMoeda(totalGastos)}</p>
       </div>
       <div class="card">
         <p class="card__label">Saldo</p>
-        <p class="card__valor">R$ ${saldo.toFixed(2)}</p>
+        <p class="card__valor">${formatarMoeda(saldo)}</p>
       </div>
     </div>
 
@@ -53,12 +52,6 @@ export async function renderDashboard() {
   `;
 }
 
-/**
- * Transforma QUALQUER formato de mesAno que vier da planilha
- * (texto puro "2026-08", ou uma data completa que o Google
- * Sheets converteu sozinho) no padrão "AAAA-MM", para permitir
- * comparação confiável.
- */
 function normalizarMesAno(valor) {
   if (typeof valor === 'string' && /^\d{4}-\d{2}$/.test(valor)) {
     return valor;
@@ -119,7 +112,7 @@ function montarAlertasContasFixas(alertas) {
       <li class="alerta-item alerta-item--${status}">
         <div>
           <p class="alerta-item__descricao">${c.descricao}</p>
-          <p class="alerta-item__info">${texto} · R$ ${Number(c.valor).toFixed(2)}</p>
+          <p class="alerta-item__info">${texto} · ${formatarMoeda(c.valor)}</p>
         </div>
         <button class="botao-pagar" data-id="${c.id}" data-mes="${c.mesAno}">Marcar como paga</button>
       </li>

@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
+import { formatarMoeda, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderCartoes() {
   const cartoes = await buscarDados('Cartoes');
@@ -30,7 +30,7 @@ function montarTabela(cartoes) {
   const linhas = cartoes.map(c => `
     <tr>
       <td>${c.nome}</td>
-      <td>R$ ${Number(c.limite).toFixed(2)}</td>
+      <td>${formatarMoeda(c.limite)}</td>
       <td>Dia ${c.diaFechamento}</td>
       <td class="tabela__acoes">
         <button class="btn-excluir" data-id="${c.id}" title="Excluir">${ICONE_LIXEIRA}</button>

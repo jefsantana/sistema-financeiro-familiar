@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { formatarData, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
+import { formatarData, formatarMoeda, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderEntradas() {
   const entradas = await buscarDados('Entradas');
@@ -40,7 +40,7 @@ function montarTabela(entradas) {
         <td>${entrada.descricao}</td>
         <td>${entrada.categoria}</td>
         <td>${formatarData(entrada.data)}</td>
-        <td class="valor-positivo">R$ ${Number(entrada.valor).toFixed(2)}</td>
+        <td class="valor-positivo">${formatarMoeda(entrada.valor)}</td>
         <td class="tabela__acoes">
           <button class="btn-excluir" data-id="${entrada.id}" title="Excluir">${ICONE_LIXEIRA}</button>
         </td>

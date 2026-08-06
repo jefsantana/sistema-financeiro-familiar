@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
+import { formatarMoeda, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderParcelamentos() {
   const parcelamentos = await buscarDados('Parcelamentos');
@@ -12,7 +12,7 @@ export async function renderParcelamentos() {
       </div>
       <div class="campo">
         <label for="valorTotal">Valor total (R$)</label>
-        <input type="number" id="valorTotal" name="valorTotal" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" id="valorTotal" name="valorTotal" required placeholder="0,00">
       </div>
       <div class="campo">
         <label for="numeroParcelas">Nº de parcelas</label>
@@ -41,7 +41,7 @@ function montarTabela(parcelamentos) {
       <tr>
         <td>${p.descricao}</td>
         <td>${p.cartao || '-'}</td>
-        <td>R$ ${Number(p.valorTotal).toFixed(2)}</td>
+        <td>${formatarMoeda(p.valorTotal)}</td>
         <td>
           ${p.parcelaAtual}/${p.numeroParcelas}
           <div class="barra-progresso"><div class="barra-progresso__preenchida" style="width:${percentual}%"></div></div>
@@ -65,12 +65,14 @@ export function iniciarEventosParcelamentos() {
   const lista = document.getElementById('listaParcelamentos');
   if (!form) return;
 
+  ativarCampoMoeda(form.querySelector('#valorTotal'));
+
   form.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const fd = new FormData(form);
     const novo = {
       descricao: fd.get('descricao'),
-      valorTotal: Number(fd.get('valorTotal')),
+      valorTotal: parseValorMonetario(fd.get('valorTotal')),
       numeroParcelas: Number(fd.get('numeroParcelas')),
       parcelaAtual: Number(fd.get('parcelaAtual')),
       cartao: fd.get('cartao') || ''

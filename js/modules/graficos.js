@@ -1,11 +1,9 @@
 // ==========================================
 // MÓDULO: GRÁFICOS
-// Funções para desenhar gráficos com SVG puro.
 // ==========================================
 
-/**
- * Gera um gráfico de barras horizontais simples
- */
+import { formatarMoeda } from '../utils/helpers.js';
+
 export function gerarGraficoBarras(dados, corVar) {
   const maior = Math.max(...dados.map(d => d.valor), 1);
 
@@ -17,7 +15,7 @@ export function gerarGraficoBarras(dados, corVar) {
         <div class="grafico-barra__trilho">
           <div class="grafico-barra__preenchida" style="width:${largura}%; background-color: var(${corVar});"></div>
         </div>
-        <span class="grafico-barra__valor">R$ ${d.valor.toFixed(2)}</span>
+        <span class="grafico-barra__valor">${formatarMoeda(d.valor)}</span>
       </div>
     `;
   }).join('');
@@ -25,11 +23,6 @@ export function gerarGraficoBarras(dados, corVar) {
 
 const CORES_DONUT = ['#7B61FF', '#FF7A9C', '#10B981', '#F59E0B', '#3B82F6', '#EF4444'];
 
-/**
- * Gera um gráfico de rosca (donut) com legenda,
- * usando apenas SVG (sem bibliotecas externas)
- * @param {Array} dados - [{ label: 'Moradia', valor: 1200 }, ...]
- */
 export function gerarGraficoDonut(dados) {
   const total = dados.reduce((soma, d) => soma + d.valor, 0);
 
@@ -72,7 +65,7 @@ export function gerarGraficoDonut(dados) {
       <div class="donut-grafico">
         <svg viewBox="0 0 180 180" width="180" height="180">${arcos}</svg>
         <div class="donut-central">
-          <p class="donut-valor">R$ ${total.toFixed(2)}</p>
+          <p class="donut-valor">${formatarMoeda(total)}</p>
           <p class="donut-legenda-total">Total</p>
         </div>
       </div>
@@ -81,10 +74,6 @@ export function gerarGraficoDonut(dados) {
   `;
 }
 
-/**
- * Agrupa uma lista de lançamentos por categoria, somando os valores.
- * Se houver mais categorias que o limite, agrupa o restante em "Outros".
- */
 export function agruparPorCategoria(lista, limite = 5) {
   const mapa = {};
   lista.forEach(item => {

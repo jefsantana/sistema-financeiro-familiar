@@ -14,8 +14,14 @@ export function formatarData(dataISO) {
   return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
+/**
+ * Formata um número no padrão de dinheiro brasileiro:
+ * milhar com ponto, decimal com vírgula, com "R$" na frente.
+ * Ex: 1250.9 -> "R$ 1.250,90"
+ */
 export function formatarMoeda(valor) {
-  return `R$ ${Number(valor).toFixed(2)}`;
+  const numero = Number(valor) || 0;
+  return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 /**
@@ -30,10 +36,8 @@ export function parseValorMonetario(texto) {
   let limpo = texto.trim().replace(/[^\d,.-]/g, '');
 
   if (limpo.includes(',') && limpo.includes('.')) {
-    // Tem os dois: ponto é milhar, vírgula é decimal (padrão BR)
     limpo = limpo.replace(/\./g, '').replace(',', '.');
   } else if (limpo.includes(',')) {
-    // Só vírgula: é o decimal
     limpo = limpo.replace(',', '.');
   }
 
@@ -43,13 +47,13 @@ export function parseValorMonetario(texto) {
 
 /**
  * Liga um campo de texto para se comportar como campo de dinheiro:
- * ao perder o foco, formata automaticamente para "0,00"
+ * ao perder o foco, formata automaticamente com milhar e vírgula.
  */
 export function ativarCampoMoeda(input) {
   input.addEventListener('blur', function () {
     if (!input.value.trim()) return;
     const numero = parseValorMonetario(input.value);
-    input.value = numero.toFixed(2).replace('.', ',');
+    input.value = numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   });
 }
 
