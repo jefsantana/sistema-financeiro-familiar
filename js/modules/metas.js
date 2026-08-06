@@ -76,4 +76,4 @@ export function iniciarEventosMetas() {
     const atualizadas = await buscarDados('Metas');
     lista.innerHTML = montarLista(atualizadas);
   });
-}
+}  
