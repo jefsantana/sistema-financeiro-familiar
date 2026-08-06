@@ -242,16 +242,22 @@ function montarAlertasVencimentos(vencimentos) {
           <p class="alerta-item__descricao">${rotulo} ${v.descricao}</p>
           <p class="alerta-item__info">${texto} · ${formatarMoeda(v.valor)}</p>
         </div>
-        <button class="botao-pagar"
-          data-tipo="${v.tipo}"
-          data-id="${v.id}"
-          data-mes="${v.mesAno}"
-          data-descricao="${v.descricao}"
-          data-valor="${v.valor}"
-          data-categoria="${v.categoria}"
-          data-cartao="${v.cartao}"
-          data-parcela-atual="${v.parcelaAtual || ''}"
-        >Pagar</button>
+        <div class="alerta-item__acoes">
+          <select class="select-pessoa" aria-label="Quem está pagando">
+            <option value="Jeferson">Jeferson</option>
+            <option value="Raquel">Raquel</option>
+          </select>
+          <button class="botao-pagar"
+            data-tipo="${v.tipo}"
+            data-id="${v.id}"
+            data-mes="${v.mesAno}"
+            data-descricao="${v.descricao}"
+            data-valor="${v.valor}"
+            data-categoria="${v.categoria}"
+            data-cartao="${v.cartao}"
+            data-parcela-atual="${v.parcelaAtual || ''}"
+          >Pagar</button>
+        </div>
       </li>
     `;
   }).join('');
