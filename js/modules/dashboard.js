@@ -2,17 +2,12 @@
 // MÓDULO: DASHBOARD
 // ==========================================
 
-import { buscarDados, salvarDados } from '../services/api.js';
+import { buscarDados, buscarDadosDashboard, salvarDados } from '../services/api.js';
 import { gerarGraficoDonut, agruparPorCategoria } from './graficos.js';
 import { formatarMoeda } from '../utils/helpers.js';
 
 export async function renderDashboard() {
-  const [entradas, gastos, contasFixas, pagamentos] = await Promise.all([
-    buscarDados('Entradas'),
-    buscarDados('Gastos'),
-    buscarDados('ContasFixas'),
-    buscarDados('PagamentosContasFixas')
-  ]);
+  const { entradas, gastos, contasFixas, pagamentos } = await buscarDadosDashboard();
 
   const totalEntradas = entradas.reduce((soma, item) => soma + Number(item.valor), 0);
   const totalGastos = gastos.reduce((soma, item) => soma + Number(item.valor), 0);
@@ -20,6 +15,7 @@ export async function renderDashboard() {
 
   const alertas = calcularAlertasContasFixas(contasFixas, pagamentos);
   const categorias = agruparPorCategoria(gastos);
+  const resumoMensal = calcularResumoMensal(entradas, gastos);
 
   return `
     <h3>📊 Visão geral</h3>
@@ -49,18 +45,84 @@ export async function renderDashboard() {
         ${gerarGraficoDonut(categorias)}
       </div>
     </div>
+
+    <div class="painel" style="margin-top: var(--espaco-md);">
+      <p class="painel__titulo">📅 Resumo Mensal</p>
+      ${montarTabelaMensal(resumoMensal)}
+    </div>
+  `;
+}
+
+/**
+ * Agrupa entradas e gastos por mês (AAAA-MM), calculando
+ * total de entrada, saída e saldo de cada mês.
+ * Devolve os últimos 6 meses com movimentação, do mais
+ * recente para o mais antigo.
+ */
+function calcularResumoMensal(entradas, gastos) {
+  const mapa = {};
+
+  function registrar(lista, chave) {
+    lista.forEach(item => {
+      const data = new Date(item.data);
+      if (isNaN(data.getTime())) return;
+      const mesAno = `${data.getUTCFullYear()}-${String(data.getUTCMonth() + 1).padStart(2, '0')}`;
+      if (!mapa[mesAno]) mapa[mesAno] = { entrada: 0, saida: 0 };
+      mapa[mesAno][chave] += Number(item.valor);
+    });
+  }
+
+  registrar(entradas, 'entrada');
+  registrar(gastos, 'saida');
+
+  return Object.keys(mapa)
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 6)
+    .map(mesAno => ({
+      mesAno,
+      nome: nomeDoMes(mesAno),
+      entrada: mapa[mesAno].entrada,
+      saida: mapa[mesAno].saida,
+      saldo: mapa[mesAno].entrada - mapa[mesAno].saida
+    }));
+}
+
+function nomeDoMes(mesAno) {
+  const [ano, mes] = mesAno.split('-');
+  const data = new Date(Number(ano), Number(mes) - 1, 1);
+  const texto = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function montarTabelaMensal(resumo) {
+  if (resumo.length === 0) {
+    return '<p class="texto-vazio">Sem lançamentos suficientes para montar o resumo mensal ainda.</p>';
+  }
+
+  const linhas = resumo.map(m => `
+    <tr>
+      <td>${m.nome}</td>
+      <td class="valor-positivo">${formatarMoeda(m.entrada)}</td>
+      <td class="valor-negativo">${formatarMoeda(m.saida)}</td>
+      <td class="${m.saldo >= 0 ? 'valor-positivo' : 'valor-negativo'}">${formatarMoeda(m.saldo)}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <table class="tabela">
+      <thead>
+        <tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>
   `;
 }
 
 function normalizarMesAno(valor) {
-  if (typeof valor === 'string' && /^\d{4}-\d{2}$/.test(valor)) {
-    return valor;
-  }
+  if (typeof valor === 'string' && /^\d{4}-\d{2}$/.test(valor)) return valor;
   const data = new Date(valor);
   if (isNaN(data.getTime())) return String(valor);
-  const ano = data.getUTCFullYear();
-  const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
-  return `${ano}-${mes}`;
+  return `${data.getUTCFullYear()}-${String(data.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function calcularAlertasContasFixas(contasFixas, pagamentos) {
