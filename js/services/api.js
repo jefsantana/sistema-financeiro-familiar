@@ -2,7 +2,7 @@
 // SERVICES: API
 // ==========================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbx0g1k3r5J6Z7z8X9Y0Z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby8H6Og5RfQC_yM5t1gptAvms96IQj5vQH-nuGlRsUqfh3ElZZVognIBCTqB1A8Gc-R/exec';
 
 export async function buscarDados(nomeAba) {
   try {
