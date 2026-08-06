@@ -1,12 +1,5 @@
 /* ==========================================
    RESPONSIVIDADE
-   Este arquivo será preenchido na Etapa 5,
-   dedicada exclusivamente a adaptar o layout
-   para tablets e celulares.
-   ========================================== */
-
-   /* ==========================================
-   RESPONSIVIDADE
    Abordagem: Desktop First (usamos max-width,
    "consertando" o layout conforme a tela diminui)
    ========================================== */
@@ -14,7 +7,6 @@
 /* Escondido por padrão no desktop */
 .header__menu-toggle {
   display: none;
-  font-size: 1.4rem;
 }
 
 .sidebar-overlay {
@@ -32,6 +24,10 @@
   .content {
     padding: var(--espaco-lg);
   }
+
+  .painel-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ==========================================
@@ -39,9 +35,8 @@
    ========================================== */
 @media (max-width: 640px) {
 
-  /* O botão hambúrguer aparece */
   .header__menu-toggle {
-    display: block;
+    display: flex;
   }
 
   /* Menu lateral vira "gaveta" escondida fora da tela */
@@ -52,18 +47,15 @@
     z-index: 100;
   }
 
-  /* Classe adicionada pelo JS quando o menu está aberto */
   .sidebar.open {
     transform: translateX(0);
   }
 
-  /* Conteúdo ocupa a tela inteira (sem espaço reservado pro menu) */
   .main {
     margin-left: 0;
     width: 100%;
   }
 
-  /* Fundo escuro atrás do menu aberto */
   .sidebar-overlay.active {
     display: block;
     position: fixed;
@@ -76,7 +68,11 @@
   }
 
   .header {
-    padding: var(--espaco-md);
+    padding: var(--espaco-sm) var(--espaco-md);
+  }
+
+  .header__eyebrow {
+    display: none;
   }
 
   .header__title {
@@ -86,13 +82,105 @@
   .content {
     padding: var(--espaco-md);
   }
-}
 
-@media (max-width: 640px) {
-  .header__eyebrow {
-    display: none;
+  .content h3 {
+    font-size: 1.05rem;
   }
+
   .sidebar__logo h1 {
     font-size: 1rem;
+  }
+
+  /* ---------- CARDS: sempre 1 por linha ---------- */
+  .cards {
+    flex-direction: column;
+  }
+
+  .card {
+    min-width: 0;
+  }
+
+  .card__valor {
+    font-size: 1.35rem;
+  }
+
+  /* ---------- FORMULÁRIOS: 1 campo por linha ---------- */
+  .formulario {
+    flex-direction: column;
+    padding: var(--espaco-md);
+  }
+
+  .campo {
+    min-width: 0;
+  }
+
+  .botao {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  /* ---------- TABELAS: rolagem horizontal em vez de espremer ---------- */
+  [id^="lista"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--raio-md);
+  }
+
+  .tabela {
+    min-width: 560px;
+  }
+
+  /* ---------- DASHBOARD: painéis e alertas ---------- */
+  .painel {
+    padding: var(--espaco-md);
+  }
+
+  .alerta-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--espaco-sm);
+  }
+
+  .botao-pagar {
+    width: 100%;
+  }
+
+  /* ---------- GRÁFICO DONUT: empilha e centraliza ---------- */
+  .donut-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .legenda-lista {
+    width: 100%;
+  }
+
+  /* ---------- GRÁFICO DE BARRAS ---------- */
+  .grafico-barra__label {
+    width: 90px;
+    font-size: 0.78rem;
+  }
+
+  .grafico-barra__valor {
+    width: 80px;
+    font-size: 0.78rem;
+  }
+}
+
+/* ==========================================
+   CELULAR PEQUENO (telas até 380px)
+   ========================================== */
+@media (max-width: 380px) {
+  .card__valor {
+    font-size: 1.2rem;
+  }
+
+  .sidebar__logo h1 {
+    font-size: 0.9rem;
+  }
+
+  .donut-grafico svg {
+    width: 150px;
+    height: 150px;
   }
 }

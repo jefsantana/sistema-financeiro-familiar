@@ -595,3 +595,12 @@ body {
   font-weight: 600;
   color: var(--cor-texto-secundario);
 }
+
+[id^="lista"]::-webkit-scrollbar {
+  height: 6px;
+}
+
+[id^="lista"]::-webkit-scrollbar-thumb {
+  background-color: var(--cor-borda);
+  border-radius: 999px;
+}
