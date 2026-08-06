@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { formatarData, ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
+import { formatarData, ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderEntradas() {
   const entradas = await buscarDados('Entradas');
@@ -13,7 +13,7 @@ export async function renderEntradas() {
       </div>
       <div class="campo">
         <label for="valor">Valor (R$)</label>
-        <input type="number" id="valor" name="valor" step="0.01" min="0" required placeholder="0,00">
+        <input type="text" inputmode="decimal" id="valor" name="valor" required placeholder="0,00">
       </div>
       <div class="campo">
         <label for="data">Data</label>
@@ -63,12 +63,14 @@ export function iniciarEventosEntradas() {
   const lista = document.getElementById('listaEntradas');
   if (!form) return;
 
+  ativarCampoMoeda(form.querySelector('#valor'));
+
   form.addEventListener('submit', async function (evento) {
     evento.preventDefault();
     const dadosFormulario = new FormData(form);
     const novaEntrada = {
       descricao: dadosFormulario.get('descricao'),
-      valor: Number(dadosFormulario.get('valor')),
+      valor: parseValorMonetario(dadosFormulario.get('valor')),
       data: dadosFormulario.get('data'),
       categoria: dadosFormulario.get('categoria')
     };

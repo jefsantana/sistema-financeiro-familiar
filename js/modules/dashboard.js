@@ -41,7 +41,7 @@ export async function renderDashboard() {
 
     <div class="painel-grid">
       <div class="painel">
-        <p class="painel__titulo">🔔 Contas a vencer este mês</p>
+        <p class="painel__titulo">🔔 Contas a vencer — ${nomeMesAtual()}</p>
         <div id="alertasContasFixas">${montarAlertasContasFixas(alertas)}</div>
       </div>
 
@@ -54,20 +54,32 @@ export async function renderDashboard() {
 }
 
 /**
- * Compara cada Conta Fixa com o mês atual e calcula
- * quantos dias faltam (ou já passaram) do vencimento.
- * Ignora contas que já têm pagamento registrado neste mês.
+ * Transforma QUALQUER formato de mesAno que vier da planilha
+ * (texto puro "2026-08", ou uma data completa que o Google
+ * Sheets converteu sozinho) no padrão "AAAA-MM", para permitir
+ * comparação confiável.
  */
+function normalizarMesAno(valor) {
+  if (typeof valor === 'string' && /^\d{4}-\d{2}$/.test(valor)) {
+    return valor;
+  }
+  const data = new Date(valor);
+  if (isNaN(data.getTime())) return String(valor);
+  const ano = data.getUTCFullYear();
+  const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+  return `${ano}-${mes}`;
+}
+
 function calcularAlertasContasFixas(contasFixas, pagamentos) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
   const ano = hoje.getFullYear();
-  const mes = hoje.getMonth(); // 0 = janeiro
+  const mes = hoje.getMonth();
   const mesAnoAtual = `${ano}-${String(mes + 1).padStart(2, '0')}`;
 
   const idsPagosEsteMes = pagamentos
-    .filter(p => p.mesAno === mesAnoAtual)
+    .filter(p => normalizarMesAno(p.mesAno) === mesAnoAtual)
     .map(p => String(p.contaFixaId));
 
   return contasFixas
@@ -83,10 +95,6 @@ function calcularAlertasContasFixas(contasFixas, pagamentos) {
     .sort((a, b) => a.diasRestantes - b.diasRestantes);
 }
 
-/**
- * Monta o HTML da lista de avisos, com cores diferentes
- * para vencida / vence hoje / vence em breve
- */
 function montarAlertasContasFixas(alertas) {
   if (alertas.length === 0) {
     return '<p class="texto-vazio">Nenhuma conta pendente este mês. 🎉</p>';
@@ -121,10 +129,12 @@ function montarAlertasContasFixas(alertas) {
   return `<ul class="alerta-lista">${itens}</ul>`;
 }
 
-/**
- * Liga o clique do botão "Marcar como paga".
- * Ao clicar, registra o pagamento e recarrega só a lista de avisos.
- */
+function nomeMesAtual() {
+  const hoje = new Date();
+  const texto = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export function iniciarEventosDashboard() {
   const container = document.getElementById('alertasContasFixas');
   if (!container) return;
@@ -136,17 +146,28 @@ export function iniciarEventosDashboard() {
     botao.disabled = true;
     botao.textContent = 'Salvando...';
 
-    await salvarDados('PagamentosContasFixas', {
-      contaFixaId: botao.dataset.id,
-      mesAno: botao.dataset.mes
-    });
+    try {
+      await salvarDados('PagamentosContasFixas', {
+        contaFixaId: botao.dataset.id,
+        mesAno: botao.dataset.mes
+      });
 
-    const [contasFixas, pagamentos] = await Promise.all([
-      buscarDados('ContasFixas'),
-      buscarDados('PagamentosContasFixas')
-    ]);
+      const [contasFixas, pagamentos] = await Promise.all([
+        buscarDados('ContasFixas'),
+        buscarDados('PagamentosContasFixas')
+      ]);
 
-    const alertas = calcularAlertasContasFixas(contasFixas, pagamentos);
-    container.innerHTML = montarAlertasContasFixas(alertas);
+      if (!Array.isArray(pagamentos)) {
+        throw new Error('A aba "PagamentosContasFixas" não retornou dados válidos.');
+      }
+
+      const alertas = calcularAlertasContasFixas(contasFixas, pagamentos);
+      container.innerHTML = montarAlertasContasFixas(alertas);
+    } catch (erro) {
+      console.error('Erro ao marcar conta como paga:', erro);
+      botao.disabled = false;
+      botao.textContent = 'Marcar como paga';
+      alert('Não foi possível salvar. Verifique o console (F12) para detalhes.');
+    }
   });
 }

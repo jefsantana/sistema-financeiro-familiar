@@ -4,17 +4,21 @@
 // e nossa API no Google Apps Script.
 // ==========================================
 
-// Cole aqui a URL da sua implantação do Apps Script
 const API_URL = 'https://script.google.com/macros/s/AKfycby8H6Og5RfQC_yM5t1gptAvms96IQj5vQH-nuGlRsUqfh3ElZZVognIBCTqB1A8Gc-R/exec';
 
 /**
- * Busca todos os registros de uma aba da planilha
- * @param {string} nomeAba - nome da aba (ex: "Entradas")
- * @returns {Promise<Array>} lista de objetos com os dados
+ * Busca todos os registros de uma aba.
+ * Usa "cache: no-store" + um parâmetro aleatório na URL
+ * para IMPEDIR que o navegador ou o Google sirvam uma
+ * resposta antiga em cache — importante logo após salvar
+ * ou excluir algo.
  */
 export async function buscarDados(nomeAba) {
   try {
-    const resposta = await fetch(`${API_URL}?action=list&sheet=${nomeAba}`);
+    const resposta = await fetch(
+      `${API_URL}?action=list&sheet=${nomeAba}&_=${Date.now()}`,
+      { cache: 'no-store' }
+    );
     const dados = await resposta.json();
     return dados;
   } catch (erro) {
@@ -23,20 +27,11 @@ export async function buscarDados(nomeAba) {
   }
 }
 
-/**
- * Envia um novo registro para ser adicionado numa aba
- * @param {string} nomeAba - nome da aba (ex: "Entradas")
- * @param {object} dados - objeto com os dados do novo registro
- * @returns {Promise<object>} o registro criado (com o id gerado)
- */
 export async function salvarDados(nomeAba, dados) {
   try {
     const resposta = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        sheet: nomeAba,
-        dados: dados
-      })
+      body: JSON.stringify({ sheet: nomeAba, dados: dados })
     });
     const resultado = await resposta.json();
     return resultado;
@@ -46,11 +41,6 @@ export async function salvarDados(nomeAba, dados) {
   }
 }
 
-/**
- * Exclui um registro de uma aba, pelo ID
- * @param {string} nomeAba
- * @param {string} id
- */
 export async function excluirDados(nomeAba, id) {
   try {
     const resposta = await fetch(API_URL, {

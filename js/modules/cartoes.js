@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderCartoes() {
   const cartoes = await buscarDados('Cartoes');
@@ -12,7 +12,7 @@ export async function renderCartoes() {
       </div>
       <div class="campo">
         <label for="limite">Limite (R$)</label>
-        <input type="number" id="limite" name="limite" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" id="limite" name="limite" required placeholder="0,00">
       </div>
       <div class="campo">
         <label for="diaFechamento">Dia de fechamento</label>
@@ -50,12 +50,14 @@ export function iniciarEventosCartoes() {
   const lista = document.getElementById('listaCartoes');
   if (!form) return;
 
+  ativarCampoMoeda(form.querySelector('#limite'));
+
   form.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const fd = new FormData(form);
     const novo = {
       nome: fd.get('nome'),
-      limite: Number(fd.get('limite')),
+      limite: parseValorMonetario(fd.get('limite')),
       diaFechamento: Number(fd.get('diaFechamento'))
     };
 

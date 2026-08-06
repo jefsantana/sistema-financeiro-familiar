@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderMetas() {
   const metas = await buscarDados('Metas');
@@ -12,11 +12,11 @@ export async function renderMetas() {
       </div>
       <div class="campo">
         <label for="valorAlvo">Valor alvo (R$)</label>
-        <input type="number" id="valorAlvo" name="valorAlvo" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" id="valorAlvo" name="valorAlvo" required placeholder="0,00">
       </div>
       <div class="campo">
         <label for="valorAtual">Valor já guardado (R$)</label>
-        <input type="number" id="valorAtual" name="valorAtual" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" id="valorAtual" name="valorAtual" required placeholder="0,00">
       </div>
       <button type="submit" class="botao botao--primario">Salvar Meta</button>
     </form>
@@ -45,13 +45,16 @@ export function iniciarEventosMetas() {
   const lista = document.getElementById('listaMetas');
   if (!form) return;
 
+  ativarCampoMoeda(form.querySelector('#valorAlvo'));
+  ativarCampoMoeda(form.querySelector('#valorAtual'));
+
   form.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const fd = new FormData(form);
     const nova = {
       descricao: fd.get('descricao'),
-      valorAlvo: Number(fd.get('valorAlvo')),
-      valorAtual: Number(fd.get('valorAtual'))
+      valorAlvo: parseValorMonetario(fd.get('valorAlvo')),
+      valorAtual: parseValorMonetario(fd.get('valorAtual'))
     };
 
     const botao = form.querySelector('button[type="submit"]');

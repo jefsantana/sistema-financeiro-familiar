@@ -1,5 +1,5 @@
 import { buscarDados, salvarDados, excluirDados } from '../services/api.js';
-import { ICONE_LIXEIRA, ativarBotoesExcluir } from '../utils/helpers.js';
+import { ICONE_LIXEIRA, ativarBotoesExcluir, parseValorMonetario, ativarCampoMoeda } from '../utils/helpers.js';
 
 export async function renderContasFixas() {
   const contas = await buscarDados('ContasFixas');
@@ -12,7 +12,7 @@ export async function renderContasFixas() {
       </div>
       <div class="campo">
         <label for="valor">Valor (R$)</label>
-        <input type="number" id="valor" name="valor" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" id="valor" name="valor" required placeholder="0,00">
       </div>
       <div class="campo">
         <label for="diaVencimento">Dia de vencimento</label>
@@ -55,12 +55,14 @@ export function iniciarEventosContasFixas() {
   const lista = document.getElementById('listaContasFixas');
   if (!form) return;
 
+  ativarCampoMoeda(form.querySelector('#valor'));
+
   form.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const fd = new FormData(form);
     const nova = {
       descricao: fd.get('descricao'),
-      valor: Number(fd.get('valor')),
+      valor: parseValorMonetario(fd.get('valor')),
       diaVencimento: Number(fd.get('diaVencimento')),
       categoria: fd.get('categoria')
     };

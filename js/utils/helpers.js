@@ -19,13 +19,42 @@ export function formatarMoeda(valor) {
 }
 
 /**
- * "Liga" o botão de excluir em uma tabela/lista, usando
- * delegação de eventos: escuta cliques no container inteiro
- * (não em cada botão individual), e verifica se o clique
- * foi em um botão de lixeira.
- *
- * @param {HTMLElement} container - elemento pai da lista/tabela
- * @param {Function} aoExcluir - função async chamada com o id clicado
+ * Converte um texto digitado pelo usuário (aceita vírgula OU
+ * ponto como decimal, com ou sem separador de milhar) em um
+ * número JavaScript confiável.
+ * Ex: "1.250,90" -> 1250.9 | "150,5" -> 150.5 | "150.5" -> 150.5
+ */
+export function parseValorMonetario(texto) {
+  if (typeof texto !== 'string') return Number(texto) || 0;
+
+  let limpo = texto.trim().replace(/[^\d,.-]/g, '');
+
+  if (limpo.includes(',') && limpo.includes('.')) {
+    // Tem os dois: ponto é milhar, vírgula é decimal (padrão BR)
+    limpo = limpo.replace(/\./g, '').replace(',', '.');
+  } else if (limpo.includes(',')) {
+    // Só vírgula: é o decimal
+    limpo = limpo.replace(',', '.');
+  }
+
+  const numero = parseFloat(limpo);
+  return isNaN(numero) ? 0 : numero;
+}
+
+/**
+ * Liga um campo de texto para se comportar como campo de dinheiro:
+ * ao perder o foco, formata automaticamente para "0,00"
+ */
+export function ativarCampoMoeda(input) {
+  input.addEventListener('blur', function () {
+    if (!input.value.trim()) return;
+    const numero = parseValorMonetario(input.value);
+    input.value = numero.toFixed(2).replace('.', ',');
+  });
+}
+
+/**
+ * Delegação de eventos para os botões de excluir de uma lista/tabela
  */
 export function ativarBotoesExcluir(container, aoExcluir) {
   container.addEventListener('click', async function (evento) {
