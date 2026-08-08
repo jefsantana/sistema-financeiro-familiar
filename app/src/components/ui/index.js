@@ -7,6 +7,7 @@ export { Modal } from './Modal/Modal.jsx';
 export { ConfirmDialog } from './ConfirmDialog/ConfirmDialog.jsx';
 export { ProgressBar } from './ProgressBar/ProgressBar.jsx';
 export { EmptyState } from './EmptyState/EmptyState.jsx';
+export { InfoBanner } from './InfoBanner/InfoBanner.jsx';
 export { Loading } from './Loading/Loading.jsx';
 export { Skeleton, SkeletonCard, SkeletonLinha } from './Skeleton/Skeleton.jsx';
 export { Avatar } from './Avatar/Avatar.jsx';

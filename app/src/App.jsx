@@ -14,6 +14,7 @@ import ContasFixas from './pages/ContasFixas/ContasFixas.jsx';
 import Parcelamentos from './pages/Parcelamentos/Parcelamentos.jsx';
 import Cartoes from './pages/Cartoes/Cartoes.jsx';
 import Metas from './pages/Metas/Metas.jsx';
+import Orcamentos from './pages/Orcamentos/Orcamentos.jsx';
 import Relatorios from './pages/Relatorios/Relatorios.jsx';
 import Historico from './pages/Historico/Historico.jsx';
 import Lixeira from './pages/Lixeira/Lixeira.jsx';
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/parcelamentos" element={<Parcelamentos />} />
                 <Route path="/cartoes" element={<Cartoes />} />
                 <Route path="/metas" element={<Metas />} />
+                <Route path="/orcamentos" element={<Orcamentos />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/historico" element={<Historico />} />
                 <Route path="/lixeira" element={<Lixeira />} />

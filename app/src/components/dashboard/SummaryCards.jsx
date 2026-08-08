@@ -4,8 +4,8 @@ import { calcularTendencia } from '../../utils/financeiro.js';
 import styles from './SummaryCards.module.css';
 
 export function SummaryCards({ saldoAtual, entradasMes, saidasMes, entradasMesAnterior, saidasMesAnterior }) {
-  const economiaMes = entradasMes - saidasMes;
-  const economiaMesAnterior = entradasMesAnterior - saidasMesAnterior;
+  const saldoMes = entradasMes - saidasMes;
+  const saldoMesAnterior = entradasMesAnterior - saidasMesAnterior;
 
   return (
     <div className={styles.grade}>
@@ -27,9 +27,9 @@ export function SummaryCards({ saldoAtual, entradasMes, saidasMes, entradasMesAn
       <StatCard
         icone={PiggyBank}
         corIcone="info"
-        rotulo="Economia do mês"
-        valor={economiaMes}
-        tendencia={calcularTendencia(economiaMes, economiaMesAnterior)}
+        rotulo="Saldo do mês"
+        valor={saldoMes}
+        tendencia={calcularTendencia(saldoMes, saldoMesAnterior)}
       />
     </div>
   );

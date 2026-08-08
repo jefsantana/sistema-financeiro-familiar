@@ -1,14 +1,15 @@
 .sidebar {
-  --sb-fundo: oklch(18% .025 264);
-  --sb-hover: oklch(24% .025 264);
-  --sb-borda: oklch(26% .025 264);
-  --sb-texto: oklch(72% .02 264);
-  --sb-texto-hover: oklch(95% .01 264);
-  --sb-nome: oklch(98% .005 264);
-  --sb-subtitulo: oklch(58% .02 264);
-  --sb-grupo-titulo: oklch(50% .02 264);
+  /* Modo claro: sidebar clara, igual ao resto da interface */
+  --sb-fundo: var(--cor-superficie);
+  --sb-hover: var(--cor-fundo);
+  --sb-borda: var(--cor-borda);
+  --sb-texto: var(--cor-texto-secundario);
+  --sb-texto-hover: var(--cor-texto);
+  --sb-nome: var(--cor-texto);
+  --sb-subtitulo: var(--cor-texto-secundario);
+  --sb-grupo-titulo: var(--cor-texto-secundario);
   --sb-ativo-fundo: oklch(58% .19 288);
-  --sb-rodape-nome: oklch(92% .01 264);
+  --sb-rodape-nome: var(--cor-texto);
   --sb-fonte: var(--fonte-corpo);
 
   width: var(--largura-sidebar);
@@ -24,7 +25,20 @@
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), width var(--transicao);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), width var(--transicao), background-color var(--transicao), border-color var(--transicao);
+}
+
+/* Modo escuro: sobrescreve as cores acima pelos tons escuros */
+[data-theme='dark'] .sidebar {
+  --sb-fundo: oklch(18% .025 264);
+  --sb-hover: oklch(24% .025 264);
+  --sb-borda: oklch(26% .025 264);
+  --sb-texto: oklch(72% .02 264);
+  --sb-texto-hover: oklch(95% .01 264);
+  --sb-nome: oklch(98% .005 264);
+  --sb-subtitulo: oklch(58% .02 264);
+  --sb-grupo-titulo: oklch(50% .02 264);
+  --sb-rodape-nome: oklch(92% .01 264);
 }
 
 .logo {

@@ -11,6 +11,7 @@ import {
   History,
   Trash2,
   Settings,
+  Wallet,
   Home,
   ShoppingCart,
   Lightbulb,
@@ -33,7 +34,6 @@ import {
   Briefcase,
   RotateCcw,
   RefreshCcw,
-  Wallet,
   PlusCircle,
   Award,
 } from 'lucide-react';
@@ -51,6 +51,7 @@ export const ICONES_NAV = {
   History,
   Trash2,
   Settings,
+  Wallet,
 };
 
 // Ícone de cada categoria fixa (gasto e entrada) — usado no lugar do

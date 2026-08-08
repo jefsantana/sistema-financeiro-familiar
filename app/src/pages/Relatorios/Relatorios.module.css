@@ -1,0 +1,44 @@
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.filtroSelect {
+  flex: 1 1 180px;
+  min-width: 180px;
+}
+
+.comparativo {
+  display: flex;
+  gap: var(--espaco-xl);
+}
+
+.itemComparativo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rotuloComparativo {
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario);
+}
+
+.itemComparativo > span:nth-child(2) {
+  font-family: var(--fonte-numeros);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.tendenciaBoa {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-sucesso);
+}
+
+.tendenciaRuim {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-perigo);
+}

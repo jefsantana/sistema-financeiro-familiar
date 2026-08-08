@@ -12,6 +12,7 @@ export default function ContasFixas() {
     tituloForm: 'Nova Conta Fixa',
     tituloLista: 'Contas fixas cadastradas',
     textoVazioLista: 'Cadastre a primeira conta fixa usando o formulário acima.',
+    dica: 'Use para contas que se repetem todo mês com o mesmo valor, como aluguel ou internet. Uma compra parcelada no cartão (ex: um notebook em 10x) vai em "Parcelamentos".',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Aluguel' },
       { nome: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', obrigatorio: true },

@@ -14,6 +14,7 @@ export default function Parcelamentos() {
     tituloForm: 'Novo Parcelamento',
     tituloLista: 'Parcelamentos cadastrados',
     textoVazioLista: 'Cadastre o primeiro parcelamento usando o formulário acima.',
+    dica: 'Use para uma compra dividida em várias vezes, geralmente no cartão de crédito (ex: um notebook em 10x). Uma conta que se repete todo mês com o mesmo valor, como aluguel ou internet, vai em "Contas Fixas".',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Notebook' },
       { nome: 'valorTotal', rotulo: 'Valor total (R$)', tipo: 'moeda', obrigatorio: true },
@@ -31,11 +32,16 @@ export default function Parcelamentos() {
         chave: 'progresso',
         rotulo: 'Progresso',
         render: (r) => {
-          const percentual = Math.min(100, Math.round((Number(r.parcelaAtual) / Number(r.numeroParcelas)) * 100));
+          const numeroParcelas = Number(r.numeroParcelas);
+          const parcelaAtual = Number(r.parcelaAtual);
+          const valorParcela = Number(r.valorTotal) / numeroParcelas;
+          const parcelasRestantes = Math.max(0, numeroParcelas - parcelaAtual + 1);
+          const saldoDevedor = valorParcela * parcelasRestantes;
+          const percentual = Math.min(100, Math.round((parcelaAtual / numeroParcelas) * 100));
           return (
-            <div style={{ minWidth: 120 }}>
+            <div style={{ minWidth: 140 }}>
               <p style={{ fontSize: '0.8rem', marginBottom: 4 }}>
-                {r.parcelaAtual}/{r.numeroParcelas}
+                {r.parcelaAtual}/{r.numeroParcelas} · {formatarMoeda(saldoDevedor)} restando
               </p>
               <ProgressBar percentual={percentual} />
             </div>

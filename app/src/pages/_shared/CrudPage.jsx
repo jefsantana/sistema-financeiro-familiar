@@ -5,6 +5,7 @@ import {
   Select,
   Button,
   EmptyState,
+  InfoBanner,
   Table,
   TableColunaAcoes,
   TableColunaNumerica,
@@ -33,7 +34,7 @@ function converterValor(campo, bruto) {
 }
 
 export default function CrudPage({ config }) {
-  const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista } = config;
+  const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista, dica } = config;
   const { registros, carregando, salvando, salvar, editar, remover } = useCrudMock(tabela);
   const [valores, setValores] = useState(estadoInicial(campos));
   const [editando, setEditando] = useState(null);
@@ -128,6 +129,8 @@ export default function CrudPage({ config }) {
         <Icone size={20} className={styles.iconePagina} />
         <h1>{editando ? `Editando: ${editando.rotulo || tituloForm}` : tituloForm}</h1>
       </div>
+
+      {dica && <InfoBanner>{dica}</InfoBanner>}
 
       <form className={styles.formulario} onSubmit={aoSalvar} noValidate>
         {campos.map((campo) => {

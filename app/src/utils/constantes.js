@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { path: '/parcelamentos', label: 'Parcelamentos', icon: 'Layers', grupo: 'Movimentações' },
   { path: '/cartoes', label: 'Cartões', icon: 'CreditCard', grupo: 'Movimentações' },
   { path: '/metas', label: 'Metas', icon: 'Target', grupo: 'Planejamento' },
+  { path: '/orcamentos', label: 'Orçamentos', icon: 'Wallet', grupo: 'Planejamento' },
   { path: '/relatorios', label: 'Relatórios', icon: 'BarChart3', grupo: 'Planejamento' },
   { path: '/historico', label: 'Histórico', icon: 'History', grupo: 'Planejamento' },
   { path: '/lixeira', label: 'Lixeira', icon: 'Trash2', grupo: 'Sistema' },

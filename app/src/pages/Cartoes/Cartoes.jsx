@@ -9,6 +9,7 @@ export default function Cartoes() {
     tituloForm: 'Novo Cartão',
     tituloLista: 'Cartões cadastrados',
     textoVazioLista: 'Cadastre o primeiro cartão usando o formulário acima.',
+    dica: 'Aqui você cadastra o cartão em si (limite e dia de fechamento). As compras parceladas feitas nele entram em "Parcelamentos", vinculadas a este cartão.',
     campos: [
       { nome: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Nubank' },
       { nome: 'limite', rotulo: 'Limite (R$)', tipo: 'moeda', obrigatorio: true },
