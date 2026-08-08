@@ -51,6 +51,17 @@ export function nomeExibicao(perfil, usuario) {
   return prefixo.charAt(0).toUpperCase() + prefixo.slice(1);
 }
 
+/**
+ * Acha a posição (0 ou 1) de um nome dentro da lista de pessoas da
+ * família, ignorando maiúsculas/minúsculas e espaços nas pontas —
+ * o nome salvo no perfil (login) e o nome salvo na família podem
+ * ter sido digitados com pequenas diferenças de formatação.
+ */
+export function posicaoDaPessoa(pessoas, nome) {
+  const normalizar = (texto) => (texto || '').trim().toLowerCase();
+  return pessoas.findIndex((pessoa) => normalizar(pessoa) === normalizar(nome));
+}
+
 export function saudacao() {
   const hora = new Date().getHours();
   if (hora < 12) return 'Bom dia';

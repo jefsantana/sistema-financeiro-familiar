@@ -5,7 +5,7 @@ import { AjustarFotoPerfilModal } from '../../components/configuracoes/AjustarFo
 import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
-import { nomeExibicao } from '../../utils/formatadores.js';
+import { nomeExibicao, posicaoDaPessoa } from '../../utils/formatadores.js';
 import styles from './Configuracoes.module.css';
 
 export default function Configuracoes() {
@@ -13,7 +13,7 @@ export default function Configuracoes() {
   const { perfil, usuario, sair, pessoas, atualizarFotoPessoal } = useAuth();
   const toast = useToast();
   const nomeExibido = nomeExibicao(perfil, usuario);
-  const posicaoPropria = pessoas.indexOf(nomeExibido);
+  const posicaoPropria = posicaoDaPessoa(pessoas, nomeExibido);
   const inputFotoRef = useRef(null);
   const [arquivoFoto, setArquivoFoto] = useState(null);
 

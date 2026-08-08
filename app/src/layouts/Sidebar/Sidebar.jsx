@@ -1,13 +1,9 @@
-import { useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { PanelLeftClose, LogOut, Heart, ImagePlus } from 'lucide-react';
+import { PanelLeftClose, LogOut, Heart } from 'lucide-react';
 import { NAV_ITEMS } from '../../utils/constantes.js';
 import { ICONES_NAV } from '../../utils/icones.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { useToast } from '../../contexts/ToastContext.jsx';
-import { useFotoCasal } from '../../hooks/useFotoCasal.js';
 import { Avatar } from '../../components/ui/index.js';
-import { AjustarFotoCasalModal } from '../../components/sidebar/AjustarFotoCasalModal.jsx';
 import { nomeExibicao } from '../../utils/formatadores.js';
 import styles from './Sidebar.module.css';
 
@@ -18,26 +14,7 @@ const GRUPOS_NAV = [...new Set(NAV_ITEMS.map((item) => item.grupo))].map((grupo)
 
 export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
   const { perfil, usuario, familia, pessoas, sair } = useAuth();
-  const toast = useToast();
   const nomeExibido = usuario ? nomeExibicao(perfil, usuario) : '';
-  const inputFotoRef = useRef(null);
-  const [arquivoSelecionado, setArquivoSelecionado] = useState(null);
-  const { foto: fotoCasal, posicao: posicaoFotoCasal, salvar: salvarFotoCasal } = useFotoCasal(perfil?.familia_id);
-
-  function aoSelecionarFoto(evento) {
-    const arquivo = evento.target.files?.[0];
-    evento.target.value = '';
-    if (arquivo) setArquivoSelecionado(arquivo);
-  }
-
-  async function aoConfirmarFoto(dataUrl, posicao) {
-    try {
-      await salvarFotoCasal(dataUrl, posicao);
-      toast.sucesso('Foto do casal atualizada');
-    } catch {
-      toast.erro('Não foi possível salvar a foto. Tente novamente.');
-    }
-  }
 
   return (
     <>
@@ -84,39 +61,6 @@ export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
           ))}
         </ul>
 
-        <button
-          type="button"
-          className={`${styles.fotoCasal} ${fotoCasal ? styles.fotoCasalPreenchida : ''}`}
-          onClick={() => inputFotoRef.current?.click()}
-          title={fotoCasal ? 'Trocar foto do casal' : 'Adicionar foto do casal'}
-        >
-          {fotoCasal ? (
-            <img
-              src={fotoCasal}
-              alt="Foto do casal"
-              className={styles.fotoCasalImagem}
-              style={{ objectPosition: `center ${posicaoFotoCasal}%` }}
-            />
-          ) : (
-            <>
-              <ImagePlus size={16} />
-              <span>Foto do casal</span>
-            </>
-          )}
-        </button>
-        <input
-          ref={inputFotoRef}
-          type="file"
-          accept="image/*"
-          className={styles.fotoCasalEntrada}
-          onChange={aoSelecionarFoto}
-        />
-        <AjustarFotoCasalModal
-          arquivo={arquivoSelecionado}
-          posicaoInicial={posicaoFotoCasal}
-          aoFechar={() => setArquivoSelecionado(null)}
-          aoConfirmar={aoConfirmarFoto}
-        />
         <div className={styles.rodape}>
           {nomeExibido && (
             <div className={styles.usuario}>
