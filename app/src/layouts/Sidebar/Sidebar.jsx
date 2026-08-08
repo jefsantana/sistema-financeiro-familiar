@@ -5,7 +5,9 @@ import { NAV_ITEMS } from '../../utils/constantes.js';
 import { ICONES_NAV } from '../../utils/icones.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
+import { useFotoCasal } from '../../hooks/useFotoCasal.js';
 import { Avatar } from '../../components/ui/index.js';
+import { AjustarFotoCasalModal } from '../../components/sidebar/AjustarFotoCasalModal.jsx';
 import { nomeExibicao } from '../../utils/formatadores.js';
 import styles from './Sidebar.module.css';
 
@@ -14,49 +16,26 @@ const GRUPOS_NAV = [...new Set(NAV_ITEMS.map((item) => item.grupo))].map((grupo)
   itens: NAV_ITEMS.filter((item) => item.grupo === grupo),
 }));
 
-const CHAVE_FOTO_CASAL = 'sffm:v1:fotoCasal';
-const LARGURA_MAXIMA_FOTO = 320;
-
-function redimensionarImagem(arquivo) {
-  return new Promise((resolve, reject) => {
-    const leitor = new FileReader();
-    leitor.onerror = () => reject(leitor.error);
-    leitor.onload = () => {
-      const imagem = new Image();
-      imagem.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
-      imagem.onload = () => {
-        const escala = Math.min(1, LARGURA_MAXIMA_FOTO / imagem.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = imagem.width * escala;
-        canvas.height = imagem.height * escala;
-        canvas.getContext('2d').drawImage(imagem, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      imagem.src = leitor.result;
-    };
-    leitor.readAsDataURL(arquivo);
-  });
-}
-
 export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
   const { perfil, usuario, sair } = useAuth();
   const toast = useToast();
   const nomeExibido = usuario ? nomeExibicao(perfil, usuario) : '';
   const inputFotoRef = useRef(null);
-  const [fotoCasal, setFotoCasal] = useState(() => localStorage.getItem(CHAVE_FOTO_CASAL) || '');
+  const [arquivoSelecionado, setArquivoSelecionado] = useState(null);
+  const { foto: fotoCasal, posicao: posicaoFotoCasal, salvar: salvarFotoCasal } = useFotoCasal(perfil?.familia_id);
 
-  async function aoSelecionarFoto(evento) {
+  function aoSelecionarFoto(evento) {
     const arquivo = evento.target.files?.[0];
     evento.target.value = '';
-    if (!arquivo) return;
+    if (arquivo) setArquivoSelecionado(arquivo);
+  }
 
+  async function aoConfirmarFoto(dataUrl, posicao) {
     try {
-      const dataUrl = await redimensionarImagem(arquivo);
-      localStorage.setItem(CHAVE_FOTO_CASAL, dataUrl);
-      setFotoCasal(dataUrl);
+      await salvarFotoCasal(dataUrl, posicao);
       toast.sucesso('Foto do casal atualizada');
     } catch {
-      toast.erro('Não foi possível usar essa imagem. Tente outra foto.');
+      toast.erro('Não foi possível salvar a foto. Tente novamente.');
     }
   }
 
@@ -105,12 +84,17 @@ export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
 
         <button
           type="button"
-          className={styles.fotoCasal}
+          className={`${styles.fotoCasal} ${fotoCasal ? styles.fotoCasalPreenchida : ''}`}
           onClick={() => inputFotoRef.current?.click()}
           title={fotoCasal ? 'Trocar foto do casal' : 'Adicionar foto do casal'}
         >
           {fotoCasal ? (
-            <img src={fotoCasal} alt="Foto do casal" className={styles.fotoCasalImagem} />
+            <img
+              src={fotoCasal}
+              alt="Foto do casal"
+              className={styles.fotoCasalImagem}
+              style={{ objectPosition: `center ${posicaoFotoCasal}%` }}
+            />
           ) : (
             <>
               <ImagePlus size={16} />
@@ -124,6 +108,12 @@ export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
           accept="image/*"
           className={styles.fotoCasalEntrada}
           onChange={aoSelecionarFoto}
+        />
+        <AjustarFotoCasalModal
+          arquivo={arquivoSelecionado}
+          posicaoInicial={posicaoFotoCasal}
+          aoFechar={() => setArquivoSelecionado(null)}
+          aoConfirmar={aoConfirmarFoto}
         />
 
         <div className={styles.rodape}>

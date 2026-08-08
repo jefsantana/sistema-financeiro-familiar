@@ -150,10 +150,15 @@
   border-color: var(--sb-texto);
 }
 
+.fotoCasalPreenchida {
+  padding: 0;
+  border-style: solid;
+}
+
 .fotoCasalImagem {
   display: block;
   width: 100%;
-  height: 84px;
+  height: 132px;
   border-radius: calc(var(--raio-md) - 1px);
   object-fit: cover;
 }

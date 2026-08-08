@@ -1,0 +1,28 @@
+.moldura {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--raio-md);
+  overflow: hidden;
+  margin-bottom: var(--espaco-md);
+  background-color: var(--cor-fundo);
+}
+
+.moldura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rotuloSlider {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  margin-bottom: var(--espaco-xs);
+}
+
+.slider {
+  width: 100%;
+  margin-bottom: var(--espaco-lg);
+  accent-color: var(--cor-primaria);
+}

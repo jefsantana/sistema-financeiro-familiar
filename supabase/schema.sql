@@ -26,6 +26,8 @@ create extension if not exists "pgcrypto";
 create table familias (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
+  foto_casal text,
+  foto_casal_posicao int not null default 50,
   criado_em timestamptz not null default now()
 );
 
@@ -215,6 +217,7 @@ create table pagamentos_parcelamentos (
 -- alguém logado que pertença à mesma família do registro.
 -- ------------------------------------------------------------
 
+alter table familias enable row level security;
 alter table perfis enable row level security;
 alter table categorias enable row level security;
 alter table entradas enable row level security;
@@ -230,6 +233,12 @@ alter table pagamentos_parcelamentos enable row level security;
 
 create policy "ver_proprio_perfil" on perfis
   for select using (id = auth.uid());
+
+create policy "familia_ve_a_propria_familia" on familias
+  for select using (id = public.minha_familia());
+
+create policy "familia_atualiza_a_propria_familia" on familias
+  for update using (id = public.minha_familia()) with check (id = public.minha_familia());
 
 do $$
 declare
