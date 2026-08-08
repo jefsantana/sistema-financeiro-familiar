@@ -130,7 +130,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: var(--espaco-sm);
+  margin-top: var(--espaco-md);
   padding: 10px;
   min-height: 52px;
   border: 1px dashed var(--sb-borda);
@@ -170,7 +170,7 @@
 .rodape {
   border-top: 1px solid var(--sb-borda);
   padding-top: var(--espaco-sm);
-  margin-top: var(--espaco-sm);
+  margin-top: var(--espaco-md);
   display: flex;
   flex-direction: column;
   gap: var(--espaco-xs);
