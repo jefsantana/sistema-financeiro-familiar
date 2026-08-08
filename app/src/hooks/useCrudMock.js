@@ -10,9 +10,12 @@ export function useCrudMock(tabela) {
 
   const recarregar = useCallback(async () => {
     setCarregando(true);
-    const dados = await api.listar(tabela);
-    setRegistros(dados);
-    setCarregando(false);
+    try {
+      const dados = await api.listar(tabela);
+      setRegistros(dados);
+    } finally {
+      setCarregando(false);
+    }
   }, [tabela]);
 
   useEffect(() => {

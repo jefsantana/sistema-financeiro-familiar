@@ -225,7 +225,9 @@ create table pagamentos_contas_fixas (
   conta_fixa_id uuid not null references contas_fixas(id),
   mes_ano text not null,
   pessoa text,
-  criado_em timestamptz not null default now()
+  criado_em timestamptz not null default now(),
+  excluido_em timestamptz,
+  excluido_por text
 );
 
 create table pagamentos_parcelamentos (
@@ -234,7 +236,9 @@ create table pagamentos_parcelamentos (
   parcelamento_id uuid not null references parcelamentos(id),
   mes_ano text not null,
   pessoa text,
-  criado_em timestamptz not null default now()
+  criado_em timestamptz not null default now(),
+  excluido_em timestamptz,
+  excluido_por text
 );
 
 -- ------------------------------------------------------------

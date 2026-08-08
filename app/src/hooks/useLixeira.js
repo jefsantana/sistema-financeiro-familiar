@@ -20,15 +20,18 @@ export function useLixeira() {
 
   const recarregar = useCallback(async () => {
     setCarregando(true);
-    const listas = await Promise.all(
-      Object.keys(TABELAS_VISIVEIS).map(async (tabela) => {
-        const registros = await listarExcluidos(tabela);
-        return registros.map((r) => ({ ...r, _tabela: tabela, _tipoLabel: TABELAS_VISIVEIS[tabela] }));
-      })
-    );
-    const todos = listas.flat().sort((a, b) => new Date(b.excluidoEm) - new Date(a.excluidoEm));
-    setItens(todos);
-    setCarregando(false);
+    try {
+      const listas = await Promise.all(
+        Object.keys(TABELAS_VISIVEIS).map(async (tabela) => {
+          const registros = await listarExcluidos(tabela);
+          return registros.map((r) => ({ ...r, _tabela: tabela, _tipoLabel: TABELAS_VISIVEIS[tabela] }));
+        })
+      );
+      const todos = listas.flat().sort((a, b) => new Date(b.excluidoEm) - new Date(a.excluidoEm));
+      setItens(todos);
+    } finally {
+      setCarregando(false);
+    }
   }, []);
 
   useEffect(() => {

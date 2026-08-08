@@ -1,5 +1,5 @@
-import { TrendingUp, PieChart, Receipt, Bell, Users, Target, Wallet, Sparkles, Calendar } from 'lucide-react';
-import { Loading } from '../../components/ui/index.js';
+import { TrendingUp, PieChart, Receipt, Bell, Users, Target, Wallet, Sparkles, Calendar, AlertTriangle } from 'lucide-react';
+import { Loading, EmptyState, Button } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { SummaryCards } from '../../components/dashboard/SummaryCards.jsx';
 import { UpcomingBills } from '../../components/dashboard/UpcomingBills.jsx';
@@ -31,13 +31,24 @@ import {
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
-  const { dados, carregando, recarregar } = useDashboardData();
+  const { dados, carregando, erro, recarregar } = useDashboardData();
   const { perfil, usuario } = useAuth();
   const toast = useToast();
   const { pagar, pagando } = usePagamentos(async () => {
     await recarregar();
     toast.sucesso('Pagamento registrado com sucesso');
   });
+
+  if (erro) {
+    return (
+      <EmptyState
+        icone={AlertTriangle}
+        titulo="Não foi possível carregar seu painel"
+        descricao="Houve um erro ao buscar seus dados. Tente novamente em instantes."
+        acao={<Button onClick={recarregar}>Tentar de novo</Button>}
+      />
+    );
+  }
 
   if (carregando || !dados) return <Loading texto="Carregando seu painel financeiro..." />;
 
