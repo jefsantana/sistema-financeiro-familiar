@@ -1,41 +1,45 @@
-import { Tag, TrendingUp, TrendingDown } from 'lucide-react';
+import { Tag, TrendingUp } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
-import { Badge } from '../../components/ui/index.js';
+import { Card } from '../../components/ui/index.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import styles from './Categorias.module.css';
 
 export default function Categorias() {
-  const config = {
+  const configEntrada = {
     tabela: 'Categorias',
-    icone: Tag,
-    tituloForm: 'Nova Categoria',
-    tituloLista: 'Categorias cadastradas',
-    textoVazioLista: 'Cadastre a primeira categoria usando o formulário acima.',
-    campos: [
-      { nome: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Alimentação' },
-      {
-        nome: 'tipo',
-        rotulo: 'Tipo',
-        tipo: 'select',
-        obrigatorio: true,
-        opcoes: [
-          { valor: 'entrada', rotulo: 'Entrada' },
-          { valor: 'gasto', rotulo: 'Gasto' },
-        ],
-      },
-    ],
-    colunas: [
-      { chave: 'nome', rotulo: 'Nome' },
-      {
-        chave: 'tipo',
-        rotulo: 'Tipo',
-        render: (r) => (
-          <Badge cor={r.tipo === 'entrada' ? 'sucesso' : 'perigo'}>
-            {r.tipo === 'entrada' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-            {r.tipo === 'entrada' ? 'Entrada' : 'Gasto'}
-          </Badge>
-        ),
-      },
-    ],
+    icone: TrendingUp,
+    tituloForm: 'Nova categoria de entrada',
+    tituloLista: 'Categorias de entrada',
+    textoVazioLista: 'Cadastre a primeira categoria de entrada usando o formulário acima.',
+    dadosFixos: { tipo: 'entrada' },
+    filtrar: (registro) => registro.tipo === 'entrada',
+    campos: [{ nome: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Salário' }],
+    colunas: [{ chave: 'nome', rotulo: 'Nome' }],
   };
 
-  return <CrudPage config={config} />;
+  return (
+    <div>
+      <Card className={styles.secaoFixa}>
+        <div className={styles.cabecalhoFixo}>
+          <Tag size={18} style={{ color: 'var(--cor-primaria)' }} />
+          <div>
+            <h2 className={styles.titulo}>Categorias de gasto</h2>
+            <p className={styles.descricao}>
+              Essa lista é fixa e não pode ser editada — escolha uma delas ao registrar um gasto.
+            </p>
+          </div>
+        </div>
+        <div className={styles.grade}>
+          {CATEGORIAS_GASTO_FIXAS.map((categoria) => (
+            <div key={categoria.nome} className={styles.itemFixo}>
+              <span className={styles.emoji}>{categoria.emoji}</span>
+              {categoria.nome}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <CrudPage config={configEntrada} />
+    </div>
+  );
 }

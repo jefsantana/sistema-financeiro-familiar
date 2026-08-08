@@ -3,11 +3,11 @@ import CrudPage from '../_shared/CrudPage.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { Avatar } from '../../components/ui/index.js';
 import { formatarData, formatarMoeda } from '../../utils/formatadores.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 
 export default function Gastos() {
-  const { registros: categorias } = useCrudMock('Categorias');
   const { registros: cartoes } = useCrudMock('Cartoes');
-  const categoriasGasto = categorias.filter((c) => c.tipo === 'gasto').map((c) => c.nome);
+  const categoriasGasto = CATEGORIAS_GASTO_FIXAS.map((c) => ({ valor: c.nome, rotulo: `${c.emoji} ${c.nome}` }));
   const nomesCartoes = cartoes.map((c) => c.nome);
 
   const config = {

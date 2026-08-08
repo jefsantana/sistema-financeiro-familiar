@@ -6,6 +6,7 @@ import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
 import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
@@ -74,9 +75,11 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
         );
       } else {
         const nomeCategoria = campos.categoria.trim();
-        const categoriaExiste = categoriasDoTipo.some((c) => c.nome.toLowerCase() === nomeCategoria.toLowerCase());
-        if (nomeCategoria && !categoriaExiste) {
-          await salvarCategoria({ nome: nomeCategoria, tipo: tipo === 'entrada' ? 'entrada' : 'gasto' });
+        if (tipo === 'entrada') {
+          const categoriaExiste = categoriasDoTipo.some((c) => c.nome.toLowerCase() === nomeCategoria.toLowerCase());
+          if (nomeCategoria && !categoriaExiste) {
+            await salvarCategoria({ nome: nomeCategoria, tipo: 'entrada' });
+          }
         }
 
         const tabela = tipo === 'entrada' ? 'Entradas' : 'Gastos';
@@ -162,19 +165,37 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
 
         {tipo !== 'transferencia' && (
           <div className={styles.linha}>
-            <Input
-              rotulo="Categoria"
-              required
-              list="lista-categorias"
-              placeholder="Escolha ou digite uma nova"
-              value={campos.categoria}
-              onChange={(e) => atualizarCampo('categoria', e.target.value)}
-            />
-            <datalist id="lista-categorias">
-              {categoriasDoTipo.map((c) => (
-                <option key={c.id} value={c.nome} />
-              ))}
-            </datalist>
+            {tipo === 'entrada' ? (
+              <>
+                <Input
+                  rotulo="Categoria"
+                  required
+                  list="lista-categorias"
+                  placeholder="Escolha ou digite uma nova"
+                  value={campos.categoria}
+                  onChange={(e) => atualizarCampo('categoria', e.target.value)}
+                />
+                <datalist id="lista-categorias">
+                  {categoriasDoTipo.map((c) => (
+                    <option key={c.id} value={c.nome} />
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <Select
+                rotulo="Categoria"
+                required
+                value={campos.categoria}
+                onChange={(e) => atualizarCampo('categoria', e.target.value)}
+              >
+                <option value="">Selecione</option>
+                {CATEGORIAS_GASTO_FIXAS.map((c) => (
+                  <option key={c.nome} value={c.nome}>
+                    {c.emoji} {c.nome}
+                  </option>
+                ))}
+              </Select>
+            )}
             {tipo === 'gasto' && (
               <Select
                 rotulo="Cartão (opcional)"

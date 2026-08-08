@@ -1,0 +1,44 @@
+.secaoFixa {
+  margin-bottom: var(--espaco-xl);
+}
+
+.cabecalhoFixo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+}
+
+.titulo {
+  font-family: var(--fonte-display);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.descricao {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  margin-top: 2px;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--espaco-sm);
+}
+
+.itemFixo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background-color: var(--cor-fundo);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.emoji {
+  font-size: 1rem;
+}

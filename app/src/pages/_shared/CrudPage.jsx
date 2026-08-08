@@ -33,7 +33,7 @@ function converterValor(campo, bruto) {
 }
 
 export default function CrudPage({ config }) {
-  const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista } = config;
+  const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista, dadosFixos, filtrar } = config;
   const { registros, carregando, salvando, salvar, editar, remover } = useCrudMock(tabela);
   const [valores, setValores] = useState(estadoInicial(campos));
   const [editando, setEditando] = useState(null);
@@ -44,8 +44,11 @@ export default function CrudPage({ config }) {
   const temColunaPessoa = colunas.some((c) => c.chave === 'pessoa') && !campos.some((c) => c.nome === 'pessoa');
 
   const registrosOrdenados = useMemo(
-    () => [...registros].sort((a, b) => new Date(b.data || b.criadoEm) - new Date(a.data || a.criadoEm)),
-    [registros]
+    () =>
+      (filtrar ? registros.filter(filtrar) : registros)
+        .slice()
+        .sort((a, b) => new Date(b.data || b.criadoEm) - new Date(a.data || a.criadoEm)),
+    [registros, filtrar]
   );
 
   function atualizarCampo(nome, valor, tipo) {
@@ -90,7 +93,7 @@ export default function CrudPage({ config }) {
       return;
     }
 
-    const dados = {};
+    const dados = { ...dadosFixos };
     campos.forEach((campo) => {
       dados[campo.nome] = converterValor(campo, valores[campo.nome]);
     });

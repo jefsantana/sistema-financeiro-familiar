@@ -27,3 +27,26 @@ export const STATUS_LANCAMENTO = {
   pendente: { label: 'Pendente', cor: 'alerta' },
   excluido: { label: 'Excluído', cor: 'perigo' },
 };
+
+// Lista fixa de categorias de gasto — não pode ser criada, editada nem
+// excluída pela interface, pra manter os relatórios e o dashboard
+// consistentes entre todas as famílias do sistema.
+export const CATEGORIAS_GASTO_FIXAS = [
+  { nome: 'Moradia', emoji: '🏠' },
+  { nome: 'Alimentação', emoji: '🛒' },
+  { nome: 'Contas da Casa', emoji: '💡' },
+  { nome: 'Transporte', emoji: '🚗' },
+  { nome: 'Saúde', emoji: '🏥' },
+  { nome: 'Educação', emoji: '🎓' },
+  { nome: 'Lazer', emoji: '🎮' },
+  { nome: 'Compras', emoji: '🛍️' },
+  { nome: 'Cuidados Pessoais', emoji: '💄' },
+  { nome: 'Pets', emoji: '🐶' },
+  { nome: 'Família', emoji: '👨‍👩‍👧' },
+  { nome: 'Viagens', emoji: '✈️' },
+  { nome: 'Assinaturas', emoji: '📱' },
+  { nome: 'Impostos e Taxas', emoji: '🧾' },
+  { nome: 'Manutenção', emoji: '🔧' },
+  { nome: 'Outros', emoji: '❓' },
+  { nome: 'Transferências', emoji: '🔄' },
+];

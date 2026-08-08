@@ -5,6 +5,7 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
 import { exportarCsv } from '../../utils/exportarCsv.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
 
@@ -100,9 +101,16 @@ export default function Historico() {
         </Select>
         <Select className={styles.filtroSelect} value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
           <option value="todas">Todas as categorias</option>
-          {categorias.map((c) => (
-            <option key={c.id} value={c.nome}>
-              {c.nome}
+          {categorias
+            .filter((c) => c.tipo === 'entrada')
+            .map((c) => (
+              <option key={c.id} value={c.nome}>
+                {c.nome}
+              </option>
+            ))}
+          {CATEGORIAS_GASTO_FIXAS.map((c) => (
+            <option key={c.nome} value={c.nome}>
+              {c.emoji} {c.nome}
             </option>
           ))}
         </Select>

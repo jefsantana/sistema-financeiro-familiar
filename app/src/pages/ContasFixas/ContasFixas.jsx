@@ -1,11 +1,10 @@
 import { FileText } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
-import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarMoeda } from '../../utils/formatadores.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 
 export default function ContasFixas() {
-  const { registros: categorias } = useCrudMock('Categorias');
-  const categoriasGasto = categorias.filter((c) => c.tipo === 'gasto').map((c) => c.nome);
+  const categoriasGasto = CATEGORIAS_GASTO_FIXAS.map((c) => ({ valor: c.nome, rotulo: `${c.emoji} ${c.nome}` }));
 
   const config = {
     tabela: 'ContasFixas',
