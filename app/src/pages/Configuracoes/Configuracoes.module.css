@@ -97,3 +97,31 @@
 .switch input:checked + .trilho::before {
   transform: translateX(20px);
 }
+
+.linhaTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  margin-bottom: var(--espaco-md);
+}
+
+.formSenha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+  align-items: flex-start;
+}
+
+.formSenha > :is(div) {
+  width: 100%;
+}
+
+.erroSenha {
+  color: var(--cor-perigo);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.zonaPerigo {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}

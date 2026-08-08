@@ -13,6 +13,7 @@ export function ConfirmDialog({
   textoConfirmar = 'Excluir',
   textoCancelar = 'Cancelar',
   variantePerigo = true,
+  confirmarDesabilitado = false,
   children,
 }) {
   const [carregando, setCarregando] = useState(false);
@@ -40,7 +41,12 @@ export function ConfirmDialog({
         <Button variante="secundario" onClick={aoFechar} disabled={carregando}>
           {textoCancelar}
         </Button>
-        <Button variante={variantePerigo ? 'perigo' : 'primario'} onClick={confirmar} carregando={carregando}>
+        <Button
+          variante={variantePerigo ? 'perigo' : 'primario'}
+          onClick={confirmar}
+          carregando={carregando}
+          disabled={confirmarDesabilitado}
+        >
           {textoConfirmar}
         </Button>
       </div>
