@@ -4,7 +4,7 @@ import { Modal } from '../ui/Modal/Modal.jsx';
 import { Input, Select, Button } from '../ui/index.js';
 import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
-import { criar } from '../../services/mockData.js';
+import { criar } from '../../services/dados.js';
 import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -57,26 +57,35 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
       return;
     }
 
+    const familiaId = perfil?.familia_id;
     setSalvando(true);
     try {
       if (tipo === 'transferencia') {
-        await criar('Transferencias', {
-          descricao: campos.descricao,
-          valor: parseValorMonetario(campos.valor),
-          data: campos.data,
-          pessoaOrigem: campos.pessoaOrigem,
-          pessoaDestino: campos.pessoaDestino,
-        });
+        await criar(
+          'Transferencias',
+          {
+            descricao: campos.descricao,
+            valor: parseValorMonetario(campos.valor),
+            data: campos.data,
+            pessoaOrigem: campos.pessoaOrigem,
+            pessoaDestino: campos.pessoaDestino,
+          },
+          familiaId
+        );
       } else {
         const tabela = tipo === 'entrada' ? 'Entradas' : 'Gastos';
-        await criar(tabela, {
-          descricao: campos.descricao,
-          valor: parseValorMonetario(campos.valor),
-          data: campos.data,
-          categoria: campos.categoria,
-          pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
-          ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
-        });
+        await criar(
+          tabela,
+          {
+            descricao: campos.descricao,
+            valor: parseValorMonetario(campos.valor),
+            data: campos.data,
+            categoria: campos.categoria,
+            pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
+            ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
+          },
+          familiaId
+        );
       }
       toast.sucesso('Lançamento salvo com sucesso');
       aoFechar();

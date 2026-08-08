@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listar } from '../services/mockData.js';
+import { listar } from '../services/dados.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const TABELAS = ['Entradas', 'Gastos', 'ContasFixas', 'PagamentosContasFixas', 'Parcelamentos', 'PagamentosParcelamentos', 'Metas', 'Orcamentos'];
 
 export function useDashboardData() {
+  const { perfil } = useAuth();
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
@@ -16,8 +18,8 @@ export function useDashboardData() {
   }, []);
 
   useEffect(() => {
-    recarregar();
-  }, [recarregar]);
+    if (perfil?.familia_id) recarregar();
+  }, [recarregar, perfil?.familia_id]);
 
   return { dados, carregando, recarregar };
 }

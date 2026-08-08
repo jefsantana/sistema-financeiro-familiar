@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import * as api from '../services/mockData.js';
+import * as api from '../services/dados.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 export function useCrudMock(tabela) {
+  const { perfil } = useAuth();
   const [registros, setRegistros] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -14,20 +16,20 @@ export function useCrudMock(tabela) {
   }, [tabela]);
 
   useEffect(() => {
-    recarregar();
-  }, [recarregar]);
+    if (perfil?.familia_id) recarregar();
+  }, [recarregar, perfil?.familia_id]);
 
   const salvar = useCallback(
     async (dados) => {
       setSalvando(true);
       try {
-        await api.criar(tabela, dados);
+        await api.criar(tabela, dados, perfil?.familia_id);
         await recarregar();
       } finally {
         setSalvando(false);
       }
     },
-    [tabela, recarregar]
+    [tabela, recarregar, perfil?.familia_id]
   );
 
   const editar = useCallback(

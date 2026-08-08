@@ -75,6 +75,17 @@ begin
   insert into public.perfis (id, familia_id, nome)
   values (new.id, nova_familia_id, nome_pessoa);
 
+  insert into public.categorias (familia_id, nome, tipo)
+  values
+    (nova_familia_id, 'Salário', 'entrada'),
+    (nova_familia_id, 'Freelance', 'entrada'),
+    (nova_familia_id, 'Alimentação', 'gasto'),
+    (nova_familia_id, 'Moradia', 'gasto'),
+    (nova_familia_id, 'Transporte', 'gasto'),
+    (nova_familia_id, 'Saúde', 'gasto'),
+    (nova_familia_id, 'Lazer', 'gasto'),
+    (nova_familia_id, 'Educação', 'gasto');
+
   return new;
 end;
 $$;

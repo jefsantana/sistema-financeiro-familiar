@@ -1,24 +1,13 @@
-import { useState } from 'react';
 import { Settings } from 'lucide-react';
-import { Card, Button, Avatar, ConfirmDialog } from '../../components/ui/index.js';
+import { Card, Button, Avatar } from '../../components/ui/index.js';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
-import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { limparDadosExemplo } from '../../services/mockData.js';
 import { nomeExibicao } from '../../utils/formatadores.js';
 import styles from './Configuracoes.module.css';
 
 export default function Configuracoes() {
   const { ehEscuro, alternarTema } = useTheme();
   const { perfil, usuario, sair } = useAuth();
-  const toast = useToast();
-  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(false);
-
-  async function aoLimparDados() {
-    await limparDadosExemplo();
-    toast.sucesso('Todos os lançamentos foram apagados. Recarregando...');
-    setTimeout(() => window.location.reload(), 900);
-  }
 
   return (
     <div>
@@ -63,29 +52,6 @@ export default function Configuracoes() {
           </label>
         </div>
       </Card>
-
-      <Card className={styles.secao}>
-        <div className={styles.linha}>
-          <div>
-            <p className={styles.rotuloLinha}>Dados de exemplo</p>
-            <p className={styles.descricaoLinha}>
-              Este ambiente ainda usa dados de demonstração salvos no navegador. Ao conectar ao Supabase, essa opção deixará de existir.
-            </p>
-          </div>
-          <Button variante="secundario" tamanho="pequeno" onClick={() => setConfirmandoLimpeza(true)}>
-            Limpar dados
-          </Button>
-        </div>
-      </Card>
-
-      <ConfirmDialog
-        aberto={confirmandoLimpeza}
-        aoFechar={() => setConfirmandoLimpeza(false)}
-        aoConfirmar={aoLimparDados}
-        titulo="Apagar todos os dados de exemplo?"
-        mensagem="Isso apaga permanentemente todas as entradas, gastos, categorias, contas fixas, parcelamentos, cartões, metas e transferências salvos neste navegador. Não pode ser desfeito."
-        textoConfirmar="Apagar tudo"
-      />
     </div>
   );
 }

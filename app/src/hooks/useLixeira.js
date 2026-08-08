@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listarExcluidos, restaurar, excluirPermanente } from '../services/mockData.js';
+import { listarExcluidos, restaurar, excluirPermanente } from '../services/dados.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const TABELAS_VISIVEIS = {
   Entradas: 'Entrada',
@@ -13,6 +14,7 @@ const TABELAS_VISIVEIS = {
 };
 
 export function useLixeira() {
+  const { perfil } = useAuth();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -30,8 +32,8 @@ export function useLixeira() {
   }, []);
 
   useEffect(() => {
-    recarregar();
-  }, [recarregar]);
+    if (perfil?.familia_id) recarregar();
+  }, [recarregar, perfil?.familia_id]);
 
   const restaurarItem = useCallback(
     async (tabela, id) => {
