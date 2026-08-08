@@ -16,7 +16,7 @@ export function useChartTheme() {
       textoForte: ehEscuro ? '#EDEDF5' : '#2D2D3A',
       grade: ehEscuro ? '#2B2645' : '#E5E7EB',
       superficie: ehEscuro ? '#1E1B2E' : '#FFFFFF',
-      fonteFamilia: 'Poppins, sans-serif',
+      fonteFamilia: "'Plus Jakarta Sans', sans-serif",
       fonteNumeros: "'IBM Plex Mono', monospace",
     }),
     [ehEscuro]

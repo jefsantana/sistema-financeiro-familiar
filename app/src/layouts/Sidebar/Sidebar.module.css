@@ -9,7 +9,7 @@
   --sb-grupo-titulo: oklch(50% .02 264);
   --sb-ativo-fundo: oklch(58% .19 288);
   --sb-rodape-nome: oklch(92% .01 264);
-  --sb-fonte: 'Plus Jakarta Sans', var(--fonte-corpo);
+  --sb-fonte: var(--fonte-corpo);
 
   width: var(--largura-sidebar);
   height: 100vh;
