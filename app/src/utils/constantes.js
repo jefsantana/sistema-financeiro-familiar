@@ -1,5 +1,3 @@
-export const PESSOAS = ['Jeferson', 'Raquel'];
-
 export const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard', grupo: 'Principal' },
   { path: '/entradas', label: 'Entradas', icon: 'TrendingUp', grupo: 'Movimentações' },

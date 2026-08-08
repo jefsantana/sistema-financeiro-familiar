@@ -23,6 +23,18 @@
   margin-bottom: var(--espaco-xl);
 }
 
+.logoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: linear-gradient(135deg, oklch(62% .19 288), oklch(56% .18 322));
+  color: #FFFFFF;
+}
+
 .logoTextos h1 {
   font-family: var(--fonte-display);
   font-size: 1.15rem;
@@ -38,6 +50,31 @@
   margin-top: 2px;
 }
 
+.abas {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: var(--espaco-lg);
+  background-color: var(--cor-fundo);
+  border-radius: var(--raio-md);
+}
+
+.aba {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--raio-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.abaAtiva {
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra-sm);
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -51,6 +88,17 @@
   padding: var(--espaco-sm) var(--espaco-md);
   font-size: 0.85rem;
   font-weight: 500;
+  margin-bottom: var(--espaco-md);
+}
+
+.mensagem {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--cor-sucesso);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: var(--espaco-md);
 }
 
 .botaoEntrar {

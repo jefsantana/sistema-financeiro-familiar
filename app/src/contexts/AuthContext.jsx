@@ -25,21 +25,33 @@ export function AuthProvider({ children }) {
 
     supabase
       .from('perfis')
-      .select('nome, familia_id')
+      .select('nome, familia_id, familias(nome, pessoa_1, pessoa_2)')
       .eq('id', sessao.user.id)
       .single()
       .then(({ data }) => setPerfil(data));
   }, [sessao]);
+
+  const familia = perfil?.familias ?? null;
+  const pessoas = familia ? [familia.pessoa_1, familia.pessoa_2].filter(Boolean) : [];
 
   const valor = useMemo(
     () => ({
       sessao,
       usuario: sessao?.user ?? null,
       perfil,
+      familia,
+      pessoas,
       carregando: sessao === undefined,
       entrar: (email, senha) => supabase.auth.signInWithPassword({ email, password: senha }),
+      cadastrar: (email, senha, { nome, pessoa2, nomeFamilia }) =>
+        supabase.auth.signUp({
+          email,
+          password: senha,
+          options: { data: { nome, pessoa2: pessoa2 || null, nome_familia: nomeFamilia || null } },
+        }),
       sair: () => supabase.auth.signOut(),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [sessao, perfil]
   );
 

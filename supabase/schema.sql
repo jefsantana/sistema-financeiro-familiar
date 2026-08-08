@@ -5,9 +5,11 @@
 --   1. Cria as "gavetas" (tabelas) que vão guardar os dados:
 --      entradas, gastos, categorias, contas fixas, parcelamentos,
 --      cartões, metas, orçamentos e transferências.
---   2. Cria uma "família" única para Jeferson e Raquel.
---   3. Liga automaticamente qualquer pessoa que criar login no
---      sistema a essa mesma família.
+--   2. Cria a família "Jeferson e Raquel" (primeira família do sistema).
+--   3. Sempre que alguém se cadastra pela tela de login, cria
+--      automaticamente uma família NOVA e isolada pra essa pessoa
+--      (com os nomes informados no cadastro) — os dados de uma
+--      família nunca aparecem para outra.
 --   4. Ativa a proteção (RLS) que garante que só quem está
 --      logado e pertence à família consegue ver ou mexer nos
 --      dados — ninguém de fora tem acesso, mesmo tendo a chave
@@ -26,13 +28,15 @@ create extension if not exists "pgcrypto";
 create table familias (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
+  pessoa_1 text,
+  pessoa_2 text,
   foto_casal text,
   foto_casal_posicao int not null default 50,
   criado_em timestamptz not null default now()
 );
 
-insert into familias (id, nome)
-values ('11111111-1111-1111-1111-111111111111', 'Jeferson e Raquel');
+insert into familias (id, nome, pessoa_1, pessoa_2)
+values ('11111111-1111-1111-1111-111111111111', 'Jeferson e Raquel', 'Jeferson', 'Raquel');
 
 -- ------------------------------------------------------------
 -- PERFIS
@@ -46,20 +50,31 @@ create table perfis (
   criado_em timestamptz not null default now()
 );
 
--- Sempre que alguém criar login no sistema, este gatilho cria
--- automaticamente o perfil da pessoa, já ligado à família única.
+-- Sempre que alguém cria login pela tela de cadastro, este gatilho
+-- cria uma família NOVA e isolada pra essa pessoa (usando o nome dela
+-- e, se informado, o nome da segunda pessoa) e liga o perfil a essa
+-- família nova — nunca à de outra pessoa.
 create function public.criar_perfil_automatico()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
-begin
-  insert into public.perfis (id, familia_id, nome)
-  values (
-    new.id,
-    '11111111-1111-1111-1111-111111111111',
-    coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1))
+declare
+  nome_pessoa text := coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1));
+  nome_pessoa_2 text := nullif(new.raw_user_meta_data->>'pessoa2', '');
+  nome_familia text := coalesce(
+    nullif(new.raw_user_meta_data->>'nome_familia', ''),
+    case when nome_pessoa_2 is not null then nome_pessoa || ' e ' || nome_pessoa_2 else nome_pessoa end
   );
+  nova_familia_id uuid;
+begin
+  insert into public.familias (nome, pessoa_1, pessoa_2)
+  values (nome_familia, nome_pessoa, nome_pessoa_2)
+  returning id into nova_familia_id;
+
+  insert into public.perfis (id, familia_id, nome)
+  values (new.id, nova_familia_id, nome_pessoa);
+
   return new;
 end;
 $$;

@@ -6,39 +6,40 @@ import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/mockData.js';
 import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
-import { PESSOAS } from '../../utils/constantes.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
 
 const HOJE = () => new Date().toISOString().slice(0, 10);
 
-function estadoInicial() {
+function estadoInicial(pessoas) {
   return {
     descricao: '',
     valor: '',
     categoria: '',
     cartao: '',
     data: HOJE(),
-    pessoaOrigem: PESSOAS[0],
-    pessoaDestino: PESSOAS[1],
+    pessoaOrigem: pessoas[0],
+    pessoaDestino: pessoas[1] ?? pessoas[0],
   };
 }
 
 export function NovoLancamentoModal({ aberto, aoFechar }) {
   const [tipo, setTipo] = useState('gasto');
-  const { perfil, usuario } = useAuth();
-  const [campos, setCampos] = useState(estadoInicial);
+  const { perfil, usuario, pessoas } = useAuth();
+  const [campos, setCampos] = useState(() => estadoInicial(pessoas));
   const [salvando, setSalvando] = useState(false);
   const { registros: categorias } = useCrudMock('Categorias');
   const { registros: cartoes } = useCrudMock('Cartoes');
   const toast = useToast();
+  const temSegundaPessoa = pessoas.length > 1;
 
   useEffect(() => {
     if (aberto) {
       setTipo('gasto');
-      setCampos(estadoInicial());
+      setCampos(estadoInicial(pessoas));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto]);
 
   const categoriasDoTipo = categorias.filter((c) => c.tipo === (tipo === 'entrada' ? 'entrada' : 'gasto'));
@@ -105,14 +106,16 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           <TrendingDown />
           Gasto
         </button>
-        <button
-          type="button"
-          className={`${styles.tipoBotao} ${styles.tipoTransferencia} ${tipo === 'transferencia' ? styles.tipoAtivo : ''}`}
-          onClick={() => setTipo('transferencia')}
-        >
-          <ArrowLeftRight />
-          Transferência
-        </button>
+        {temSegundaPessoa && (
+          <button
+            type="button"
+            className={`${styles.tipoBotao} ${styles.tipoTransferencia} ${tipo === 'transferencia' ? styles.tipoAtivo : ''}`}
+            onClick={() => setTipo('transferencia')}
+          >
+            <ArrowLeftRight />
+            Transferência
+          </button>
+        )}
       </div>
 
       <form className={styles.form} onSubmit={salvarLancamento}>

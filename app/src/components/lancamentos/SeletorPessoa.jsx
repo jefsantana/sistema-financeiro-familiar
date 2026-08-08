@@ -1,9 +1,11 @@
 import { Check } from 'lucide-react';
 import { Avatar } from '../ui/index.js';
-import { PESSOAS } from '../../utils/constantes.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './SeletorPessoa.module.css';
 
 export function SeletorPessoa({ valor, aoSelecionar, rotulo = 'Quem?' }) {
+  const { pessoas } = useAuth();
+
   return (
     <div>
       {rotulo && (
@@ -12,7 +14,7 @@ export function SeletorPessoa({ valor, aoSelecionar, rotulo = 'Quem?' }) {
         </p>
       )}
       <div className={styles.grupo} role="group" aria-label={rotulo}>
-        {PESSOAS.map((pessoa) => (
+        {pessoas.map((pessoa) => (
           <button
             key={pessoa}
             type="button"

@@ -4,10 +4,11 @@ import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNu
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
-import { PESSOAS } from '../../utils/constantes.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
 
 export default function Historico() {
+  const { pessoas } = useAuth();
   const { registros: entradas, carregando: c1 } = useCrudMock('Entradas');
   const { registros: gastos, carregando: c2 } = useCrudMock('Gastos');
   const { registros: transferencias, carregando: c3 } = useCrudMock('Transferencias');
@@ -84,7 +85,7 @@ export default function Historico() {
         </Select>
         <Select className={styles.filtroSelect} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)}>
           <option value="todos">Todas as pessoas</option>
-          {PESSOAS.map((p) => (
+          {pessoas.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>

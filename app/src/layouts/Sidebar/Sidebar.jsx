@@ -17,7 +17,7 @@ const GRUPOS_NAV = [...new Set(NAV_ITEMS.map((item) => item.grupo))].map((grupo)
 }));
 
 export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
-  const { perfil, usuario, sair } = useAuth();
+  const { perfil, usuario, familia, pessoas, sair } = useAuth();
   const toast = useToast();
   const nomeExibido = usuario ? nomeExibicao(perfil, usuario) : '';
   const inputFotoRef = useRef(null);
@@ -52,8 +52,8 @@ export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
             <Heart size={16} fill="currentColor" />
           </div>
           <div className={styles.logoTextos}>
-            <h1>Jeferson &amp; Raquel</h1>
-            <p className={styles.logoSubtitulo}>Finanças em dupla</p>
+            <h1>{familia?.nome || 'Minha família'}</h1>
+            <p className={styles.logoSubtitulo}>{pessoas.length > 1 ? 'Finanças em dupla' : 'Finanças pessoais'}</p>
           </div>
         </div>
 
