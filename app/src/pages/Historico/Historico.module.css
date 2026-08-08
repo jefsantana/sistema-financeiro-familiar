@@ -52,6 +52,8 @@
 
 .resumo {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--espaco-lg);
   margin-bottom: var(--espaco-md);
   font-size: 0.85rem;
@@ -60,4 +62,8 @@
 
 .resumo strong {
   color: var(--cor-texto);
+}
+
+.botaoExportar {
+  margin-left: auto;
 }

@@ -1,11 +1,21 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, History } from 'lucide-react';
-import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNumerica } from '../../components/ui/index.js';
+import { ChevronLeft, ChevronRight, Search, History, Download } from 'lucide-react';
+import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNumerica, Button } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
+import { exportarCsv } from '../../utils/exportarCsv.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
+
+const COLUNAS_CSV = [
+  { chave: 'data', rotulo: 'Data' },
+  { chave: 'tipo', rotulo: 'Tipo' },
+  { chave: 'descricao', rotulo: 'Descrição' },
+  { chave: 'categoria', rotulo: 'Categoria' },
+  { chave: 'pessoa', rotulo: 'Pessoa' },
+  { chave: 'valor', rotulo: 'Valor' },
+];
 
 export default function Historico() {
   const { pessoas } = useAuth();
@@ -46,6 +56,19 @@ export default function Historico() {
 
   const totalEntradas = lancamentos.filter((l) => l.tipo === 'entrada').reduce((s, l) => s + Number(l.valor), 0);
   const totalGastos = lancamentos.filter((l) => l.tipo === 'gasto').reduce((s, l) => s + Number(l.valor), 0);
+
+  function aoExportar() {
+    const linhas = lancamentos.map((item) => ({
+      data: formatarData(item.data),
+      tipo: item.tipo === 'entrada' ? 'Entrada' : item.tipo === 'gasto' ? 'Gasto' : 'Transferência',
+      descricao: item.descricao,
+      categoria: item.categoria || '',
+      pessoa:
+        item.tipo === 'transferencia' ? `${item.pessoaOrigem} → ${item.pessoaDestino}` : item.pessoa || '',
+      valor: formatarMoeda(item.valor),
+    }));
+    exportarCsv(`lancamentos-${mesAnoAlvo}.csv`, COLUNAS_CSV, linhas);
+  }
 
   if (carregando) return <Loading texto="Carregando histórico..." />;
 
@@ -103,6 +126,16 @@ export default function Historico() {
         <span>
           {lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''}
         </span>
+        <Button
+          variante="secundario"
+          tamanho="pequeno"
+          icone={Download}
+          onClick={aoExportar}
+          disabled={lancamentos.length === 0}
+          className={styles.botaoExportar}
+        >
+          Exportar CSV
+        </Button>
       </div>
 
       {lancamentos.length === 0 ? (
