@@ -39,6 +39,12 @@
   align-self: flex-end;
 }
 
+.acoesFormulario {
+  display: flex;
+  gap: var(--espaco-sm);
+  align-self: flex-end;
+}
+
 .tituloLista {
   font-family: var(--fonte-display);
   font-weight: 600;
@@ -58,6 +64,11 @@
   }
 
   .botaoSalvar {
+    align-self: stretch;
+  }
+
+  .acoesFormulario {
+    flex-direction: column-reverse;
     align-self: stretch;
   }
 }

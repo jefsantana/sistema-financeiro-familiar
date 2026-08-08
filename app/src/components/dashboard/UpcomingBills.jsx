@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { PartyPopper } from 'lucide-react';
-import { EmptyState } from '../ui/index.js';
+import { EmptyState, ConfirmDialog } from '../ui/index.js';
+import { SeletorPessoa } from '../lancamentos/SeletorPessoa.jsx';
 import { formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './UpcomingBills.module.css';
@@ -13,12 +15,18 @@ function textoStatus(diasRestantes) {
 
 export function UpcomingBills({ vencimentos, aoPagar, pagando }) {
   const { perfil, usuario } = useAuth();
-  const pessoa = nomeExibicao(perfil, usuario).split(' ')[0];
+  const [paraPagar, setParaPagar] = useState(null);
+  const [pessoa, setPessoa] = useState('');
 
   if (vencimentos.length === 0) {
     return (
       <EmptyState icone={PartyPopper} titulo="Tudo em dia" descricao="Nenhuma conta ou parcela pendente este mês." />
     );
+  }
+
+  function abrirConfirmacao(item) {
+    setPessoa(nomeExibicao(perfil, usuario).split(' ')[0]);
+    setParaPagar(item);
   }
 
   return (
@@ -42,7 +50,7 @@ export function UpcomingBills({ vencimentos, aoPagar, pagando }) {
                 type="button"
                 className={styles.botaoPagar}
                 disabled={pagando === item.id}
-                onClick={() => aoPagar(item, pessoa)}
+                onClick={() => abrirConfirmacao(item)}
               >
                 {pagando === item.id ? '...' : 'Pagar'}
               </button>
@@ -50,6 +58,22 @@ export function UpcomingBills({ vencimentos, aoPagar, pagando }) {
           </li>
         );
       })}
+
+      <ConfirmDialog
+        aberto={Boolean(paraPagar)}
+        aoFechar={() => setParaPagar(null)}
+        aoConfirmar={() => aoPagar(paraPagar, pessoa)}
+        titulo="Confirmar pagamento"
+        mensagem={
+          paraPagar
+            ? `Confirma o pagamento de "${paraPagar.descricao}" no valor de ${formatarMoeda(paraPagar.valor)}? Isso vai debitar o valor do saldo.`
+            : ''
+        }
+        textoConfirmar="Confirmar pagamento"
+        variantePerigo={false}
+      >
+        <SeletorPessoa rotulo="Quem pagou?" valor={pessoa} aoSelecionar={setPessoa} />
+      </ConfirmDialog>
     </ul>
   );
 }

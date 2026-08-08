@@ -13,6 +13,7 @@ export function ConfirmDialog({
   textoConfirmar = 'Excluir',
   textoCancelar = 'Cancelar',
   variantePerigo = true,
+  children,
 }) {
   const [carregando, setCarregando] = useState(false);
 
@@ -34,6 +35,7 @@ export function ConfirmDialog({
         </div>
       )}
       {mensagem && <p className={styles.mensagem}>{mensagem}</p>}
+      {children && <div className={styles.conteudoExtra}>{children}</div>}
       <div className={styles.acoes}>
         <Button variante="secundario" onClick={aoFechar} disabled={carregando}>
           {textoCancelar}

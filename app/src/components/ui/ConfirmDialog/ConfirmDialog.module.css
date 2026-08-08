@@ -17,6 +17,10 @@
   margin-bottom: var(--espaco-lg);
 }
 
+.conteudoExtra {
+  margin-bottom: var(--espaco-lg);
+}
+
 .acoes {
   display: flex;
   gap: var(--espaco-sm);

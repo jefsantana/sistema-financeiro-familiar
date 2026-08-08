@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Target } from 'lucide-react';
+import { Trash2, Pencil, X, Target } from 'lucide-react';
 import { Input, Button, Card, ProgressBar, EmptyState, ConfirmDialog, SkeletonCard } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -10,13 +10,28 @@ import styles from './Metas.module.css';
 const CAMPOS_VAZIOS = { descricao: '', valorAlvo: '', valorAtual: '' };
 
 export default function Metas() {
-  const { registros: metas, carregando, salvando, salvar, remover } = useCrudMock('Metas');
+  const { registros: metas, carregando, salvando, salvar, editar, remover } = useCrudMock('Metas');
   const [campos, setCampos] = useState(CAMPOS_VAZIOS);
+  const [editandoId, setEditandoId] = useState(null);
   const [paraExcluir, setParaExcluir] = useState(null);
   const toast = useToast();
 
   function atualizarCampo(nome, valor) {
     setCampos((atual) => ({ ...atual, [nome]: valor.replace(/-/g, '') }));
+  }
+
+  function iniciarEdicao(meta) {
+    setEditandoId(meta.id);
+    setCampos({
+      descricao: meta.descricao,
+      valorAlvo: Number(meta.valorAlvo).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      valorAtual: Number(meta.valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    });
+  }
+
+  function cancelarEdicao() {
+    setEditandoId(null);
+    setCampos(CAMPOS_VAZIOS);
   }
 
   async function aoSalvar(evento) {
@@ -27,13 +42,21 @@ export default function Metas() {
       return;
     }
 
-    await salvar({
+    const dados = {
       descricao: campos.descricao,
       valorAlvo: parseValorMonetario(campos.valorAlvo),
       valorAtual: parseValorMonetario(campos.valorAtual),
-    });
+    };
+
+    if (editandoId) {
+      await editar(editandoId, dados);
+      toast.sucesso('✓ Alterações salvas com sucesso');
+    } else {
+      await salvar(dados);
+      toast.sucesso('✓ Meta salva com sucesso');
+    }
+    setEditandoId(null);
     setCampos(CAMPOS_VAZIOS);
-    toast.sucesso('✓ Meta salva com sucesso');
   }
 
   async function confirmarExclusao() {
@@ -44,7 +67,7 @@ export default function Metas() {
   return (
     <div>
       <div className={formStyles.cabecalhoPagina}>
-        <h1>🎯 Nova Meta</h1>
+        <h1>{editandoId ? '🎯 Editando meta' : '🎯 Nova Meta'}</h1>
       </div>
 
       <form onSubmit={aoSalvar} className={formStyles.formulario}>
@@ -74,9 +97,16 @@ export default function Metas() {
           onChange={(e) => atualizarCampo('valorAtual', e.target.value)}
           className={formStyles.campoFlex}
         />
-        <Button type="submit" carregando={salvando} className={formStyles.botaoSalvar}>
-          Salvar Meta
-        </Button>
+        <div className={formStyles.acoesFormulario}>
+          <Button type="submit" carregando={salvando} className={formStyles.botaoSalvar}>
+            {editandoId ? 'Salvar alterações' : 'Salvar Meta'}
+          </Button>
+          {editandoId && (
+            <Button type="button" variante="secundario" onClick={cancelarEdicao}>
+              <X size={16} /> Cancelar
+            </Button>
+          )}
+        </div>
       </form>
 
       <h3 className={formStyles.tituloLista}>📋 Metas cadastradas</h3>
@@ -94,15 +124,24 @@ export default function Metas() {
             const percentual = Math.min(100, Math.round((Number(meta.valorAtual) / Number(meta.valorAlvo)) * 100));
             return (
               <Card key={meta.id} className={styles.card}>
-                <button
-                  type="button"
-                  className={styles.excluir}
-                  onClick={() => setParaExcluir(meta.id)}
-                  aria-label="Excluir meta"
-                  style={{ color: 'var(--cor-texto-secundario)' }}
-                >
-                  <Trash2 size={17} />
-                </button>
+                <div className={styles.acoesCard}>
+                  <button
+                    type="button"
+                    onClick={() => iniciarEdicao(meta)}
+                    aria-label="Editar meta"
+                    style={{ color: 'var(--cor-texto-secundario)' }}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setParaExcluir(meta.id)}
+                    aria-label="Excluir meta"
+                    style={{ color: 'var(--cor-texto-secundario)' }}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </div>
                 <p className={styles.descricao}>{meta.descricao}</p>
                 <p className={styles.valores}>
                   {formatarMoeda(meta.valorAtual)} de {formatarMoeda(meta.valorAlvo)}{' '}

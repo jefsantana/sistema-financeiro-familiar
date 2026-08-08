@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil, X } from 'lucide-react';
 import {
   Input,
   Select,
@@ -12,6 +12,7 @@ import {
   ConfirmDialog,
   SkeletonLinha,
 } from '../../components/ui/index.js';
+import { SeletorPessoa } from '../../components/lancamentos/SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -34,11 +35,15 @@ function converterValor(campo, bruto) {
 
 export default function CrudPage({ config }) {
   const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista } = config;
-  const { registros, carregando, salvando, salvar, remover } = useCrudMock(tabela);
+  const { registros, carregando, salvando, salvar, editar, remover } = useCrudMock(tabela);
   const [valores, setValores] = useState(estadoInicial(campos));
+  const [editando, setEditando] = useState(null);
   const [paraExcluir, setParaExcluir] = useState(null);
   const toast = useToast();
   const { perfil, usuario } = useAuth();
+  const pessoaLogada = nomeExibicao(perfil, usuario).split(' ')[0];
+  const [pessoaSelecionada, setPessoaSelecionada] = useState(pessoaLogada);
+  const temColunaPessoa = colunas.some((c) => c.chave === 'pessoa') && !campos.some((c) => c.nome === 'pessoa');
 
   const registrosOrdenados = useMemo(
     () => [...registros].sort((a, b) => new Date(b.data || b.criadoEm) - new Date(a.data || a.criadoEm)),
@@ -58,6 +63,26 @@ export default function CrudPage({ config }) {
     });
   }
 
+  function iniciarEdicao(registro) {
+    const valoresDoRegistro = {};
+    campos.forEach((campo) => {
+      const bruto = registro[campo.nome];
+      valoresDoRegistro[campo.nome] =
+        campo.tipo === 'moeda' && typeof bruto === 'number'
+          ? bruto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : (bruto ?? '');
+    });
+    setEditando({ id: registro.id });
+    setPessoaSelecionada(registro.pessoa || pessoaLogada);
+    setValores(valoresDoRegistro);
+  }
+
+  function cancelarEdicao() {
+    setEditando(null);
+    setPessoaSelecionada(pessoaLogada);
+    setValores(estadoInicial(campos));
+  }
+
   async function aoSalvar(evento) {
     evento.preventDefault();
 
@@ -74,24 +99,31 @@ export default function CrudPage({ config }) {
       dados[campo.nome] = converterValor(campo, valores[campo.nome]);
     });
 
-    if (colunas.some((c) => c.chave === 'pessoa') && !campos.some((c) => c.nome === 'pessoa')) {
-      dados.pessoa = nomeExibicao(perfil, usuario).split(' ')[0];
+    if (temColunaPessoa) {
+      dados.pessoa = pessoaSelecionada;
     }
 
-    await salvar(dados);
+    if (editando) {
+      await editar(editando.id, dados);
+      toast.sucesso('✓ Alterações salvas com sucesso');
+    } else {
+      await salvar(dados);
+      toast.sucesso('✓ Lançamento salvo com sucesso');
+    }
+    setEditando(null);
+    setPessoaSelecionada(pessoaLogada);
     setValores(estadoInicial(campos));
-    toast.sucesso('✓ Lançamento salvo com sucesso');
   }
 
   async function confirmarExclusao() {
-    await remover(paraExcluir);
+    await remover(paraExcluir, pessoaLogada);
     toast.sucesso('Registro movido para a lixeira');
   }
 
   return (
     <div>
       <div className={styles.cabecalhoPagina}>
-        <h1>{tituloForm}</h1>
+        <h1>{editando ? `Editando: ${tituloForm}` : tituloForm}</h1>
       </div>
 
       <form className={styles.formulario} onSubmit={aoSalvar}>
@@ -134,9 +166,22 @@ export default function CrudPage({ config }) {
           );
         })}
 
-        <Button type="submit" carregando={salvando} className={styles.botaoSalvar}>
-          Salvar
-        </Button>
+        {temColunaPessoa && (
+          <div className={styles.campoPessoa}>
+            <SeletorPessoa valor={pessoaSelecionada} aoSelecionar={setPessoaSelecionada} />
+          </div>
+        )}
+
+        <div className={styles.acoesFormulario}>
+          <Button type="submit" carregando={salvando} className={styles.botaoSalvar}>
+            {editando ? 'Salvar alterações' : 'Salvar'}
+          </Button>
+          {editando && (
+            <Button type="button" variante="secundario" onClick={cancelarEdicao}>
+              <X size={16} /> Cancelar
+            </Button>
+          )}
+        </div>
       </form>
 
       <h3 className={styles.tituloLista}>{tituloLista}</h3>
@@ -174,6 +219,9 @@ export default function CrudPage({ config }) {
                   )
                 )}
                 <TableColunaAcoes>
+                  <TableBotaoAcao title="Editar" onClick={() => iniciarEdicao(registro)}>
+                    <Pencil size={16} />
+                  </TableBotaoAcao>
                   <TableBotaoAcao title="Excluir" onClick={() => setParaExcluir(registro.id)}>
                     <Trash2 size={16} />
                   </TableBotaoAcao>

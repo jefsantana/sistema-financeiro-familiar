@@ -13,13 +13,14 @@ import styles from './NovoLancamentoModal.module.css';
 
 const HOJE = () => new Date().toISOString().slice(0, 10);
 
-function estadoInicial() {
+function estadoInicial(pessoaLogada) {
   return {
     descricao: '',
     valor: '',
     categoria: '',
     cartao: '',
     data: HOJE(),
+    pessoa: pessoaLogada,
     pessoaOrigem: PESSOAS[0],
     pessoaDestino: PESSOAS[1],
   };
@@ -27,18 +28,20 @@ function estadoInicial() {
 
 export function NovoLancamentoModal({ aberto, aoFechar }) {
   const [tipo, setTipo] = useState('gasto');
-  const [campos, setCampos] = useState(estadoInicial);
+  const { perfil, usuario } = useAuth();
+  const pessoaLogada = nomeExibicao(perfil, usuario).split(' ')[0];
+  const [campos, setCampos] = useState(() => estadoInicial(pessoaLogada));
   const [salvando, setSalvando] = useState(false);
   const { registros: categorias } = useCrudMock('Categorias');
   const { registros: cartoes } = useCrudMock('Cartoes');
   const toast = useToast();
-  const { perfil, usuario } = useAuth();
 
   useEffect(() => {
     if (aberto) {
       setTipo('gasto');
-      setCampos(estadoInicial());
+      setCampos(estadoInicial(pessoaLogada));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto]);
 
   const categoriasDoTipo = categorias.filter((c) => c.tipo === (tipo === 'entrada' ? 'entrada' : 'gasto'));
@@ -73,7 +76,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           valor: parseValorMonetario(campos.valor),
           data: campos.data,
           categoria: campos.categoria,
-          pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
+          pessoa: campos.pessoa,
           ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
         });
       }
@@ -172,6 +175,10 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
               </Select>
             )}
           </div>
+        )}
+
+        {tipo !== 'transferencia' && (
+          <SeletorPessoa rotulo="Pessoa" valor={campos.pessoa} aoSelecionar={(p) => atualizarCampo('pessoa', p)} />
         )}
 
         {tipo === 'transferencia' && (

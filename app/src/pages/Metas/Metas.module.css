@@ -8,10 +8,12 @@
   position: relative;
 }
 
-.excluir {
+.acoesCard {
   position: absolute;
   top: var(--espaco-sm);
   right: var(--espaco-sm);
+  display: flex;
+  gap: var(--espaco-xs);
 }
 
 .descricao {
