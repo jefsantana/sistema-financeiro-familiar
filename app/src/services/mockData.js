@@ -174,7 +174,9 @@ export async function excluirPermanente(tabela, id) {
 }
 
 export async function limparDadosExemplo() {
-  Object.keys(SEEDS).forEach((tabela) => localStorage.removeItem(chave(tabela)));
+  // Grava listas vazias (em vez de remover a chave) porque carregarTabela()
+  // reseeda automaticamente qualquer tabela ausente do localStorage.
+  Object.keys(SEEDS).forEach((tabela) => gravarBruto(tabela, []));
 }
 
 export const TABELAS = Object.keys(SEEDS);
