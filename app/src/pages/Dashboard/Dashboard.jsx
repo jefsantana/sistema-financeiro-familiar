@@ -104,7 +104,11 @@ export default function Dashboard() {
       />
 
       <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel icone={TrendingUp} titulo="Evolução Financeira" subtitulo={`últimos ${resumoMensal.length} meses`}>
+        <Panel
+          icone={TrendingUp}
+          titulo="Evolução Financeira"
+          subtitulo={resumoMensal.length === 1 ? 'último mês' : `últimos ${resumoMensal.length} meses`}
+        >
           <GraficoLinha pontos={[...resumoMensal].reverse().map((m) => ({ mes: m.nomeCurto, entrada: m.entrada, saida: m.saida, saldo: m.saldo }))} />
         </Panel>
 

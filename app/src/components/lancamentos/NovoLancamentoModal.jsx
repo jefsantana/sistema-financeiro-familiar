@@ -54,8 +54,20 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   async function salvarLancamento(evento) {
     evento.preventDefault();
 
+    if (!campos.descricao.trim()) {
+      toast.erro('Preencha a descrição.');
+      return;
+    }
     if (parseValorMonetario(campos.valor) <= 0) {
       toast.erro('Informe um valor maior que zero.');
+      return;
+    }
+    if (!campos.data) {
+      toast.erro('Informe a data.');
+      return;
+    }
+    if (tipo !== 'transferencia' && !campos.categoria.trim()) {
+      toast.erro('Escolha uma categoria.');
       return;
     }
 
@@ -137,7 +149,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
         )}
       </div>
 
-      <form className={styles.form} onSubmit={salvarLancamento}>
+      <form className={styles.form} onSubmit={salvarLancamento} noValidate>
         <Input
           rotulo="Descrição"
           required

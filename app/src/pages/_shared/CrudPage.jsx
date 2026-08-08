@@ -73,7 +73,7 @@ export default function CrudPage({ config }) {
           ? bruto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           : (bruto ?? '');
     });
-    setEditando({ id: registro.id });
+    setEditando({ id: registro.id, rotulo: registro.descricao || registro.nome || '' });
     setValores(valoresDoRegistro);
   }
 
@@ -84,6 +84,14 @@ export default function CrudPage({ config }) {
 
   async function aoSalvar(evento) {
     evento.preventDefault();
+
+    const campoVazio = campos.find(
+      (campo) => campo.obrigatorio && campo.tipo !== 'moeda' && !String(valores[campo.nome] ?? '').trim()
+    );
+    if (campoVazio) {
+      toast.erro(`Preencha o campo "${campoVazio.rotulo}".`);
+      return;
+    }
 
     const campoMoedaInvalido = campos.find(
       (campo) => campo.tipo === 'moeda' && campo.obrigatorio && parseValorMonetario(valores[campo.nome]) <= 0
@@ -121,10 +129,10 @@ export default function CrudPage({ config }) {
     <div>
       <div className={styles.cabecalhoPagina}>
         <Icone size={20} className={styles.iconePagina} />
-        <h1>{editando ? `Editando: ${tituloForm}` : tituloForm}</h1>
+        <h1>{editando ? `Editando: ${editando.rotulo || tituloForm}` : tituloForm}</h1>
       </div>
 
-      <form className={styles.formulario} onSubmit={aoSalvar}>
+      <form className={styles.formulario} onSubmit={aoSalvar} noValidate>
         {campos.map((campo) => {
           if (campo.tipo === 'select') {
             return (
