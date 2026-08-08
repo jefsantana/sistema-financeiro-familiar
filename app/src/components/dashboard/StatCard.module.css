@@ -1,0 +1,121 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.destaque {
+  background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-acento) 130%);
+  border: none;
+  box-shadow: 0 10px 28px rgba(123, 97, 255, 0.32);
+  position: relative;
+  overflow: hidden;
+}
+
+.destaque::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 65%;
+  height: 180%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.destaque:hover {
+  box-shadow: 0 14px 34px rgba(123, 97, 255, 0.4);
+}
+
+.destaque .rotulo {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.destaque .valor {
+  color: #FFFFFF;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rotulo {
+  color: var(--cor-texto-secundario);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--raio-sm);
+  flex-shrink: 0;
+}
+
+.icone svg {
+  width: 17px;
+  height: 17px;
+}
+
+.icone.primaria { background-color: rgba(123, 97, 255, 0.12); color: var(--cor-primaria); }
+.icone.sucesso { background-color: rgba(16, 185, 129, 0.12); color: var(--cor-sucesso); }
+.icone.perigo { background-color: rgba(239, 68, 68, 0.12); color: var(--cor-perigo); }
+.icone.info { background-color: rgba(59, 130, 246, 0.12); color: var(--cor-info); }
+
+.iconeDestaque {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
+}
+
+.valor {
+  font-family: var(--fonte-numeros);
+  font-size: 1.55rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.tendencia {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tendencia svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tendenciaBoa { color: var(--cor-sucesso); }
+.tendenciaRuim { color: var(--cor-perigo); }
+.tendenciaNeutra { color: var(--cor-texto-secundario); font-weight: 500; }
+.tendenciaDestaque { color: rgba(255, 255, 255, 0.85); font-weight: 500; }
+
+@media (max-width: 1024px) {
+  .valor {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .valor {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .valor {
+    font-size: 1.35rem;
+  }
+}

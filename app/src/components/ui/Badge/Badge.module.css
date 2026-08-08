@@ -1,0 +1,42 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.neutro {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto-secundario);
+  border: 1px solid var(--cor-borda);
+}
+
+.sucesso {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: var(--cor-sucesso);
+}
+
+.perigo {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--cor-perigo);
+}
+
+.alerta {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: var(--cor-alerta);
+}
+
+.info {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: var(--cor-info);
+}
+
+.primaria {
+  background-color: rgba(123, 97, 255, 0.12);
+  color: var(--cor-primaria);
+}

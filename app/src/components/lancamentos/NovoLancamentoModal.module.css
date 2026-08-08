@@ -1,0 +1,68 @@
+.tipos {
+  display: flex;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-lg);
+}
+
+.tipoBotao {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--espaco-md) var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  color: var(--cor-texto-secundario);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: border-color var(--transicao), color var(--transicao), background-color var(--transicao);
+}
+
+.tipoBotao svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tipoEntrada.tipoAtivo {
+  border-color: var(--cor-sucesso);
+  color: var(--cor-sucesso);
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.tipoGasto.tipoAtivo {
+  border-color: var(--cor-perigo);
+  color: var(--cor-perigo);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.tipoTransferencia.tipoAtivo {
+  border-color: var(--cor-info);
+  color: var(--cor-info);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.linha {
+  display: flex;
+  gap: var(--espaco-md);
+}
+
+.linha > * {
+  min-width: 0;
+}
+
+.acoes {
+  margin-top: var(--espaco-sm);
+}
+
+@media (max-width: 480px) {
+  .linhaPessoas {
+    flex-direction: column;
+  }
+}

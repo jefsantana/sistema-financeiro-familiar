@@ -1,0 +1,66 @@
+.viewport {
+  position: fixed;
+  bottom: var(--espaco-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+  z-index: 300;
+  width: min(360px, calc(100vw - var(--espaco-lg) * 2));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-md);
+  border-radius: var(--raio-md);
+  background-color: var(--cor-texto);
+  color: var(--cor-superficie);
+  box-shadow: var(--sombra-lg);
+  font-size: 0.88rem;
+  font-weight: 500;
+  animation: entrar 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iconeSucesso {
+  color: var(--cor-sucesso);
+  flex-shrink: 0;
+}
+
+.iconeErro {
+  color: var(--cor-perigo);
+  flex-shrink: 0;
+}
+
+.mensagem {
+  flex: 1;
+}
+
+.botaoFechar {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.botaoFechar:hover {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .viewport {
+    bottom: calc(var(--altura-bottomnav) + var(--espaco-sm));
+    width: calc(100vw - var(--espaco-md) * 2);
+  }
+}

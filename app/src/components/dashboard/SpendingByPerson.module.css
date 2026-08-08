@@ -1,0 +1,42 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.nome {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.valor {
+  font-family: var(--fonte-numeros);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.percentual {
+  font-family: var(--fonte-numeros);
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}

@@ -1,13 +1,21 @@
 # Sistema Financeiro Familiar
 
-Sistema de gestão financeira familiar, desenvolvido com HTML5, CSS3, JavaScript puro (ES6+), Google Apps Script e Google Sheets como banco de dados.
+Sistema de gestão financeira familiar de Jeferson e Raquel, desenvolvido em React + Vite, com Supabase como banco de dados (em preparação).
 
 ## Status do projeto
-🚧 Em desenvolvimento — Etapa 2: estrutura inicial do projeto.
+🚧 Em migração — estrutura React, Design System e todas as páginas com dados de exemplo já funcionando. Integração com Supabase (autenticação, banco real, RLS) ainda por vir.
 
 ## Tecnologias
-- HTML5
-- CSS3
-- JavaScript (ES6+)
-- Google Apps Script
-- Google Sheets
+- React 19
+- Vite
+- React Router
+- Chart.js
+- Supabase (Postgres + Auth) — em preparação
+
+## Como rodar
+
+```bash
+cd app
+npm install
+npm run dev
+```

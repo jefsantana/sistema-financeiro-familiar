@@ -1,0 +1,65 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.rotulo {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  font-weight: 600;
+}
+
+.envolveEntrada {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.entrada {
+  width: 100%;
+  padding: 11px var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-size: 0.95rem;
+  font-family: var(--fonte-corpo);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.comIcone {
+  padding-left: 38px;
+}
+
+.entrada:focus {
+  border-color: var(--cor-primaria);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.14);
+}
+
+.entrada.comErro {
+  border-color: var(--cor-perigo);
+}
+
+.entrada::placeholder {
+  color: var(--cor-texto-secundario);
+  opacity: 0.7;
+}
+
+.icone {
+  position: absolute;
+  left: 11px;
+  width: 17px;
+  height: 17px;
+  color: var(--cor-texto-secundario);
+  pointer-events: none;
+}
+
+.mensagemErro {
+  font-size: 0.76rem;
+  color: var(--cor-perigo);
+  font-weight: 500;
+}

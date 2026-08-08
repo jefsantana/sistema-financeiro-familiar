@@ -1,0 +1,58 @@
+.pagina {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaco-lg);
+  background: linear-gradient(160deg, var(--cor-sidebar) 0%, var(--cor-primaria) 140%);
+}
+
+.cartao {
+  width: 100%;
+  max-width: 380px;
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-lg);
+  padding: var(--espaco-xl);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-xl);
+}
+
+.logoTextos h1 {
+  font-family: var(--fonte-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.logoSubtitulo {
+  color: var(--cor-texto-secundario);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.erro {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: var(--cor-perigo);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.botaoEntrar {
+  margin-top: var(--espaco-xs);
+}

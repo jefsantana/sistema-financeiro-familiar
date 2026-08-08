@@ -1,0 +1,59 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 6px 0;
+}
+
+.icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icone svg {
+  width: 16px;
+  height: 16px;
+}
+
+.entrada { background-color: rgba(16, 185, 129, 0.12); color: var(--cor-sucesso); }
+.gasto { background-color: rgba(239, 68, 68, 0.12); color: var(--cor-perigo); }
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.descricao {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+}
+
+.valor {
+  font-family: var(--fonte-numeros);
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

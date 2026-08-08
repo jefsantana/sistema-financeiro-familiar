@@ -1,0 +1,92 @@
+.sobreposicao {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 18, 31, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaco-md);
+  z-index: 200;
+  animation: aparecer 0.18s ease;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-lg);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: subir 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espaco-lg) var(--espaco-lg) 0;
+}
+
+.titulo {
+  font-family: var(--fonte-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.botaoFechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao);
+  flex-shrink: 0;
+}
+
+.botaoFechar:hover {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.corpo {
+  padding: var(--espaco-lg);
+}
+
+@media (max-width: 640px) {
+  .sobreposicao {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100%;
+    max-height: 88vh;
+    border-radius: var(--raio-lg) var(--raio-lg) 0 0;
+    animation: subirMobile 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes subirMobile {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}

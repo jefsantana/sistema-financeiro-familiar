@@ -1,0 +1,23 @@
+.cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+}
+
+.titulo {
+  font-family: var(--fonte-display);
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.subtitulo {
+  font-family: var(--fonte-corpo);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+  margin-left: 8px;
+}

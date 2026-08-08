@@ -1,0 +1,30 @@
+.icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--cor-perigo);
+  margin-bottom: var(--espaco-md);
+}
+
+.mensagem {
+  color: var(--cor-texto-secundario);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: var(--espaco-lg);
+}
+
+.acoes {
+  display: flex;
+  gap: var(--espaco-sm);
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .acoes {
+    flex-direction: column-reverse;
+  }
+}

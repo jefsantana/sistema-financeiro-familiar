@@ -1,0 +1,17 @@
+.grade {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--espaco-md);
+}
+
+@media (max-width: 1024px) {
+  .grade {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .grade {
+    grid-template-columns: 1fr;
+  }
+}

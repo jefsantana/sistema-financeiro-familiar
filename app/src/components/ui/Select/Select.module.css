@@ -1,0 +1,48 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.rotulo {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  font-weight: 600;
+}
+
+.envolveSelect {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select {
+  width: 100%;
+  padding: 11px 34px 11px var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-size: 0.95rem;
+  font-family: var(--fonte-corpo);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.select:focus {
+  border-color: var(--cor-primaria);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.14);
+}
+
+.seta {
+  position: absolute;
+  right: 11px;
+  width: 16px;
+  height: 16px;
+  color: var(--cor-texto-secundario);
+  pointer-events: none;
+}

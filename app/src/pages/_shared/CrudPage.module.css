@@ -1,0 +1,63 @@
+.cabecalhoPagina {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-xs);
+}
+
+.cabecalhoPagina h1 {
+  font-family: var(--fonte-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.formulario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-md);
+  margin-bottom: var(--espaco-xl);
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-sm);
+  padding: var(--espaco-lg);
+}
+
+.campoFlex {
+  flex: 1;
+  min-width: 180px;
+}
+
+.campoPessoa {
+  flex: 1;
+  min-width: 240px;
+}
+
+.botaoSalvar {
+  align-self: flex-end;
+}
+
+.tituloLista {
+  font-family: var(--fonte-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: var(--espaco-md);
+}
+
+@media (max-width: 640px) {
+  .formulario {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campoFlex,
+  .campoPessoa {
+    min-width: 0;
+  }
+
+  .botaoSalvar {
+    align-self: stretch;
+  }
+}

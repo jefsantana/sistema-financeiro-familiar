@@ -1,0 +1,36 @@
+.grupo {
+  display: flex;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.opcao {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-xs);
+  padding: 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  background-color: var(--cor-fundo);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: border-color var(--transicao), color var(--transicao), background-color var(--transicao);
+}
+
+.opcaoAtiva {
+  border-color: var(--cor-primaria);
+  color: #FFFFFF;
+  background-color: var(--cor-primaria);
+  box-shadow: 0 2px 8px rgba(123, 97, 255, 0.35);
+}
+
+.check {
+  flex-shrink: 0;
+}

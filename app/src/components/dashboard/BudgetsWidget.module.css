@@ -1,0 +1,33 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-lg);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.categoria {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.valores {
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario);
+  font-family: var(--fonte-numeros);
+}
+
+.estourado {
+  color: var(--cor-perigo);
+  font-weight: 700;
+}

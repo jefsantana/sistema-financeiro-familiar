@@ -1,0 +1,24 @@
+.card {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-sm);
+  transition: box-shadow var(--transicao), transform var(--transicao), border-color var(--transicao);
+}
+
+.comHover:hover {
+  box-shadow: var(--sombra);
+  transform: translateY(-2px);
+}
+
+.preenchimentoNormal {
+  padding: var(--espaco-lg);
+}
+
+.preenchimentoPequeno {
+  padding: var(--espaco-md);
+}
+
+.preenchimentoNenhum {
+  padding: 0;
+}

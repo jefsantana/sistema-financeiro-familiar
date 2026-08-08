@@ -1,0 +1,69 @@
+.secao {
+  margin-bottom: var(--espaco-lg);
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.linha:last-child {
+  border-bottom: none;
+}
+
+.rotuloLinha {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.descricaoLinha {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  margin-top: 2px;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.trilho {
+  position: absolute;
+  inset: 0;
+  background-color: var(--cor-borda);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--transicao);
+}
+
+.trilho::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  transition: transform var(--transicao);
+}
+
+.switch input:checked + .trilho {
+  background-color: var(--cor-primaria);
+}
+
+.switch input:checked + .trilho::before {
+  transform: translateX(20px);
+}

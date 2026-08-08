@@ -1,0 +1,63 @@
+.navegacaoMes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-lg);
+}
+
+.mesAtual {
+  font-family: var(--fonte-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 180px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.botaoNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--cor-borda);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+  transition: background-color var(--transicao);
+}
+
+.botaoNav:hover {
+  background-color: var(--cor-fundo);
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-lg);
+  align-items: center;
+}
+
+.busca {
+  flex: 1 1 100%;
+  min-width: 200px;
+}
+
+.filtroSelect {
+  flex: 1 1 140px;
+  min-width: 140px;
+}
+
+.resumo {
+  display: flex;
+  gap: var(--espaco-lg);
+  margin-bottom: var(--espaco-md);
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario);
+}
+
+.resumo strong {
+  color: var(--cor-texto);
+}

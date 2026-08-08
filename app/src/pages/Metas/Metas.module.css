@@ -1,0 +1,32 @@
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.card {
+  position: relative;
+}
+
+.excluir {
+  position: absolute;
+  top: var(--espaco-sm);
+  right: var(--espaco-sm);
+}
+
+.descricao {
+  font-weight: 600;
+  margin-bottom: var(--espaco-xs);
+}
+
+.valores {
+  font-size: 0.86rem;
+  color: var(--cor-texto-secundario);
+  margin-bottom: var(--espaco-sm);
+}
+
+.percentual {
+  font-family: var(--fonte-numeros);
+  font-weight: 700;
+  color: var(--cor-sucesso);
+}

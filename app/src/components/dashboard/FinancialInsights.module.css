@@ -1,0 +1,32 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-fundo);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.icone {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.icone svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sucesso .icone { color: var(--cor-sucesso); }
+.alerta .icone { color: var(--cor-alerta); }
+.perigo .icone { color: var(--cor-perigo); }
+.info .icone { color: var(--cor-info); }
+.neutro .icone { color: var(--cor-primaria); }

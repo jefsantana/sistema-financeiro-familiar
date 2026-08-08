@@ -1,0 +1,236 @@
+.sidebar {
+  width: var(--largura-sidebar);
+  height: 100vh;
+  background-color: var(--cor-sidebar);
+  padding: var(--espaco-lg) var(--espaco-md);
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--cor-sidebar-borda);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), width var(--transicao);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 0 var(--espaco-sm);
+  margin-bottom: var(--espaco-xl);
+}
+
+.logoTextos h1 {
+  font-family: var(--fonte-display);
+  color: #FFFFFF;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.logoSubtitulo {
+  color: var(--cor-texto-sidebar);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 10px var(--espaco-md);
+  color: var(--cor-texto-sidebar);
+  border-radius: var(--raio-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.link svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.link:hover {
+  background-color: var(--cor-sidebar-hover);
+  color: #FFFFFF;
+}
+
+.linkAtivo {
+  background-color: var(--cor-sidebar-hover);
+  color: var(--cor-texto-sidebar-ativo);
+  border-left: 2px solid var(--cor-acento);
+  font-weight: 600;
+}
+
+.rodape {
+  border-top: 1px solid var(--cor-sidebar-borda);
+  padding-top: var(--espaco-md);
+  margin-top: var(--espaco-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 6px var(--espaco-md);
+}
+
+.usuarioNome {
+  flex: 1;
+  min-width: 0;
+  color: var(--cor-texto-sidebar-ativo);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.botaoSair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-sidebar);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.botaoSair:hover {
+  background-color: var(--cor-sidebar-hover);
+  color: #FFFFFF;
+}
+
+.botaoSair svg {
+  width: 16px;
+  height: 16px;
+}
+
+.botaoRecolher {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  width: 100%;
+  padding: 9px var(--espaco-md);
+  color: var(--cor-texto-sidebar);
+  border-radius: var(--raio-sm);
+  font-size: 0.82rem;
+  transition: background-color var(--transicao);
+}
+
+.botaoRecolher:hover {
+  background-color: var(--cor-sidebar-hover);
+  color: #FFFFFF;
+}
+
+.botaoRecolher svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--transicao);
+}
+
+/* ---------- DESKTOP: recolhível manualmente para ícones apenas ---------- */
+.sidebarRecolhida {
+  width: 76px;
+}
+
+.sidebarRecolhida .logoTextos,
+.sidebarRecolhida .link span,
+.sidebarRecolhida .botaoRecolher span,
+.sidebarRecolhida .usuario {
+  display: none;
+}
+
+.sidebarRecolhida .logo {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebarRecolhida .link {
+  justify-content: center;
+}
+
+.sidebarRecolhida .botaoRecolher svg {
+  transform: rotate(180deg);
+}
+
+/* ---------- TABLET: sempre recolhida para ícones apenas ---------- */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .sidebar {
+    width: 76px;
+  }
+
+  .logoTextos,
+  .link span {
+    display: none;
+  }
+
+  .logo {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .link {
+    justify-content: center;
+  }
+
+  .rodape {
+    display: none;
+  }
+}
+
+/* ---------- CELULAR: sidebar vira gaveta ---------- */
+@media (max-width: 640px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 200;
+  }
+
+  .sidebarAberta {
+    transform: translateX(0);
+  }
+
+  .botaoRecolher {
+    display: none;
+  }
+}
+
+.overlay {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .overlayAtivo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 150;
+    animation: aparecer 0.2s ease;
+  }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

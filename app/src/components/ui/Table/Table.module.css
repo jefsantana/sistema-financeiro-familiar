@@ -1,0 +1,165 @@
+.envolve {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--raio-lg);
+  border: 1px solid var(--cor-borda);
+  background-color: var(--cor-superficie);
+  box-shadow: var(--sombra-sm);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.tabela th,
+.tabela td {
+  padding: 13px var(--espaco-md);
+  text-align: left;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela tbody tr {
+  transition: background-color var(--transicao-rapida);
+}
+
+.tabela tbody tr:hover {
+  background-color: var(--cor-fundo);
+}
+
+.tabela th {
+  background-color: var(--cor-fundo);
+  font-size: 0.7rem;
+  color: var(--cor-texto-secundario);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.colunaAcoes {
+  width: 44px;
+  text-align: center !important;
+}
+
+.colunaNumerica {
+  font-family: var(--fonte-numeros);
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.botaoAcao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.botaoAcao:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--cor-perigo);
+}
+
+.botaoAcao:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- CELULAR: cada linha vira um cartão de lançamento ---------- */
+@media (max-width: 640px) {
+  .envolve {
+    overflow: visible;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .tabela {
+    min-width: 0;
+    display: block;
+    border-collapse: separate;
+    border-spacing: 0 var(--espaco-sm);
+  }
+
+  .tabela thead {
+    display: none;
+  }
+
+  .tabela tbody {
+    display: block;
+  }
+
+  .tabela tbody tr {
+    display: block;
+    background-color: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-lg);
+    box-shadow: var(--sombra-sm);
+    padding: var(--espaco-sm) var(--espaco-md);
+  }
+
+  .tabela tbody tr:hover {
+    background-color: var(--cor-superficie);
+  }
+
+  .tabela td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espaco-md);
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--cor-borda);
+    text-align: right;
+    font-size: 0.85rem;
+  }
+
+  .tabela tr td:last-child {
+    border-bottom: none;
+  }
+
+  .tabela td::before {
+    content: attr(data-rotulo);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cor-texto-secundario);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* Primeira coluna funciona como o título do cartão — sem rótulo */
+  .tabela td:first-child {
+    justify-content: flex-start;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--cor-texto);
+  }
+
+  .tabela td:first-child::before {
+    content: none;
+  }
+
+  .colunaAcoes {
+    justify-content: flex-end !important;
+    padding-top: var(--espaco-sm);
+  }
+
+  .colunaAcoes::before {
+    content: none;
+  }
+
+  .botaoAcao {
+    width: 40px;
+    height: 40px;
+  }
+}
