@@ -84,21 +84,12 @@ export async function excluirPermanente(tabela, id) {
   if (error) throw error;
 }
 
-const CATEGORIAS_PADRAO = [
-  { nome: 'Salário', tipo: 'entrada' },
-  { nome: 'Freelance', tipo: 'entrada' },
-  { nome: 'Alimentação', tipo: 'gasto' },
-  { nome: 'Moradia', tipo: 'gasto' },
-  { nome: 'Transporte', tipo: 'gasto' },
-  { nome: 'Saúde', tipo: 'gasto' },
-  { nome: 'Lazer', tipo: 'gasto' },
-  { nome: 'Educação', tipo: 'gasto' },
-];
-
 // Apaga TODOS os dados da família (lançamentos e cadastros), de forma
-// permanente, e recria as categorias padrão — como se a família
-// tivesse acabado de se cadastrar. A ordem respeita as referências
-// entre tabelas (pagamentos antes das contas/parcelamentos que apontam).
+// permanente — como se a família tivesse acabado de se cadastrar. As
+// categorias não entram aqui: hoje são listas fixas definidas no
+// próprio código (utils/constantes.js), não vêm mais do banco. A
+// ordem respeita as referências entre tabelas (pagamentos antes das
+// contas/parcelamentos que apontam).
 export async function limparDadosFamilia(familiaId) {
   const tabelasDependentes = ['pagamentos_contas_fixas', 'pagamentos_parcelamentos'];
   const tabelasPrincipais = [
@@ -110,16 +101,10 @@ export async function limparDadosFamilia(familiaId) {
     'cartoes',
     'metas',
     'orcamentos',
-    'categorias',
   ];
 
   for (const tabela of [...tabelasDependentes, ...tabelasPrincipais]) {
     const { error } = await supabase.from(tabela).delete().eq('familia_id', familiaId);
     if (error) throw error;
   }
-
-  const { error: erroCategorias } = await supabase
-    .from('categorias')
-    .insert(CATEGORIAS_PADRAO.map((categoria) => ({ ...categoria, familia_id: familiaId })));
-  if (erroCategorias) throw erroCategorias;
 }

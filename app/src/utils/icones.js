@@ -27,7 +27,15 @@ import {
   Receipt,
   Wrench,
   HelpCircle,
-  ArrowLeftRight,
+  Gift,
+  Landmark,
+  Building2,
+  Briefcase,
+  RotateCcw,
+  RefreshCcw,
+  Wallet,
+  PlusCircle,
+  Award,
 } from 'lucide-react';
 
 export const ICONES_NAV = {
@@ -45,26 +53,42 @@ export const ICONES_NAV = {
   Settings,
 };
 
-// Ícone de cada categoria de gasto fixa — usado no lugar do emoji,
-// tanto na lista da tela Categorias quanto ao lado do select nos
-// formulários (o <select> nativo do navegador não permite ícones
-// dentro das opções, só texto puro).
+// Ícone de cada categoria fixa (gasto e entrada) — usado no lugar do
+// emoji, tanto nas listas quanto ao lado do select nos formulários
+// (o <select> nativo do navegador não permite ícones dentro das
+// opções, só texto puro).
 export const ICONES_CATEGORIA_GASTO = {
-  Moradia: Home,
   Alimentação: ShoppingCart,
-  'Contas da Casa': Lightbulb,
-  Transporte: Car,
-  Saúde: HeartPulse,
-  Educação: GraduationCap,
-  Lazer: Gamepad2,
-  Compras: ShoppingBag,
-  'Cuidados Pessoais': Sparkles,
-  Pets: PawPrint,
-  Família: Users,
-  Viagens: Plane,
   Assinaturas: Repeat,
+  'Cartão de Crédito': CreditCard,
+  Compras: ShoppingBag,
+  'Contas da Casa': Lightbulb,
+  'Cuidados Pessoais': Sparkles,
+  Educação: GraduationCap,
+  Família: Users,
   'Impostos e Taxas': Receipt,
+  Investimentos: TrendingUp,
+  Lazer: Gamepad2,
   Manutenção: Wrench,
-  Outros: HelpCircle,
-  Transferências: ArrowLeftRight,
+  Moradia: Home,
+  Pets: PawPrint,
+  Presentes: Gift,
+  Saúde: HeartPulse,
+  'Tarifas Bancárias': Landmark,
+  Transporte: Car,
+  Viagens: Plane,
+};
+
+export const ICONES_CATEGORIA_ENTRADA = {
+  'Aluguel Recebido': Building2,
+  Benefícios: Award,
+  Estorno: RefreshCcw,
+  Freelance: Briefcase,
+  'Outras Entradas': HelpCircle,
+  'Presentes Recebidos': Gift,
+  Reembolso: RotateCcw,
+  'Renda Extra': PlusCircle,
+  'Rendimentos de Investimentos': TrendingUp,
+  Salário: Wallet,
+  'Venda de Produtos/Bens': ShoppingBag,
 };

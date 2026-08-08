@@ -6,8 +6,8 @@ import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
 import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
+import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
+import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
@@ -31,7 +31,6 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   const { perfil, usuario, pessoas } = useAuth();
   const [campos, setCampos] = useState(() => estadoInicial(pessoas));
   const [salvando, setSalvando] = useState(false);
-  const { registros: categorias, salvar: salvarCategoria } = useCrudMock('Categorias');
   const { registros: cartoes } = useCrudMock('Cartoes');
   const toast = useToast();
   const temSegundaPessoa = pessoas.length > 1;
@@ -43,8 +42,6 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto]);
-
-  const categoriasDoTipo = categorias.filter((c) => c.tipo === (tipo === 'entrada' ? 'entrada' : 'gasto'));
 
   function atualizarCampo(nome, valor) {
     const valorLimpo = nome === 'valor' ? valor.replace(/-/g, '') : valor;
@@ -87,14 +84,6 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
       } else {
-        const nomeCategoria = campos.categoria.trim();
-        if (tipo === 'entrada') {
-          const categoriaExiste = categoriasDoTipo.some((c) => c.nome.toLowerCase() === nomeCategoria.toLowerCase());
-          if (nomeCategoria && !categoriaExiste) {
-            await salvarCategoria({ nome: nomeCategoria, tipo: 'entrada' });
-          }
-        }
-
         const tabela = tipo === 'entrada' ? 'Entradas' : 'Gastos';
         await criar(
           tabela,
@@ -102,7 +91,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
             descricao: campos.descricao,
             valor: parseValorMonetario(campos.valor),
             data: campos.data,
-            categoria: nomeCategoria,
+            categoria: campos.categoria,
             pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
             ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
           },
@@ -178,38 +167,22 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
 
         {tipo !== 'transferencia' && (
           <div className={styles.linha}>
-            {tipo === 'entrada' ? (
-              <>
-                <Input
-                  rotulo="Categoria"
-                  required
-                  list="lista-categorias"
-                  placeholder="Escolha ou digite uma nova"
-                  value={campos.categoria}
-                  onChange={(e) => atualizarCampo('categoria', e.target.value)}
-                />
-                <datalist id="lista-categorias">
-                  {categoriasDoTipo.map((c) => (
-                    <option key={c.id} value={c.nome} />
-                  ))}
-                </datalist>
-              </>
-            ) : (
-              <Select
-                rotulo="Categoria"
-                required
-                icone={ICONES_CATEGORIA_GASTO[campos.categoria]}
-                value={campos.categoria}
-                onChange={(e) => atualizarCampo('categoria', e.target.value)}
-              >
-                <option value="">Selecione</option>
-                {CATEGORIAS_GASTO_FIXAS.map((nome) => (
-                  <option key={nome} value={nome}>
-                    {nome}
-                  </option>
-                ))}
-              </Select>
-            )}
+            <Select
+              rotulo="Categoria"
+              required
+              icone={
+                tipo === 'entrada' ? ICONES_CATEGORIA_ENTRADA[campos.categoria] : ICONES_CATEGORIA_GASTO[campos.categoria]
+              }
+              value={campos.categoria}
+              onChange={(e) => atualizarCampo('categoria', e.target.value)}
+            >
+              <option value="">Selecione</option>
+              {(tipo === 'entrada' ? CATEGORIAS_ENTRADA_FIXAS : CATEGORIAS_GASTO_FIXAS).map((nome) => (
+                <option key={nome} value={nome}>
+                  {nome}
+                </option>
+              ))}
+            </Select>
             {tipo === 'gasto' && (
               <Select
                 rotulo="Cartão (opcional)"

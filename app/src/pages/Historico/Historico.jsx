@@ -5,7 +5,7 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
 import { exportarCsv } from '../../utils/exportarCsv.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
@@ -24,7 +24,6 @@ export default function Historico() {
   const { registros: entradas, carregando: c1 } = useCrudMock('Entradas');
   const { registros: gastos, carregando: c2 } = useCrudMock('Gastos');
   const { registros: transferencias, carregando: c3 } = useCrudMock('Transferencias');
-  const { registros: categorias } = useCrudMock('Categorias');
 
   const [dataReferencia, setDataReferencia] = useState(() => new Date());
   const [filtroTipo, setFiltroTipo] = useState('todos');
@@ -102,13 +101,11 @@ export default function Historico() {
         </Select>
         <Select className={styles.filtroSelect} value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
           <option value="todas">Todas as categorias</option>
-          {categorias
-            .filter((c) => c.tipo === 'entrada')
-            .map((c) => (
-              <option key={c.id} value={c.nome}>
-                {c.nome}
-              </option>
-            ))}
+          {CATEGORIAS_ENTRADA_FIXAS.map((nome) => (
+            <option key={nome} value={nome}>
+              {nome}
+            </option>
+          ))}
           {CATEGORIAS_GASTO_FIXAS.map((nome) => (
             <option key={nome} value={nome}>
               {nome}

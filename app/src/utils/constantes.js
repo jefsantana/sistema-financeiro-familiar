@@ -28,26 +28,42 @@ export const STATUS_LANCAMENTO = {
   excluido: { label: 'Excluído', cor: 'perigo' },
 };
 
-// Lista fixa de categorias de gasto — não pode ser criada, editada nem
-// excluída pela interface, pra manter os relatórios e o dashboard
-// consistentes entre todas as famílias do sistema. Os ícones de cada
-// uma ficam em utils/icones.js (ICONES_CATEGORIA_GASTO).
+// Listas fixas de categorias — não é possível criar, editar nem excluir
+// pela interface, pra manter os relatórios e o dashboard consistentes
+// e sem duplicidade (ex: "Salario" e "Salário" como categorias
+// diferentes). Os ícones de cada uma ficam em utils/icones.js.
 export const CATEGORIAS_GASTO_FIXAS = [
-  'Moradia',
   'Alimentação',
-  'Contas da Casa',
-  'Transporte',
-  'Saúde',
-  'Educação',
-  'Lazer',
-  'Compras',
-  'Cuidados Pessoais',
-  'Pets',
-  'Família',
-  'Viagens',
   'Assinaturas',
+  'Cartão de Crédito',
+  'Compras',
+  'Contas da Casa',
+  'Cuidados Pessoais',
+  'Educação',
+  'Família',
   'Impostos e Taxas',
+  'Investimentos',
+  'Lazer',
   'Manutenção',
-  'Outros',
-  'Transferências',
+  'Moradia',
+  'Pets',
+  'Presentes',
+  'Saúde',
+  'Tarifas Bancárias',
+  'Transporte',
+  'Viagens',
+];
+
+export const CATEGORIAS_ENTRADA_FIXAS = [
+  'Aluguel Recebido',
+  'Benefícios',
+  'Estorno',
+  'Freelance',
+  'Outras Entradas',
+  'Presentes Recebidos',
+  'Reembolso',
+  'Renda Extra',
+  'Rendimentos de Investimentos',
+  'Salário',
+  'Venda de Produtos/Bens',
 ];
