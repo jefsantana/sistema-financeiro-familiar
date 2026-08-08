@@ -12,7 +12,6 @@ import {
   ConfirmDialog,
   SkeletonLinha,
 } from '../../components/ui/index.js';
-import { SeletorPessoa } from '../../components/lancamentos/SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -42,7 +41,6 @@ export default function CrudPage({ config }) {
   const toast = useToast();
   const { perfil, usuario } = useAuth();
   const pessoaLogada = nomeExibicao(perfil, usuario).split(' ')[0];
-  const [pessoaSelecionada, setPessoaSelecionada] = useState(pessoaLogada);
   const temColunaPessoa = colunas.some((c) => c.chave === 'pessoa') && !campos.some((c) => c.nome === 'pessoa');
 
   const registrosOrdenados = useMemo(
@@ -73,13 +71,11 @@ export default function CrudPage({ config }) {
           : (bruto ?? '');
     });
     setEditando({ id: registro.id });
-    setPessoaSelecionada(registro.pessoa || pessoaLogada);
     setValores(valoresDoRegistro);
   }
 
   function cancelarEdicao() {
     setEditando(null);
-    setPessoaSelecionada(pessoaLogada);
     setValores(estadoInicial(campos));
   }
 
@@ -99,19 +95,17 @@ export default function CrudPage({ config }) {
       dados[campo.nome] = converterValor(campo, valores[campo.nome]);
     });
 
-    if (temColunaPessoa) {
-      dados.pessoa = pessoaSelecionada;
-    }
-
     if (editando) {
       await editar(editando.id, dados);
       toast.sucesso('Alterações salvas com sucesso');
     } else {
+      if (temColunaPessoa) {
+        dados.pessoa = pessoaLogada;
+      }
       await salvar(dados);
       toast.sucesso('Lançamento salvo com sucesso');
     }
     setEditando(null);
-    setPessoaSelecionada(pessoaLogada);
     setValores(estadoInicial(campos));
   }
 
@@ -166,12 +160,6 @@ export default function CrudPage({ config }) {
             />
           );
         })}
-
-        {temColunaPessoa && (
-          <div className={styles.campoPessoa}>
-            <SeletorPessoa valor={pessoaSelecionada} aoSelecionar={setPessoaSelecionada} />
-          </div>
-        )}
 
         <div className={styles.acoesFormulario}>
           <Button type="submit" carregando={salvando} className={styles.botaoSalvar}>
