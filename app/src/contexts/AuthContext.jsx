@@ -50,6 +50,11 @@ export function AuthProvider({ children }) {
           options: { data: { nome, pessoa2: pessoa2 || null, nome_familia: nomeFamilia || null } },
         }),
       sair: () => supabase.auth.signOut(),
+      recuperarSenha: (email) =>
+        supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + import.meta.env.BASE_URL + 'redefinir-senha',
+        }),
+      atualizarSenha: (novaSenha) => supabase.auth.updateUser({ password: novaSenha }),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sessao, perfil]

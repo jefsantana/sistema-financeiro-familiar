@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './layouts/AppLayout/AppLayout.jsx';
 import Login from './pages/Login/Login.jsx';
+import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha.jsx';
 import Dashboard from './pages/Dashboard/Dashboard.jsx';
 import Entradas from './pages/Entradas/Entradas.jsx';
 import Gastos from './pages/Gastos/Gastos.jsx';
@@ -26,6 +27,7 @@ export default function App() {
         <ToastProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>

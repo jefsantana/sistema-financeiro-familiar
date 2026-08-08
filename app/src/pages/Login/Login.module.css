@@ -104,3 +104,14 @@
 .botaoEntrar {
   margin-top: var(--espaco-xs);
 }
+
+.linkSecundario {
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+.linkSecundario:hover {
+  text-decoration: underline;
+}

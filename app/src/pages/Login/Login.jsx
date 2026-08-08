@@ -20,7 +20,7 @@ function mensagemDeErroCadastrar(erro) {
 }
 
 export default function Login() {
-  const { usuario, carregando, entrar, cadastrar } = useAuth();
+  const { usuario, carregando, entrar, cadastrar, recuperarSenha } = useAuth();
   const [modo, setModo] = useState('entrar');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -65,6 +65,22 @@ export default function Login() {
     setModo('entrar');
   }
 
+  async function aoRecuperarSenha(evento) {
+    evento.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const { error } = await recuperarSenha(email);
+    setEnviando(false);
+
+    if (error) {
+      setErro('Não foi possível enviar o e-mail. Confira o endereço e tente de novo.');
+      return;
+    }
+
+    setMensagem('Enviamos um link de redefinição pro seu e-mail. Confira sua caixa de entrada.');
+    setModo('entrar');
+  }
+
   return (
     <div className={styles.pagina}>
       <div className={styles.cartao}>
@@ -78,27 +94,29 @@ export default function Login() {
           </div>
         </div>
 
-        <div className={styles.abas}>
-          <button
-            type="button"
-            className={`${styles.aba} ${modo === 'entrar' ? styles.abaAtiva : ''}`}
-            onClick={() => trocarModo('entrar')}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            className={`${styles.aba} ${modo === 'cadastrar' ? styles.abaAtiva : ''}`}
-            onClick={() => trocarModo('cadastrar')}
-          >
-            Cadastrar
-          </button>
-        </div>
+        {modo !== 'recuperar' && (
+          <div className={styles.abas}>
+            <button
+              type="button"
+              className={`${styles.aba} ${modo === 'entrar' ? styles.abaAtiva : ''}`}
+              onClick={() => trocarModo('entrar')}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              className={`${styles.aba} ${modo === 'cadastrar' ? styles.abaAtiva : ''}`}
+              onClick={() => trocarModo('cadastrar')}
+            >
+              Cadastrar
+            </button>
+          </div>
+        )}
 
         {erro && <p className={styles.erro}>{erro}</p>}
         {mensagem && <p className={styles.mensagem}>{mensagem}</p>}
 
-        {modo === 'entrar' ? (
+        {modo === 'entrar' && (
           <form className={styles.form} onSubmit={aoEntrar}>
             <Input
               rotulo="E-mail"
@@ -120,11 +138,37 @@ export default function Login() {
               onChange={(e) => setSenha(e.target.value)}
               placeholder="••••••••"
             />
+            <button type="button" className={styles.linkSecundario} onClick={() => trocarModo('recuperar')}>
+              Esqueci minha senha
+            </button>
             <Button type="submit" larguraTotal carregando={enviando} className={styles.botaoEntrar}>
               Entrar
             </Button>
           </form>
-        ) : (
+        )}
+
+        {modo === 'recuperar' && (
+          <form className={styles.form} onSubmit={aoRecuperarSenha}>
+            <Input
+              rotulo="E-mail"
+              type="email"
+              icone={Mail}
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+            />
+            <Button type="submit" larguraTotal carregando={enviando} className={styles.botaoEntrar}>
+              Enviar link de redefinição
+            </Button>
+            <button type="button" className={styles.linkSecundario} onClick={() => trocarModo('entrar')}>
+              Voltar para o login
+            </button>
+          </form>
+        )}
+
+        {modo === 'cadastrar' && (
           <form className={styles.form} onSubmit={aoCadastrar}>
             <Input
               rotulo="Seu nome"
