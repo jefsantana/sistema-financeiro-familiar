@@ -22,6 +22,18 @@
   margin-bottom: var(--espaco-xl);
 }
 
+.logoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-acento));
+  color: #FFFFFF;
+}
+
 .logoTextos h1 {
   font-family: var(--fonte-display);
   color: #FFFFFF;
@@ -41,8 +53,25 @@
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--espaco-md);
   flex: 1;
+}
+
+.grupoTitulo {
+  padding: 0 var(--espaco-md);
+  margin-bottom: 6px;
+  color: var(--cor-texto-sidebar);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.grupoLista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .link {
@@ -51,11 +80,10 @@
   gap: var(--espaco-sm);
   padding: 10px var(--espaco-md);
   color: var(--cor-texto-sidebar);
-  border-radius: var(--raio-sm);
+  border-radius: var(--raio-md);
   font-size: 0.9rem;
   font-weight: 500;
-  border-left: 2px solid transparent;
-  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .link svg {
@@ -71,10 +99,34 @@
 }
 
 .linkAtivo {
-  background-color: var(--cor-sidebar-hover);
-  color: var(--cor-texto-sidebar-ativo);
-  border-left: 2px solid var(--cor-acento);
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-hover));
+  color: #FFFFFF;
   font-weight: 600;
+  box-shadow: 0 4px 14px rgba(123, 97, 255, 0.35);
+}
+
+.linkAtivo svg {
+  opacity: 1;
+}
+
+.linkAtivo:hover {
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-hover));
+}
+
+.fotoCasal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: 1px dashed var(--cor-sidebar-borda);
+  border-radius: var(--raio-lg);
+  color: var(--cor-texto-sidebar);
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 .rodape {
@@ -157,7 +209,9 @@
 .sidebarRecolhida .logoTextos,
 .sidebarRecolhida .link span,
 .sidebarRecolhida .botaoRecolher span,
-.sidebarRecolhida .usuario {
+.sidebarRecolhida .usuario,
+.sidebarRecolhida .grupoTitulo,
+.sidebarRecolhida .fotoCasal {
   display: none;
 }
 
@@ -181,7 +235,9 @@
   }
 
   .logoTextos,
-  .link span {
+  .link span,
+  .grupoTitulo,
+  .fotoCasal {
     display: none;
   }
 

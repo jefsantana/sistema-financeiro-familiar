@@ -1,18 +1,18 @@
 export const PESSOAS = ['Jeferson', 'Raquel'];
 
 export const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-  { path: '/entradas', label: 'Entradas', icon: 'TrendingUp' },
-  { path: '/gastos', label: 'Gastos', icon: 'TrendingDown' },
-  { path: '/categorias', label: 'Categorias', icon: 'Tag' },
-  { path: '/contas', label: 'Contas Fixas', icon: 'FileText' },
-  { path: '/parcelamentos', label: 'Parcelamentos', icon: 'Layers' },
-  { path: '/cartoes', label: 'Cartões', icon: 'CreditCard' },
-  { path: '/metas', label: 'Metas', icon: 'Target' },
-  { path: '/relatorios', label: 'Relatórios', icon: 'BarChart3' },
-  { path: '/historico', label: 'Histórico', icon: 'History' },
-  { path: '/lixeira', label: 'Lixeira', icon: 'Trash2' },
-  { path: '/configuracoes', label: 'Configurações', icon: 'Settings' },
+  { path: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard', grupo: 'Principal' },
+  { path: '/entradas', label: 'Entradas', icon: 'TrendingUp', grupo: 'Movimentações' },
+  { path: '/gastos', label: 'Gastos', icon: 'TrendingDown', grupo: 'Movimentações' },
+  { path: '/categorias', label: 'Categorias', icon: 'Tag', grupo: 'Movimentações' },
+  { path: '/contas', label: 'Contas Fixas', icon: 'FileText', grupo: 'Movimentações' },
+  { path: '/parcelamentos', label: 'Parcelamentos', icon: 'Layers', grupo: 'Movimentações' },
+  { path: '/cartoes', label: 'Cartões', icon: 'CreditCard', grupo: 'Movimentações' },
+  { path: '/metas', label: 'Metas', icon: 'Target', grupo: 'Planejamento' },
+  { path: '/relatorios', label: 'Relatórios', icon: 'BarChart3', grupo: 'Planejamento' },
+  { path: '/historico', label: 'Histórico', icon: 'History', grupo: 'Planejamento' },
+  { path: '/lixeira', label: 'Lixeira', icon: 'Trash2', grupo: 'Sistema' },
+  { path: '/configuracoes', label: 'Configurações', icon: 'Settings', grupo: 'Sistema' },
 ];
 
 export const NAV_ITEMS_MOBILE = [

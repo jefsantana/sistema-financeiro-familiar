@@ -1,11 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { PanelLeftClose, LogOut } from 'lucide-react';
+import { PanelLeftClose, LogOut, Heart, Users } from 'lucide-react';
 import { NAV_ITEMS } from '../../utils/constantes.js';
 import { ICONES_NAV } from '../../utils/icones.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { Avatar } from '../../components/ui/index.js';
 import { nomeExibicao } from '../../utils/formatadores.js';
 import styles from './Sidebar.module.css';
+
+const GRUPOS_NAV = [...new Set(NAV_ITEMS.map((item) => item.grupo))].map((grupo) => ({
+  grupo,
+  itens: NAV_ITEMS.filter((item) => item.grupo === grupo),
+}));
 
 export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
   const { perfil, usuario, sair } = useAuth();
@@ -20,33 +25,44 @@ export function Sidebar({ aberta, recolhida, aoFechar, aoAlternarRecolhida }) {
         aria-label="Menu principal"
       >
         <div className={styles.logo}>
-          <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
-            <circle cx="12" cy="15" r="8" stroke="#7B61FF" strokeWidth="1.8" />
-            <circle cx="18" cy="15" r="8" stroke="#FF7A9C" strokeWidth="1.8" />
-          </svg>
+          <div className={styles.logoIcone}>
+            <Heart size={16} fill="currentColor" />
+          </div>
           <div className={styles.logoTextos}>
             <h1>Jeferson &amp; Raquel</h1>
-            <p className={styles.logoSubtitulo}>Controle Financeiro</p>
+            <p className={styles.logoSubtitulo}>Finanças em dupla</p>
           </div>
         </div>
 
         <ul className={styles.menu}>
-          {NAV_ITEMS.map((item) => {
-            const Icone = ICONES_NAV[item.icon];
-            return (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) => `${styles.link} ${isActive ? styles.linkAtivo : ''}`}
-                  onClick={aoFechar}
-                >
-                  <Icone />
-                  <span>{item.label}</span>
-                </NavLink>
-              </li>
-            );
-          })}
+          {GRUPOS_NAV.map(({ grupo, itens }) => (
+            <li key={grupo}>
+              <p className={styles.grupoTitulo}>{grupo}</p>
+              <ul className={styles.grupoLista}>
+                {itens.map((item) => {
+                  const Icone = ICONES_NAV[item.icon];
+                  return (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) => `${styles.link} ${isActive ? styles.linkAtivo : ''}`}
+                        onClick={aoFechar}
+                      >
+                        <Icone />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
         </ul>
+
+        <div className={styles.fotoCasal}>
+          <Users size={22} />
+          <span>Foto do casal</span>
+        </div>
 
         <div className={styles.rodape}>
           {nomeExibido && (
