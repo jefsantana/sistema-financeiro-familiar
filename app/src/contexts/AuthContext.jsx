@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
 
     supabase
       .from('perfis')
-      .select('nome, familia_id, familias(nome, pessoa_1, pessoa_2)')
+      .select('nome, familia_id, familias(nome, pessoa_1, pessoa_2, foto_pessoa_1, foto_pessoa_2)')
       .eq('id', sessao.user.id)
       .single()
       .then(({ data }) => setPerfil(data));
@@ -55,6 +55,14 @@ export function AuthProvider({ children }) {
           redirectTo: window.location.origin + import.meta.env.BASE_URL + 'redefinir-senha',
         }),
       atualizarSenha: (novaSenha) => supabase.auth.updateUser({ password: novaSenha }),
+      atualizarFotoPessoal: async (indice, dataUrl) => {
+        const coluna = indice === 0 ? 'foto_pessoa_1' : 'foto_pessoa_2';
+        const { error } = await supabase.from('familias').update({ [coluna]: dataUrl }).eq('id', perfil.familia_id);
+        if (!error) {
+          setPerfil((atual) => ({ ...atual, familias: { ...atual.familias, [coluna]: dataUrl } }));
+        }
+        return { error };
+      },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sessao, perfil]

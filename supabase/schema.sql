@@ -32,6 +32,8 @@ create table familias (
   pessoa_2 text,
   foto_casal text,
   foto_casal_posicao int not null default 50,
+  foto_pessoa_1 text,
+  foto_pessoa_2 text,
   criado_em timestamptz not null default now()
 );
 
