@@ -4,6 +4,21 @@ export function formatarData(dataISO) {
 }
 
 /**
+ * Data de "hoje" no formato AAAA-MM-DD, usando o dia local da pessoa
+ * (não UTC). Usar toISOString() aqui seria um bug: no fuso do Brasil
+ * (UTC-3), todo dia entre ~21h e meia-noite o UTC já virou o dia
+ * seguinte, então "hoje" apareceria errado (um dia à frente) nos
+ * formulários de lançamento nesse horário.
+ */
+export function dataLocalDeHoje() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+/**
  * Formata um número no padrão de dinheiro brasileiro:
  * milhar com ponto, decimal com vírgula, com "R$" na frente.
  * Ex: 1250.9 -> "R$ 1.250,90"

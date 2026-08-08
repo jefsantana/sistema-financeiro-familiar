@@ -89,7 +89,7 @@ export function calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamen
         id: p.id,
         descricao: `${p.descricao} (parcela ${p.parcelaAtual}/${p.numeroParcelas})`,
         valor: valorParcela,
-        categoria: 'Parcelamento',
+        categoria: p.categoria || 'Cartão de Crédito',
         cartao: p.cartao || '',
         mesAno: mesAnoAtual,
         parcelaAtual: Number(p.parcelaAtual),

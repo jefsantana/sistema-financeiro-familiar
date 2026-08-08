@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
 import { criar, atualizar } from '../services/dados.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
-
-const HOJE = () => new Date().toISOString().slice(0, 10);
+import { dataLocalDeHoje } from '../utils/formatadores.js';
 
 export function usePagamentos(aoConcluir) {
   const { perfil } = useAuth();
@@ -25,8 +24,8 @@ export function usePagamentos(aoConcluir) {
           {
             descricao: item.descricao,
             valor: item.valor,
-            data: HOJE(),
-            categoria: item.categoria || (item.tipo === 'contaFixa' ? 'Contas Fixas' : 'Parcelamento'),
+            data: dataLocalDeHoje(),
+            categoria: item.categoria || 'Cartão de Crédito',
             cartao: item.cartao || '',
             pessoa,
           },

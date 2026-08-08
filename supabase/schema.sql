@@ -171,6 +171,7 @@ create table parcelamentos (
   parcela_atual int not null default 1,
   dia_vencimento int check (dia_vencimento between 1 and 31),
   cartao text,
+  categoria text,
   criado_em timestamptz not null default now(),
   excluido_em timestamptz,
   excluido_por text

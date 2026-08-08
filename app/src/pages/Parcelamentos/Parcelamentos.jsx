@@ -3,6 +3,9 @@ import CrudPage from '../_shared/CrudPage.jsx';
 import { ProgressBar } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarMoeda } from '../../utils/formatadores.js';
+import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
+import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 
 export default function Parcelamentos() {
   const { registros: cartoes } = useCrudMock('Cartoes');
@@ -22,9 +25,18 @@ export default function Parcelamentos() {
       { nome: 'parcelaAtual', rotulo: 'Parcela atual', tipo: 'numero', obrigatorio: true, min: 1 },
       { nome: 'diaVencimento', rotulo: 'Dia do vencimento', tipo: 'numero', obrigatorio: true, min: 1, max: 31 },
       { nome: 'cartao', rotulo: 'Cartão (opcional)', tipo: 'select', opcoes: nomesCartoes },
+      {
+        nome: 'categoria',
+        rotulo: 'Categoria',
+        tipo: 'select',
+        obrigatorio: true,
+        opcoes: CATEGORIAS_GASTO_FIXAS,
+        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+      },
     ],
     colunas: [
       { chave: 'descricao', rotulo: 'Descrição' },
+      { chave: 'categoria', rotulo: 'Categoria', render: (r) => <CategoriaComIcone nome={r.categoria} /> },
       { chave: 'cartao', rotulo: 'Cartão', render: (r) => r.cartao || '-' },
       { chave: 'valorTotal', rotulo: 'Valor Total', numerica: true, render: (r) => formatarMoeda(r.valorTotal) },
       { chave: 'diaVencimento', rotulo: 'Vencimento', render: (r) => `Dia ${r.diaVencimento || '-'}` },

@@ -5,14 +5,12 @@ import { Input, Select, Button } from '../ui/index.js';
 import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
-import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
+import { parseValorMonetario, nomeExibicao, dataLocalDeHoje } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
-
-const HOJE = () => new Date().toISOString().slice(0, 10);
 
 function estadoInicial(pessoas) {
   return {
@@ -20,7 +18,7 @@ function estadoInicial(pessoas) {
     valor: '',
     categoria: '',
     cartao: '',
-    data: HOJE(),
+    data: dataLocalDeHoje(),
     pessoaOrigem: pessoas[0],
     pessoaDestino: pessoas[1] ?? pessoas[0],
   };
