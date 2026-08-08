@@ -11,6 +11,23 @@ import {
   History,
   Trash2,
   Settings,
+  Home,
+  ShoppingCart,
+  Lightbulb,
+  Car,
+  HeartPulse,
+  GraduationCap,
+  Gamepad2,
+  ShoppingBag,
+  Sparkles,
+  PawPrint,
+  Users,
+  Plane,
+  Repeat,
+  Receipt,
+  Wrench,
+  HelpCircle,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 export const ICONES_NAV = {
@@ -26,4 +43,28 @@ export const ICONES_NAV = {
   History,
   Trash2,
   Settings,
+};
+
+// Ícone de cada categoria de gasto fixa — usado no lugar do emoji,
+// tanto na lista da tela Categorias quanto ao lado do select nos
+// formulários (o <select> nativo do navegador não permite ícones
+// dentro das opções, só texto puro).
+export const ICONES_CATEGORIA_GASTO = {
+  Moradia: Home,
+  Alimentação: ShoppingCart,
+  'Contas da Casa': Lightbulb,
+  Transporte: Car,
+  Saúde: HeartPulse,
+  Educação: GraduationCap,
+  Lazer: Gamepad2,
+  Compras: ShoppingBag,
+  'Cuidados Pessoais': Sparkles,
+  Pets: PawPrint,
+  Família: Users,
+  Viagens: Plane,
+  Assinaturas: Repeat,
+  'Impostos e Taxas': Receipt,
+  Manutenção: Wrench,
+  Outros: HelpCircle,
+  Transferências: ArrowLeftRight,
 };

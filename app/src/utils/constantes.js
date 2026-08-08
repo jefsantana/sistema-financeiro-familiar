@@ -30,23 +30,24 @@ export const STATUS_LANCAMENTO = {
 
 // Lista fixa de categorias de gasto — não pode ser criada, editada nem
 // excluída pela interface, pra manter os relatórios e o dashboard
-// consistentes entre todas as famílias do sistema.
+// consistentes entre todas as famílias do sistema. Os ícones de cada
+// uma ficam em utils/icones.js (ICONES_CATEGORIA_GASTO).
 export const CATEGORIAS_GASTO_FIXAS = [
-  { nome: 'Moradia', emoji: '🏠' },
-  { nome: 'Alimentação', emoji: '🛒' },
-  { nome: 'Contas da Casa', emoji: '💡' },
-  { nome: 'Transporte', emoji: '🚗' },
-  { nome: 'Saúde', emoji: '🏥' },
-  { nome: 'Educação', emoji: '🎓' },
-  { nome: 'Lazer', emoji: '🎮' },
-  { nome: 'Compras', emoji: '🛍️' },
-  { nome: 'Cuidados Pessoais', emoji: '💄' },
-  { nome: 'Pets', emoji: '🐶' },
-  { nome: 'Família', emoji: '👨‍👩‍👧' },
-  { nome: 'Viagens', emoji: '✈️' },
-  { nome: 'Assinaturas', emoji: '📱' },
-  { nome: 'Impostos e Taxas', emoji: '🧾' },
-  { nome: 'Manutenção', emoji: '🔧' },
-  { nome: 'Outros', emoji: '❓' },
-  { nome: 'Transferências', emoji: '🔄' },
+  'Moradia',
+  'Alimentação',
+  'Contas da Casa',
+  'Transporte',
+  'Saúde',
+  'Educação',
+  'Lazer',
+  'Compras',
+  'Cuidados Pessoais',
+  'Pets',
+  'Família',
+  'Viagens',
+  'Assinaturas',
+  'Impostos e Taxas',
+  'Manutenção',
+  'Outros',
+  'Transferências',
 ];

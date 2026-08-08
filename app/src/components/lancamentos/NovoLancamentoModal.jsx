@@ -7,6 +7,7 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
 import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
@@ -185,13 +186,14 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
               <Select
                 rotulo="Categoria"
                 required
+                icone={ICONES_CATEGORIA_GASTO[campos.categoria]}
                 value={campos.categoria}
                 onChange={(e) => atualizarCampo('categoria', e.target.value)}
               >
                 <option value="">Selecione</option>
-                {CATEGORIAS_GASTO_FIXAS.map((c) => (
-                  <option key={c.nome} value={c.nome}>
-                    {c.emoji} {c.nome}
+                {CATEGORIAS_GASTO_FIXAS.map((nome) => (
+                  <option key={nome} value={nome}>
+                    {nome}
                   </option>
                 ))}
               </Select>

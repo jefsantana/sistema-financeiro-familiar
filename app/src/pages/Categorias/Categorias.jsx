@@ -2,6 +2,7 @@ import { Tag, TrendingUp } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
 import { Card } from '../../components/ui/index.js';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import styles from './Categorias.module.css';
 
 export default function Categorias() {
@@ -30,12 +31,15 @@ export default function Categorias() {
           </div>
         </div>
         <div className={styles.grade}>
-          {CATEGORIAS_GASTO_FIXAS.map((categoria) => (
-            <div key={categoria.nome} className={styles.itemFixo}>
-              <span className={styles.emoji}>{categoria.emoji}</span>
-              {categoria.nome}
-            </div>
-          ))}
+          {CATEGORIAS_GASTO_FIXAS.map((nome) => {
+            const Icone = ICONES_CATEGORIA_GASTO[nome];
+            return (
+              <div key={nome} className={styles.itemFixo}>
+                <Icone size={16} className={styles.iconeItem} />
+                {nome}
+              </div>
+            );
+          })}
         </div>
       </Card>
 

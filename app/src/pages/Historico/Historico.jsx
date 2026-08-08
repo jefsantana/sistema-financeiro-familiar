@@ -6,6 +6,7 @@ import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadore
 import { obterMesAno } from '../../utils/financeiro.js';
 import { exportarCsv } from '../../utils/exportarCsv.js';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
 
@@ -108,9 +109,9 @@ export default function Historico() {
                 {c.nome}
               </option>
             ))}
-          {CATEGORIAS_GASTO_FIXAS.map((c) => (
-            <option key={c.nome} value={c.nome}>
-              {c.emoji} {c.nome}
+          {CATEGORIAS_GASTO_FIXAS.map((nome) => (
+            <option key={nome} value={nome}>
+              {nome}
             </option>
           ))}
         </Select>
@@ -164,7 +165,9 @@ export default function Historico() {
             {lancamentos.map((item) => (
               <tr key={`${item.tipo}-${item.id}`}>
                 <td data-rotulo="Descrição">{item.descricao}</td>
-                <td data-rotulo="Categoria">{item.categoria || '-'}</td>
+                <td data-rotulo="Categoria">
+                  <CategoriaComIcone nome={item.categoria} />
+                </td>
                 <td data-rotulo="Pessoa">
                   {item.tipo === 'transferencia' ? (
                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>

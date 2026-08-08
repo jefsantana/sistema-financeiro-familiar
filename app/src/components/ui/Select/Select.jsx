@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 import styles from './Select.module.css';
 
-export function Select({ rotulo, className = '', id, children, ...props }) {
+export function Select({ rotulo, icone: Icone, className = '', id, children, ...props }) {
   const idGerado = useId();
   const idFinal = id || idGerado;
 
@@ -14,7 +14,8 @@ export function Select({ rotulo, className = '', id, children, ...props }) {
         </label>
       )}
       <div className={styles.envolveSelect}>
-        <select id={idFinal} className={styles.select} {...props}>
+        {Icone && <Icone className={styles.icone} />}
+        <select id={idFinal} className={`${styles.select} ${Icone ? styles.comIcone : ''}`} {...props}>
           {children}
         </select>
         <ChevronDown className={styles.seta} />

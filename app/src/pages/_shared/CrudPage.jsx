@@ -132,6 +132,7 @@ export default function CrudPage({ config }) {
                 key={campo.nome}
                 rotulo={campo.rotulo}
                 required={campo.obrigatorio}
+                icone={campo.iconePorValor ? campo.iconePorValor(valores[campo.nome]) : undefined}
                 value={valores[campo.nome]}
                 onChange={(e) => atualizarCampo(campo.nome, e.target.value)}
                 className={styles.campoFlex}

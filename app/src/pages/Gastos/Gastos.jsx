@@ -4,10 +4,11 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { Avatar } from '../../components/ui/index.js';
 import { formatarData, formatarMoeda } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
+import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
+import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 
 export default function Gastos() {
   const { registros: cartoes } = useCrudMock('Cartoes');
-  const categoriasGasto = CATEGORIAS_GASTO_FIXAS.map((c) => ({ valor: c.nome, rotulo: `${c.emoji} ${c.nome}` }));
   const nomesCartoes = cartoes.map((c) => c.nome);
 
   const config = {
@@ -20,12 +21,19 @@ export default function Gastos() {
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Supermercado' },
       { nome: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', obrigatorio: true },
       { nome: 'data', rotulo: 'Data', tipo: 'data', obrigatorio: true },
-      { nome: 'categoria', rotulo: 'Categoria', tipo: 'select', obrigatorio: true, opcoes: categoriasGasto },
+      {
+        nome: 'categoria',
+        rotulo: 'Categoria',
+        tipo: 'select',
+        obrigatorio: true,
+        opcoes: CATEGORIAS_GASTO_FIXAS,
+        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+      },
       { nome: 'cartao', rotulo: 'Cartão (opcional)', tipo: 'select', opcoes: nomesCartoes },
     ],
     colunas: [
       { chave: 'descricao', rotulo: 'Descrição' },
-      { chave: 'categoria', rotulo: 'Categoria' },
+      { chave: 'categoria', rotulo: 'Categoria', render: (r) => <CategoriaComIcone nome={r.categoria} /> },
       { chave: 'cartao', rotulo: 'Cartão', render: (r) => r.cartao || '-' },
       { chave: 'pessoa', rotulo: 'Pessoa', render: (r) => (r.pessoa ? <Avatar nome={r.pessoa} tamanho="pequeno" /> : '-') },
       { chave: 'data', rotulo: 'Data', render: (r) => formatarData(r.data) },

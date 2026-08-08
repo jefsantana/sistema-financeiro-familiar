@@ -39,6 +39,7 @@
   font-weight: 500;
 }
 
-.emoji {
-  font-size: 1rem;
+.iconeItem {
+  flex-shrink: 0;
+  color: var(--cor-primaria);
 }

@@ -38,6 +38,19 @@
   box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.14);
 }
 
+.comIcone {
+  padding-left: 38px;
+}
+
+.icone {
+  position: absolute;
+  left: 11px;
+  width: 17px;
+  height: 17px;
+  color: var(--cor-texto-secundario);
+  pointer-events: none;
+}
+
 .seta {
   position: absolute;
   right: 11px;
