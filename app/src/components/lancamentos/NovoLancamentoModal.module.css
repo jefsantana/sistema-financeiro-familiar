@@ -61,8 +61,6 @@
   margin-top: var(--espaco-sm);
 }
 
-@media (max-width: 480px) {
-  .linhaPessoas {
-    flex-direction: column;
-  }
+.linhaPessoas {
+  flex-direction: column;
 }
