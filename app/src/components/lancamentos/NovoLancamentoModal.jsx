@@ -29,7 +29,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   const { perfil, usuario, pessoas } = useAuth();
   const [campos, setCampos] = useState(() => estadoInicial(pessoas));
   const [salvando, setSalvando] = useState(false);
-  const { registros: categorias } = useCrudMock('Categorias');
+  const { registros: categorias, salvar: salvarCategoria } = useCrudMock('Categorias');
   const { registros: cartoes } = useCrudMock('Cartoes');
   const toast = useToast();
   const temSegundaPessoa = pessoas.length > 1;
@@ -73,6 +73,12 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
       } else {
+        const nomeCategoria = campos.categoria.trim();
+        const categoriaExiste = categoriasDoTipo.some((c) => c.nome.toLowerCase() === nomeCategoria.toLowerCase());
+        if (nomeCategoria && !categoriaExiste) {
+          await salvarCategoria({ nome: nomeCategoria, tipo: tipo === 'entrada' ? 'entrada' : 'gasto' });
+        }
+
         const tabela = tipo === 'entrada' ? 'Entradas' : 'Gastos';
         await criar(
           tabela,
@@ -80,7 +86,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
             descricao: campos.descricao,
             valor: parseValorMonetario(campos.valor),
             data: campos.data,
-            categoria: campos.categoria,
+            categoria: nomeCategoria,
             pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
             ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
           },
@@ -156,19 +162,19 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
 
         {tipo !== 'transferencia' && (
           <div className={styles.linha}>
-            <Select
+            <Input
               rotulo="Categoria"
               required
+              list="lista-categorias"
+              placeholder="Escolha ou digite uma nova"
               value={campos.categoria}
               onChange={(e) => atualizarCampo('categoria', e.target.value)}
-            >
-              <option value="">Selecione</option>
+            />
+            <datalist id="lista-categorias">
               {categoriasDoTipo.map((c) => (
-                <option key={c.id} value={c.nome}>
-                  {c.nome}
-                </option>
+                <option key={c.id} value={c.nome} />
               ))}
-            </Select>
+            </datalist>
             {tipo === 'gasto' && (
               <Select
                 rotulo="Cartão (opcional)"
