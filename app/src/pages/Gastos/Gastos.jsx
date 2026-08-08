@@ -13,8 +13,8 @@ export default function Gastos() {
   const config = {
     tabela: 'Gastos',
     icone: TrendingDown,
-    tituloForm: '🧾 Novo Gasto',
-    tituloLista: '📋 Gastos cadastrados',
+    tituloForm: 'Novo Gasto',
+    tituloLista: 'Gastos cadastrados',
     textoVazioLista: 'Cadastre o primeiro gasto usando o formulário acima.',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Supermercado' },

@@ -80,7 +80,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           ...(tipo === 'gasto' ? { cartao: campos.cartao } : {}),
         });
       }
-      toast.sucesso('✓ Lançamento salvo com sucesso');
+      toast.sucesso('Lançamento salvo com sucesso');
       aoFechar();
     } catch {
       toast.erro('Não foi possível salvar. Tente novamente.');

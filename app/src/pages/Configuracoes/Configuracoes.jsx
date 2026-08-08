@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react';
 import { Card, Button, Avatar } from '../../components/ui/index.js';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -18,8 +19,18 @@ export default function Configuracoes() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'var(--fonte-display)', fontSize: '1.2rem', fontWeight: 600, marginBottom: 'var(--espaco-lg)' }}>
-        ⚙️ Configurações
+      <h1
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          fontFamily: 'var(--fonte-display)',
+          fontSize: '1.2rem',
+          fontWeight: 600,
+          marginBottom: 'var(--espaco-lg)',
+        }}
+      >
+        <Settings size={20} style={{ color: 'var(--cor-primaria)' }} /> Configurações
       </h1>
 
       <Card className={styles.secao}>

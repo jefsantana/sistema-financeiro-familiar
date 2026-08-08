@@ -18,8 +18,16 @@
 }
 
 .descricao {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 600;
   font-size: 0.88rem;
+}
+
+.iconeTipo {
+  flex-shrink: 0;
+  color: var(--cor-texto-secundario);
 }
 
 .info {

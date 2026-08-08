@@ -105,10 +105,10 @@ export default function CrudPage({ config }) {
 
     if (editando) {
       await editar(editando.id, dados);
-      toast.sucesso('✓ Alterações salvas com sucesso');
+      toast.sucesso('Alterações salvas com sucesso');
     } else {
       await salvar(dados);
-      toast.sucesso('✓ Lançamento salvo com sucesso');
+      toast.sucesso('Lançamento salvo com sucesso');
     }
     setEditando(null);
     setPessoaSelecionada(pessoaLogada);
@@ -123,6 +123,7 @@ export default function CrudPage({ config }) {
   return (
     <div>
       <div className={styles.cabecalhoPagina}>
+        <Icone size={20} className={styles.iconePagina} />
         <h1>{editando ? `Editando: ${tituloForm}` : tituloForm}</h1>
       </div>
 

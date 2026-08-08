@@ -6,8 +6,8 @@ export default function Cartoes() {
   const config = {
     tabela: 'Cartoes',
     icone: CreditCard,
-    tituloForm: '💳 Novo Cartão',
-    tituloLista: '📋 Cartões cadastrados',
+    tituloForm: 'Novo Cartão',
+    tituloLista: 'Cartões cadastrados',
     textoVazioLista: 'Cadastre o primeiro cartão usando o formulário acima.',
     campos: [
       { nome: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Nubank' },

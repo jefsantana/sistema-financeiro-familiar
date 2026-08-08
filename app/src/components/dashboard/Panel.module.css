@@ -7,11 +7,19 @@
 }
 
 .titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--fonte-display);
   font-size: 1rem;
   font-weight: 600;
   flex: 1;
   min-width: 0;
+}
+
+.icone {
+  flex-shrink: 0;
+  color: var(--cor-primaria);
 }
 
 .subtitulo {

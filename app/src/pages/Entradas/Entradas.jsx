@@ -11,8 +11,8 @@ export default function Entradas() {
   const config = {
     tabela: 'Entradas',
     icone: TrendingUp,
-    tituloForm: '💵 Nova Entrada',
-    tituloLista: '📋 Entradas cadastradas',
+    tituloForm: 'Nova Entrada',
+    tituloLista: 'Entradas cadastradas',
     textoVazioLista: 'Cadastre a primeira entrada usando o formulário acima.',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Salário' },

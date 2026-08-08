@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PartyPopper } from 'lucide-react';
+import { PartyPopper, Layers, Pin } from 'lucide-react';
 import { EmptyState, ConfirmDialog } from '../ui/index.js';
 import { SeletorPessoa } from '../lancamentos/SeletorPessoa.jsx';
 import { formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
@@ -33,13 +33,13 @@ export function UpcomingBills({ vencimentos, aoPagar, pagando }) {
     <ul className={styles.lista}>
       {vencimentos.map((item) => {
         const status = textoStatus(item.diasRestantes);
-        const rotulo = item.tipo === 'parcelamento' ? '🧩' : '📌';
+        const IconeTipo = item.tipo === 'parcelamento' ? Layers : Pin;
 
         return (
           <li key={item.id} className={`${styles.item} ${status.classe}`}>
             <div>
               <p className={styles.descricao}>
-                {rotulo} {item.descricao}
+                <IconeTipo size={14} className={styles.iconeTipo} /> {item.descricao}
               </p>
               <p className={styles.info}>
                 {status.texto} · {formatarMoeda(item.valor)}

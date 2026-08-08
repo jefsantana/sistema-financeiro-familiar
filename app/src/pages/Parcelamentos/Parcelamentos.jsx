@@ -11,8 +11,8 @@ export default function Parcelamentos() {
   const config = {
     tabela: 'Parcelamentos',
     icone: Layers,
-    tituloForm: '🧩 Novo Parcelamento',
-    tituloLista: '📋 Parcelamentos cadastrados',
+    tituloForm: 'Novo Parcelamento',
+    tituloLista: 'Parcelamentos cadastrados',
     textoVazioLista: 'Cadastre o primeiro parcelamento usando o formulário acima.',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Notebook' },

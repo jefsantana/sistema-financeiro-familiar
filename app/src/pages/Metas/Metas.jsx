@@ -50,10 +50,10 @@ export default function Metas() {
 
     if (editandoId) {
       await editar(editandoId, dados);
-      toast.sucesso('✓ Alterações salvas com sucesso');
+      toast.sucesso('Alterações salvas com sucesso');
     } else {
       await salvar(dados);
-      toast.sucesso('✓ Meta salva com sucesso');
+      toast.sucesso('Meta salva com sucesso');
     }
     setEditandoId(null);
     setCampos(CAMPOS_VAZIOS);
@@ -67,7 +67,8 @@ export default function Metas() {
   return (
     <div>
       <div className={formStyles.cabecalhoPagina}>
-        <h1>{editandoId ? '🎯 Editando meta' : '🎯 Nova Meta'}</h1>
+        <Target size={20} className={formStyles.iconePagina} />
+        <h1>{editandoId ? 'Editando meta' : 'Nova Meta'}</h1>
       </div>
 
       <form onSubmit={aoSalvar} className={formStyles.formulario}>
@@ -109,7 +110,7 @@ export default function Metas() {
         </div>
       </form>
 
-      <h3 className={formStyles.tituloLista}>📋 Metas cadastradas</h3>
+      <h3 className={formStyles.tituloLista}>Metas cadastradas</h3>
 
       {carregando ? (
         <div className={styles.grade}>

@@ -10,8 +10,8 @@ export default function ContasFixas() {
   const config = {
     tabela: 'ContasFixas',
     icone: FileText,
-    tituloForm: '📌 Nova Conta Fixa',
-    tituloLista: '📋 Contas fixas cadastradas',
+    tituloForm: 'Nova Conta Fixa',
+    tituloLista: 'Contas fixas cadastradas',
     textoVazioLista: 'Cadastre a primeira conta fixa usando o formulário acima.',
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Aluguel' },

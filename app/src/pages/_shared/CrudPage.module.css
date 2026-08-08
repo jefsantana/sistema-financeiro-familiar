@@ -11,6 +11,11 @@
   font-weight: 600;
 }
 
+.iconePagina {
+  color: var(--cor-primaria);
+  flex-shrink: 0;
+}
+
 .formulario {
   display: flex;
   flex-wrap: wrap;

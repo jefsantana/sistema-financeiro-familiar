@@ -16,7 +16,7 @@ export default function Lixeira() {
 
   async function aoRestaurar(item) {
     await restaurarItem(item._tabela, item.id);
-    toast.sucesso(`✓ "${nomeExibicao(item)}" foi restaurado`);
+    toast.sucesso(`"${nomeExibicao(item)}" foi restaurado`);
   }
 
   async function confirmarExclusaoDefinitiva() {
@@ -28,8 +28,18 @@ export default function Lixeira() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'var(--fonte-display)', fontSize: '1.2rem', fontWeight: 600, marginBottom: 'var(--espaco-md)' }}>
-        🗑️ Lixeira
+      <h1
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          fontFamily: 'var(--fonte-display)',
+          fontSize: '1.2rem',
+          fontWeight: 600,
+          marginBottom: 'var(--espaco-md)',
+        }}
+      >
+        <Trash2 size={20} style={{ color: 'var(--cor-primaria)' }} /> Lixeira
       </h1>
 
       {itens.length === 0 ? (

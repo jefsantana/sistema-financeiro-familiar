@@ -1,3 +1,4 @@
+import { TrendingUp, PieChart, Receipt, Bell, Users, Target, Wallet, Sparkles, Calendar } from 'lucide-react';
 import { Loading } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { SummaryCards } from '../../components/dashboard/SummaryCards.jsx';
@@ -35,7 +36,7 @@ export default function Dashboard() {
   const toast = useToast();
   const { pagar, pagando } = usePagamentos(async () => {
     await recarregar();
-    toast.sucesso('✓ Pagamento registrado com sucesso');
+    toast.sucesso('Pagamento registrado com sucesso');
   });
 
   if (carregando || !dados) return <Loading texto="Carregando seu painel financeiro..." />;
@@ -79,7 +80,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className={styles.saudacao}>
-        <h1>{saudacao()}, {nomeUsuario}! 👋</h1>
+        <h1>{saudacao()}, {nomeUsuario}!</h1>
         <p className={styles.data}>{dataPorExtenso(hoje)}</p>
       </div>
 
@@ -92,45 +93,45 @@ export default function Dashboard() {
       />
 
       <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel titulo="📈 Evolução Financeira" subtitulo={`últimos ${resumoMensal.length} meses`}>
+        <Panel icone={TrendingUp} titulo="Evolução Financeira" subtitulo={`últimos ${resumoMensal.length} meses`}>
           <GraficoLinha pontos={[...resumoMensal].reverse().map((m) => ({ mes: m.nomeCurto, entrada: m.entrada, saida: m.saida, saldo: m.saldo }))} />
         </Panel>
 
-        <Panel titulo="🥯 Gastos por Categoria" subtitulo="este mês">
+        <Panel icone={PieChart} titulo="Gastos por Categoria" subtitulo="este mês">
           <GraficoDonut dados={categoriasMes} />
         </Panel>
       </div>
 
       <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel titulo="🧾 Últimos Lançamentos">
+        <Panel icone={Receipt} titulo="Últimos Lançamentos">
           <RecentTransactions lancamentos={ultimosLancamentos} />
         </Panel>
 
-        <Panel titulo="🔔 Próximos Vencimentos" subtitulo={nomeMesAno(hoje)}>
+        <Panel icone={Bell} titulo="Próximos Vencimentos" subtitulo={nomeMesAno(hoje)}>
           <UpcomingBills vencimentos={vencimentos} aoPagar={pagar} pagando={pagando} />
         </Panel>
       </div>
 
       <div className={`${styles.secao} ${styles.grade3}`}>
-        <Panel titulo="👥 Gastos por Pessoa" subtitulo="este mês">
+        <Panel icone={Users} titulo="Gastos por Pessoa" subtitulo="este mês">
           <SpendingByPerson dados={pessoasGasto} />
         </Panel>
 
-        <Panel titulo="🎯 Metas">
+        <Panel icone={Target} titulo="Metas">
           <GoalsWidget metas={metas} />
         </Panel>
 
-        <Panel titulo="📊 Orçamento" subtitulo="por categoria">
+        <Panel icone={Wallet} titulo="Orçamento" subtitulo="por categoria">
           <BudgetsWidget orcamentos={orcamentos} gastosPorCategoria={gastosPorCategoriaMapa} />
         </Panel>
       </div>
 
       <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel titulo="✨ Insights Financeiros">
+        <Panel icone={Sparkles} titulo="Insights Financeiros">
           <FinancialInsights insights={insights} />
         </Panel>
 
-        <Panel titulo="📅 Resumo Mensal">
+        <Panel icone={Calendar} titulo="Resumo Mensal">
           <MonthlyTable resumo={resumoMensal} />
         </Panel>
       </div>
