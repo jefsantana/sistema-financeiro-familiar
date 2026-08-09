@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   PieChart,
   Receipt,
@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { Loading, EmptyState, Button } from '../../components/ui/index.js';
+import { Loading, EmptyState, Button, Input } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { SummaryCards } from '../../components/dashboard/SummaryCards.jsx';
 import { UpcomingBills } from '../../components/dashboard/UpcomingBills.jsx';
@@ -29,11 +29,10 @@ import { useDashboardData } from '../../hooks/useDashboardData.js';
 import { usePagamentos } from '../../hooks/usePagamentos.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { saudacao, dataPorExtenso, nomeExibicao } from '../../utils/formatadores.js';
+import { saudacao, dataPorExtenso, formatarData, nomeExibicao } from '../../utils/formatadores.js';
 import {
   somar,
   mesAnoDe,
-  obterMesAno,
   calcularAlertasContasFixas,
   calcularAlertasParcelamentos,
   agruparPorCategoria,
@@ -50,12 +49,40 @@ function nomeMesCapitalizado(data) {
   return `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}`;
 }
 
-function ultimoDiaDoMes(data) {
-  return new Date(data.getFullYear(), data.getMonth() + 1, 0).getDate();
+function paraIso(ano, mes, dia) {
+  return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+}
+
+function primeiroDiaIso(data) {
+  return paraIso(data.getFullYear(), data.getMonth() + 1, 1);
+}
+
+function ultimoDiaIso(data) {
+  const ultimoDia = new Date(data.getFullYear(), data.getMonth() + 1, 0).getDate();
+  return paraIso(data.getFullYear(), data.getMonth() + 1, ultimoDia);
 }
 
 function textoIntervaloMes(data) {
-  return `01 a ${ultimoDiaDoMes(data)} de ${nomeMesCapitalizado(data)}`;
+  const ultimoDia = new Date(data.getFullYear(), data.getMonth() + 1, 0).getDate();
+  return `01 a ${ultimoDia} de ${nomeMesCapitalizado(data)}`;
+}
+
+// Datas "AAAA-MM-DD" são tratadas sempre em UTC aqui (mesma convenção
+// do resto do app) pra somar/subtrair dias sem risco de escorregar um
+// dia por causa do fuso horário local.
+function somarDias(iso, dias) {
+  const [ano, mes, dia] = iso.split('-').map(Number);
+  const data = new Date(Date.UTC(ano, mes - 1, dia));
+  data.setUTCDate(data.getUTCDate() + dias);
+  return data.toISOString().slice(0, 10);
+}
+
+function diferencaEmDias(isoFim, isoInicio) {
+  const [anoA, mesA, diaA] = isoInicio.split('-').map(Number);
+  const [anoB, mesB, diaB] = isoFim.split('-').map(Number);
+  const inicio = Date.UTC(anoA, mesA - 1, diaA);
+  const fim = Date.UTC(anoB, mesB - 1, diaB);
+  return Math.round((fim - inicio) / 86400000);
 }
 
 export default function Dashboard() {
@@ -68,9 +95,42 @@ export default function Dashboard() {
   });
 
   const [dataReferencia, setDataReferencia] = useState(() => new Date());
+  const [intervaloPersonalizado, setIntervaloPersonalizado] = useState(null);
+  const [seletorAberto, setSeletorAberto] = useState(false);
+  const [rascunhoInicio, setRascunhoInicio] = useState('');
+  const [rascunhoFim, setRascunhoFim] = useState('');
+  const seletorRef = useRef(null);
+
+  const dataInicioEfetiva = intervaloPersonalizado?.inicio || primeiroDiaIso(dataReferencia);
+  const dataFimEfetiva = intervaloPersonalizado?.fim || ultimoDiaIso(dataReferencia);
+
+  useEffect(() => {
+    function aoClicarFora(evento) {
+      if (seletorRef.current && !seletorRef.current.contains(evento.target)) setSeletorAberto(false);
+    }
+    document.addEventListener('mousedown', aoClicarFora);
+    return () => document.removeEventListener('mousedown', aoClicarFora);
+  }, []);
 
   function mudarMes(deslocamento) {
+    setIntervaloPersonalizado(null);
     setDataReferencia((atual) => new Date(atual.getFullYear(), atual.getMonth() + deslocamento, 1));
+  }
+
+  function abrirSeletorDeDatas() {
+    setRascunhoInicio(dataInicioEfetiva);
+    setRascunhoFim(dataFimEfetiva);
+    setSeletorAberto((atual) => !atual);
+  }
+
+  function aplicarIntervaloPersonalizado(evento) {
+    evento.preventDefault();
+    if (rascunhoInicio > rascunhoFim) {
+      toast.erro('A data inicial precisa ser antes da data final.');
+      return;
+    }
+    setIntervaloPersonalizado({ inicio: rascunhoInicio, fim: rascunhoFim });
+    setSeletorAberto(false);
   }
 
   if (erro) {
@@ -90,27 +150,29 @@ export default function Dashboard() {
   const { entradas, gastos, contasFixas, pagamentos, parcelamentos, pagamentosParcelamentos, metas, orcamentos } = dados;
 
   const hoje = new Date();
-  const mesSelecionado = mesAnoDe(dataReferencia);
-  const mesAnteriorSelecionado = mesAnoDe(new Date(dataReferencia.getFullYear(), dataReferencia.getMonth() - 1, 1));
-  const ehMesAtualReal = mesSelecionado === mesAnoDe(hoje);
+  const ehPeriodoAtualReal = !intervaloPersonalizado && mesAnoDe(dataReferencia) === mesAnoDe(hoje);
 
-  const entradasMes = entradas.filter((e) => obterMesAno(e.data) === mesSelecionado);
-  const gastosMes = gastos.filter((g) => obterMesAno(g.data) === mesSelecionado);
-  const entradasMesAnterior = entradas.filter((e) => obterMesAno(e.data) === mesAnteriorSelecionado);
-  const gastosMesAnterior = gastos.filter((g) => obterMesAno(g.data) === mesAnteriorSelecionado);
+  // "Período anterior" pra comparação: mesma duração, imediatamente
+  // antes do período selecionado — funciona tanto pro mês inteiro
+  // quanto pra um intervalo de datas escolhido à mão.
+  const duracaoDias = diferencaEmDias(dataFimEfetiva, dataInicioEfetiva) + 1;
+  const dataFimAnterior = somarDias(dataInicioEfetiva, -1);
+  const dataInicioAnterior = somarDias(dataInicioEfetiva, -duracaoDias);
+
+  const entradasMes = entradas.filter((e) => e.data >= dataInicioEfetiva && e.data <= dataFimEfetiva);
+  const gastosMes = gastos.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
+  const entradasMesAnterior = entradas.filter((e) => e.data >= dataInicioAnterior && e.data <= dataFimAnterior);
+  const gastosMesAnterior = gastos.filter((g) => g.data >= dataInicioAnterior && g.data <= dataFimAnterior);
 
   const totalEntradasMes = somar(entradasMes);
   const totalSaidasMes = somar(gastosMes);
 
-  // "Saldo Atual" é o acumulado até o fim do mês selecionado (comparável
-  // com o fim do mês anterior, pra dar o percentual de variação).
-  const saldoAtual =
-    somar(entradas.filter((e) => obterMesAno(e.data) <= mesSelecionado)) -
-    somar(gastos.filter((g) => obterMesAno(g.data) <= mesSelecionado));
-  const saldoAcumuladoMesAnterior =
-    somar(entradas.filter((e) => obterMesAno(e.data) <= mesAnteriorSelecionado)) -
-    somar(gastos.filter((g) => obterMesAno(g.data) <= mesAnteriorSelecionado));
-  const tendenciaSaldo = calcularTendencia(saldoAtual, saldoAcumuladoMesAnterior);
+  // "Saldo Atual" é o acumulado até o fim do período selecionado
+  // (comparável com o fim do período anterior de mesma duração).
+  const saldoAtual = somar(entradas.filter((e) => e.data <= dataFimEfetiva)) - somar(gastos.filter((g) => g.data <= dataFimEfetiva));
+  const saldoAcumuladoAnterior =
+    somar(entradas.filter((e) => e.data <= dataFimAnterior)) - somar(gastos.filter((g) => g.data <= dataFimAnterior));
+  const tendenciaSaldo = calcularTendencia(saldoAtual, saldoAcumuladoAnterior);
 
   const alertasContas = calcularAlertasContasFixas(contasFixas, pagamentos);
   const alertasParcelas = calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamentos);
@@ -123,9 +185,10 @@ export default function Dashboard() {
   const ultimosLancamentos = montarUltimosLancamentos(entradas, gastos);
   const pessoasGasto = agruparPorPessoa(gastosMes);
 
-  const subtituloMes = ehMesAtualReal
-    ? 'este mês'
-    : dataReferencia.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const subtituloMes = ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`;
+  const textoPeriodo = intervaloPersonalizado
+    ? `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`
+    : textoIntervaloMes(dataReferencia);
 
   const insights = gerarInsights({
     categoriasMes,
@@ -147,20 +210,37 @@ export default function Dashboard() {
         {tendenciaSaldo && (
           <div className={styles.bannerSaldo}>
             {tendenciaSaldo.subiu ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            Seu saldo {tendenciaSaldo.subiu ? 'aumentou' : 'diminuiu'} {tendenciaSaldo.percentual}% em relação ao mês
-            passado.
+            Seu saldo {tendenciaSaldo.subiu ? 'aumentou' : 'diminuiu'} {tendenciaSaldo.percentual}% em relação ao período
+            anterior.
           </div>
         )}
-        <div className={styles.seletorMes}>
-          <button type="button" onClick={() => mudarMes(-1)} aria-label="Mês anterior">
-            <ChevronLeft size={16} />
-          </button>
-          <span>
-            <Calendar size={14} /> {textoIntervaloMes(dataReferencia)}
-          </span>
-          <button type="button" onClick={() => mudarMes(1)} aria-label="Próximo mês">
-            <ChevronRight size={16} />
-          </button>
+        <div className={styles.seletorMesContainer} ref={seletorRef}>
+          <div className={styles.seletorMes}>
+            <button type="button" onClick={() => mudarMes(-1)} aria-label="Mês anterior">
+              <ChevronLeft size={16} />
+            </button>
+            <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
+              <Calendar size={14} /> {textoPeriodo}
+            </button>
+            <button type="button" onClick={() => mudarMes(1)} aria-label="Próximo mês">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {seletorAberto && (
+            <form className={styles.popoverData} onSubmit={aplicarIntervaloPersonalizado}>
+              <Input rotulo="De" type="date" value={rascunhoInicio} onChange={(e) => setRascunhoInicio(e.target.value)} />
+              <Input rotulo="Até" type="date" value={rascunhoFim} onChange={(e) => setRascunhoFim(e.target.value)} />
+              <div className={styles.popoverAcoes}>
+                <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" tamanho="pequeno">
+                  Aplicar
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
 

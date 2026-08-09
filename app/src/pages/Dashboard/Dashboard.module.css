@@ -36,18 +36,22 @@
   font-weight: 600;
 }
 
+.seletorMesContainer {
+  position: relative;
+  margin-left: auto;
+}
+
 .seletorMes {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-md);
   background-color: var(--cor-superficie);
   padding: 4px;
 }
 
-.seletorMes button {
+.seletorMes > button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,24 +62,54 @@
   transition: background-color var(--transicao), color var(--transicao);
 }
 
-.seletorMes button:hover {
+.seletorMes > button:hover {
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
 
-.seletorMes span {
+.seletorMesLabel {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 var(--espaco-xs);
+  border-radius: var(--raio-sm);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--cor-texto);
   white-space: nowrap;
+  transition: background-color var(--transicao);
 }
 
-.seletorMes span svg {
+.seletorMesLabel:hover {
+  background-color: var(--cor-fundo);
+}
+
+.seletorMesLabel svg {
   color: var(--cor-texto-secundario);
+  flex-shrink: 0;
+}
+
+.popoverData {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+  width: 240px;
+  padding: var(--espaco-md);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background-color: var(--cor-superficie);
+  box-shadow: var(--sombra-lg);
+}
+
+.popoverAcoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-xs);
+  margin-top: 2px;
 }
 
 .painelPrincipal {
