@@ -24,10 +24,11 @@ export function TableColunaNumerica({ children, ...props }) {
   );
 }
 
-export function TableBotaoAcao({ children, ...props }) {
+export function TableBotaoAcao({ children, rotulo, ...props }) {
   return (
     <button type="button" className={styles.botaoAcao} {...props}>
       {children}
+      {rotulo && <span className={styles.rotuloBotaoAcao}>{rotulo}</span>}
     </button>
   );
 }

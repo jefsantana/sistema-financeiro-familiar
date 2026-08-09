@@ -76,6 +76,10 @@
   cursor: not-allowed;
 }
 
+.rotuloBotaoAcao {
+  display: none;
+}
+
 /* ---------- CELULAR: cada linha vira um cartão de lançamento ---------- */
 @media (max-width: 640px) {
   .envolve {
@@ -153,6 +157,7 @@
 
   .colunaAcoes {
     justify-content: flex-end !important;
+    gap: var(--espaco-sm);
     padding-top: var(--espaco-sm);
   }
 
@@ -161,12 +166,24 @@
   }
 
   .botaoAcao {
-    width: 40px;
+    width: auto;
     height: 40px;
+    flex: 1;
+    gap: 6px;
+    padding: 0 var(--espaco-md);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
   }
 
   .botaoAcao svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .rotuloBotaoAcao {
+    display: inline;
+    font-size: 0.85rem;
+    font-weight: 600;
   }
 }

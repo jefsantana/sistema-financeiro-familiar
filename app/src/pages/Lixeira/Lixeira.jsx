@@ -65,14 +65,12 @@ export default function Lixeira() {
                 <td data-rotulo="Excluído em">{formatarData(item.excluidoEm)}</td>
                 <td data-rotulo="Por">{item.excluidoPor || '-'}</td>
                 <TableColunaAcoes>
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                    <TableBotaoAcao title="Restaurar" onClick={() => aoRestaurar(item)}>
-                      <RotateCcw size={16} />
-                    </TableBotaoAcao>
-                    <TableBotaoAcao title="Excluir definitivamente" onClick={() => setParaExcluirDefinitivo(item)}>
-                      <X size={16} />
-                    </TableBotaoAcao>
-                  </div>
+                  <TableBotaoAcao title="Restaurar" rotulo="Restaurar" onClick={() => aoRestaurar(item)}>
+                    <RotateCcw size={16} />
+                  </TableBotaoAcao>
+                  <TableBotaoAcao title="Excluir definitivamente" rotulo="Excluir" onClick={() => setParaExcluirDefinitivo(item)}>
+                    <X size={16} />
+                  </TableBotaoAcao>
                 </TableColunaAcoes>
               </tr>
             ))}

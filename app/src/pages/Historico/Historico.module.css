@@ -64,6 +64,8 @@
   color: var(--cor-texto);
 }
 
-.botaoExportar {
+.botoesExportar {
+  display: flex;
+  gap: var(--espaco-xs);
   margin-left: auto;
 }

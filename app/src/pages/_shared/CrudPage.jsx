@@ -220,10 +220,10 @@ export default function CrudPage({ config }) {
                   )
                 )}
                 <TableColunaAcoes>
-                  <TableBotaoAcao title="Editar" onClick={() => iniciarEdicao(registro)}>
+                  <TableBotaoAcao title="Editar" rotulo="Editar" onClick={() => iniciarEdicao(registro)}>
                     <Pencil size={16} />
                   </TableBotaoAcao>
-                  <TableBotaoAcao title="Excluir" onClick={() => setParaExcluir(registro.id)}>
+                  <TableBotaoAcao title="Excluir" rotulo="Excluir" onClick={() => setParaExcluir(registro.id)}>
                     <Trash2 size={16} />
                   </TableBotaoAcao>
                 </TableColunaAcoes>

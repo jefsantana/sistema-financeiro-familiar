@@ -1,26 +1,19 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, History, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, History, FileSpreadsheet, FileText } from 'lucide-react';
 import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNumerica, Button } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
-import { exportarCsv } from '../../utils/exportarCsv.js';
+import { exportarExcel, exportarPdf } from '../../utils/exportarRelatorio.js';
+import { useToast } from '../../contexts/ToastContext.jsx';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import styles from './Historico.module.css';
 
-const COLUNAS_CSV = [
-  { chave: 'data', rotulo: 'Data' },
-  { chave: 'tipo', rotulo: 'Tipo' },
-  { chave: 'descricao', rotulo: 'Descrição' },
-  { chave: 'categoria', rotulo: 'Categoria' },
-  { chave: 'pessoa', rotulo: 'Pessoa' },
-  { chave: 'valor', rotulo: 'Valor' },
-];
-
 export default function Historico() {
   const { pessoas } = useAuth();
+  const toast = useToast();
   const { registros: entradas, carregando: c1 } = useCrudMock('Entradas');
   const { registros: gastos, carregando: c2 } = useCrudMock('Gastos');
   const { registros: transferencias, carregando: c3 } = useCrudMock('Transferencias');
@@ -58,17 +51,38 @@ export default function Historico() {
   const totalEntradas = lancamentos.filter((l) => l.tipo === 'entrada').reduce((s, l) => s + Number(l.valor), 0);
   const totalGastos = lancamentos.filter((l) => l.tipo === 'gasto').reduce((s, l) => s + Number(l.valor), 0);
 
-  function aoExportar() {
+  function dadosParaExportacao() {
     const linhas = lancamentos.map((item) => ({
       data: formatarData(item.data),
-      tipo: item.tipo === 'entrada' ? 'Entrada' : item.tipo === 'gasto' ? 'Gasto' : 'Transferência',
+      tipo: item.tipo,
       descricao: item.descricao,
       categoria: item.categoria || '',
-      pessoa:
-        item.tipo === 'transferencia' ? `${item.pessoaOrigem} → ${item.pessoaDestino}` : item.pessoa || '',
-      valor: formatarMoeda(item.valor),
+      pessoa: item.tipo === 'transferencia' ? `${item.pessoaOrigem} → ${item.pessoaDestino}` : item.pessoa || '',
+      valor: item.valor,
     }));
-    exportarCsv(`lancamentos-${mesAnoAlvo}.csv`, COLUNAS_CSV, linhas);
+    return {
+      titulo: 'Sistema Financeiro Familiar',
+      periodo: `Lançamentos de ${nomeMesAno(dataReferencia)}`,
+      linhas,
+      totalEntradas,
+      totalGastos,
+    };
+  }
+
+  async function aoExportarExcel() {
+    try {
+      await exportarExcel({ ...dadosParaExportacao(), nomeArquivo: `lancamentos-${mesAnoAlvo}.xlsx` });
+    } catch {
+      toast.erro('Não foi possível gerar o Excel. Tente novamente.');
+    }
+  }
+
+  async function aoExportarPdf() {
+    try {
+      await exportarPdf({ ...dadosParaExportacao(), nomeArquivo: `lancamentos-${mesAnoAlvo}.pdf` });
+    } catch {
+      toast.erro('Não foi possível gerar o PDF. Tente novamente.');
+    }
   }
 
   if (carregando) return <Loading texto="Carregando histórico..." />;
@@ -132,16 +146,26 @@ export default function Historico() {
         <span>
           {lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''}
         </span>
-        <Button
-          variante="secundario"
-          tamanho="pequeno"
-          icone={Download}
-          onClick={aoExportar}
-          disabled={lancamentos.length === 0}
-          className={styles.botaoExportar}
-        >
-          Exportar CSV
-        </Button>
+        <div className={styles.botoesExportar}>
+          <Button
+            variante="secundario"
+            tamanho="pequeno"
+            icone={FileSpreadsheet}
+            onClick={aoExportarExcel}
+            disabled={lancamentos.length === 0}
+          >
+            Excel
+          </Button>
+          <Button
+            variante="secundario"
+            tamanho="pequeno"
+            icone={FileText}
+            onClick={aoExportarPdf}
+            disabled={lancamentos.length === 0}
+          >
+            PDF
+          </Button>
+        </div>
       </div>
 
       {lancamentos.length === 0 ? (
