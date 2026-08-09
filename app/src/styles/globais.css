@@ -64,12 +64,17 @@ svg {
   min-height: 100vh;
 }
 
+.valor-positivo,
+.valor-negativo {
+  font-family: var(--fonte-numeros);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .valor-positivo {
   color: var(--cor-sucesso);
-  font-weight: 600;
 }
 
 .valor-negativo {
   color: var(--cor-perigo);
-  font-weight: 600;
 }

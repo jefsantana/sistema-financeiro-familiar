@@ -31,4 +31,6 @@
 .valores {
   font-size: 0.78rem;
   color: var(--cor-texto-secundario);
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
 }

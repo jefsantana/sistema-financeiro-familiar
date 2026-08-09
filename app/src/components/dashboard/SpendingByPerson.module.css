@@ -29,7 +29,8 @@
 .valor {
   font-family: var(--fonte-numeros);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .percentual {

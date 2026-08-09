@@ -53,7 +53,8 @@
 .valor {
   font-family: var(--fonte-numeros);
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
 }
