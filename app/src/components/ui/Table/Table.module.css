@@ -44,12 +44,12 @@
 }
 
 .colunaAcoes {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--espaco-xs);
-  width: 1%;
+  text-align: right !important;
   white-space: nowrap;
+}
+
+.botaoAcao + .botaoAcao {
+  margin-left: var(--espaco-xs);
 }
 
 .colunaNumerica {
@@ -169,6 +169,11 @@
     justify-content: flex-end;
     gap: var(--espaco-sm);
     padding-top: var(--espaco-sm);
+    text-align: right;
+  }
+
+  .botaoAcao + .botaoAcao {
+    margin-left: 0;
   }
 
   .colunaAcoes::before {
