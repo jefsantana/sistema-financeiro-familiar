@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { TrendingUp, TrendingDown, ArrowUpDown, Calendar } from 'lucide-react';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { GraficoBarras } from '../../components/charts/GraficoBarras.jsx';
-import { GraficoLinha } from '../../components/charts/GraficoLinha.jsx';
 import { MonthlyTable } from '../../components/dashboard/MonthlyTable.jsx';
 import { Loading, Select } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
@@ -107,10 +106,6 @@ export default function Relatorios() {
 
       <Panel icone={TrendingUp} titulo="Entradas por Categoria" subtitulo={subtituloPeriodo}>
         <GraficoBarras dados={entradasPorCategoria} cor="#10B981" />
-      </Panel>
-
-      <Panel icone={TrendingUp} titulo="Evolução Financeira" subtitulo={resumoMensal.length === 1 ? 'último mês' : `últimos ${resumoMensal.length} meses`}>
-        <GraficoLinha pontos={[...resumoMensal].reverse().map((m) => ({ mes: m.nomeCurto, entrada: m.entrada, saida: m.saida, saldo: m.saldo }))} />
       </Panel>
 
       <Panel icone={Calendar} titulo="Resumo Mensal">

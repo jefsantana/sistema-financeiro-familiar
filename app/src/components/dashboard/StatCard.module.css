@@ -69,7 +69,6 @@
 .icone.sucesso { background-color: rgba(16, 185, 129, 0.12); color: var(--cor-sucesso); }
 .icone.perigo { background-color: rgba(239, 68, 68, 0.12); color: var(--cor-perigo); }
 .icone.info { background-color: rgba(59, 130, 246, 0.12); color: var(--cor-info); }
-.icone.alerta { background-color: rgba(245, 158, 11, 0.14); color: var(--cor-alerta); }
 
 .iconeDestaque {
   background-color: rgba(255, 255, 255, 0.18);

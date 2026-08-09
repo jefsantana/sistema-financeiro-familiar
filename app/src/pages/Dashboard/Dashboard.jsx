@@ -23,6 +23,7 @@ import { SpendingByPerson } from '../../components/dashboard/SpendingByPerson.js
 import { GoalsWidget } from '../../components/dashboard/GoalsWidget.jsx';
 import { BudgetsWidget } from '../../components/dashboard/BudgetsWidget.jsx';
 import { FinancialInsights } from '../../components/dashboard/FinancialInsights.jsx';
+import { GraficoLinha } from '../../components/charts/GraficoLinha.jsx';
 import { GraficoDonut } from '../../components/charts/GraficoDonut.jsx';
 import { useDashboardData } from '../../hooks/useDashboardData.js';
 import { usePagamentos } from '../../hooks/usePagamentos.js';
@@ -38,6 +39,7 @@ import {
   agruparPorCategoria,
   agruparPorPessoa,
   calcularTendencia,
+  calcularResumoMensal,
   montarUltimosLancamentos,
   gerarInsights,
 } from '../../utils/financeiro.js';
@@ -114,14 +116,10 @@ export default function Dashboard() {
   const alertasParcelas = calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamentos);
   const vencimentos = [...alertasContas, ...alertasParcelas].sort((a, b) => a.diasRestantes - b.diasRestantes);
 
-  // Saldo previsto só faz sentido pro mês real em curso — contas e
-  // parcelas "a vencer" são sempre em relação a hoje, não a um mês
-  // passado já fechado.
-  const saldoPrevisto = ehMesAtualReal ? saldoAtual - somar(vencimentos) : saldoAtual;
-
   const categoriasMes = agruparPorCategoria(gastosMes);
   const categoriasMesAnterior = agruparPorCategoria(gastosMesAnterior);
   const gastosPorCategoriaMapa = Object.fromEntries(agruparPorCategoria(gastosMes, 999).map((c) => [c.label, c.valor]));
+  const resumoMensal = calcularResumoMensal(entradas, gastos);
   const ultimosLancamentos = montarUltimosLancamentos(entradas, gastos);
   const pessoasGasto = agruparPorPessoa(gastosMes);
 
@@ -173,46 +171,68 @@ export default function Dashboard() {
         saidasMes={totalSaidasMes}
         entradasMesAnterior={somar(entradasMesAnterior)}
         saidasMesAnterior={somar(gastosMesAnterior)}
-        saldoPrevisto={saldoPrevisto}
-        legendaSaldoPrevisto={`até ${ultimoDiaDoMes(dataReferencia)} de ${nomeMesCapitalizado(dataReferencia)}`}
       />
 
-      <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel icone={Receipt} titulo="Últimos Lançamentos">
-          <RecentTransactions lancamentos={ultimosLancamentos} />
-        </Panel>
+      <div className={styles.painelPrincipal}>
+        <div className={`${styles.grade} ${styles.grupo}`}>
+          <div className={styles.itemGrafico}>
+            <Panel
+              icone={TrendingUp}
+              titulo="Evolução Financeira"
+              subtitulo={resumoMensal.length === 1 ? 'último mês' : `últimos ${resumoMensal.length} meses`}
+            >
+              <GraficoLinha
+                pontos={[...resumoMensal].reverse().map((m) => ({ mes: m.nomeCurto, entrada: m.entrada, saida: m.saida, saldo: m.saldo }))}
+              />
+            </Panel>
+          </div>
 
-        <Panel icone={Bell} titulo="Próximos Vencimentos" subtitulo={subtituloMes}>
-          <UpcomingBills vencimentos={vencimentos} aoPagar={pagar} pagando={pagando} />
-        </Panel>
-      </div>
+          <div className={styles.itemCategoria}>
+            <Panel icone={PieChart} titulo="Gastos por Categoria" subtitulo={subtituloMes}>
+              <GraficoDonut dados={categoriasMes} />
+            </Panel>
+          </div>
+        </div>
 
-      <div className={styles.secao}>
-        <Panel icone={Sparkles} titulo="Insights Financeiros">
-          <FinancialInsights insights={insights} />
-        </Panel>
-      </div>
+        <div className={`${styles.grade} ${styles.grupo}`}>
+          <div className={styles.itemUltimos}>
+            <Panel icone={Receipt} titulo="Últimos Lançamentos">
+              <RecentTransactions lancamentos={ultimosLancamentos} />
+            </Panel>
+          </div>
 
-      <p className={styles.subtituloSecao}>Mais detalhes</p>
+          <div className={styles.itemVencimentos}>
+            <Panel icone={Bell} titulo="Próximos Vencimentos" subtitulo={subtituloMes}>
+              <UpcomingBills vencimentos={vencimentos} aoPagar={pagar} pagando={pagando} />
+            </Panel>
+          </div>
+        </div>
 
-      <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel icone={PieChart} titulo="Gastos por Categoria" subtitulo={subtituloMes}>
-          <GraficoDonut dados={categoriasMes} />
-        </Panel>
+        <div className={styles.itemInsights}>
+          <Panel icone={Sparkles} titulo="Insights Financeiros">
+            <FinancialInsights insights={insights} />
+          </Panel>
+        </div>
 
-        <Panel icone={Users} titulo="Gastos por Pessoa" subtitulo={subtituloMes}>
-          <SpendingByPerson dados={pessoasGasto} />
-        </Panel>
-      </div>
+        <div className={`${styles.grade3} ${styles.grupo}`}>
+          <div className={styles.itemPessoa}>
+            <Panel icone={Users} titulo="Gastos por Pessoa" subtitulo={subtituloMes}>
+              <SpendingByPerson dados={pessoasGasto} />
+            </Panel>
+          </div>
 
-      <div className={`${styles.secao} ${styles.grade}`}>
-        <Panel icone={Target} titulo="Metas">
-          <GoalsWidget metas={metas} />
-        </Panel>
+          <div className={styles.itemMetas}>
+            <Panel icone={Target} titulo="Metas">
+              <GoalsWidget metas={metas} />
+            </Panel>
+          </div>
 
-        <Panel icone={Wallet} titulo="Orçamento" subtitulo={subtituloMes}>
-          <BudgetsWidget orcamentos={orcamentos} gastosPorCategoria={gastosPorCategoriaMapa} />
-        </Panel>
+          <div className={styles.itemOrcamento}>
+            <Panel icone={Wallet} titulo="Orçamento" subtitulo={subtituloMes}>
+              <BudgetsWidget orcamentos={orcamentos} gastosPorCategoria={gastosPorCategoriaMapa} />
+            </Panel>
+          </div>
+        </div>
       </div>
     </div>
   );

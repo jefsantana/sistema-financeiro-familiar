@@ -78,17 +78,10 @@
   color: var(--cor-texto-secundario);
 }
 
-.subtituloSecao {
-  margin-top: var(--espaco-xl);
-  margin-bottom: var(--espaco-sm);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--cor-texto-secundario);
-}
-
-.secao {
+.painelPrincipal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-lg);
   margin-top: var(--espaco-lg);
 }
 
@@ -99,12 +92,39 @@
   align-items: start;
 }
 
-.grade > * {
+.grade3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espaco-md);
+  align-items: start;
+}
+
+.grade > *,
+.grade3 > * {
   min-width: 0;
 }
 
+/* ---------- CELULAR: ordem própria dos painéis, independente do
+   agrupamento em pares/trios usado no desktop ---------- */
 @media (max-width: 1024px) {
-  .grade {
+  .grade,
+  .grade3 {
     grid-template-columns: 1fr;
   }
+
+  /* display:contents "dissolve" o agrupamento (.grupo), deixando cada
+     painel virar filho direto de .painelPrincipal — só assim dá pra
+     usar "order" pra intercalar itens que vieram de grupos diferentes */
+  .grupo {
+    display: contents;
+  }
+
+  .itemGrafico { order: 1; }
+  .itemCategoria { order: 2; }
+  .itemVencimentos { order: 3; }
+  .itemMetas { order: 4; }
+  .itemUltimos { order: 5; }
+  .itemPessoa { order: 6; }
+  .itemInsights { order: 7; }
+  .itemOrcamento { order: 8; }
 }

@@ -1,18 +1,9 @@
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Landmark } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
 import { StatCard } from './StatCard.jsx';
 import { calcularTendencia } from '../../utils/financeiro.js';
 import styles from './SummaryCards.module.css';
 
-export function SummaryCards({
-  saldoAtual,
-  tendenciaSaldo,
-  entradasMes,
-  saidasMes,
-  entradasMesAnterior,
-  saidasMesAnterior,
-  saldoPrevisto,
-  legendaSaldoPrevisto,
-}) {
+export function SummaryCards({ saldoAtual, tendenciaSaldo, entradasMes, saidasMes, entradasMesAnterior, saidasMesAnterior }) {
   const saldoMes = entradasMes - saidasMes;
   const saldoMesAnterior = entradasMesAnterior - saidasMesAnterior;
 
@@ -40,7 +31,6 @@ export function SummaryCards({
         valor={saldoMes}
         tendencia={calcularTendencia(saldoMes, saldoMesAnterior)}
       />
-      <StatCard icone={Landmark} corIcone="alerta" rotulo="Saldo Previsto" valor={saldoPrevisto} legenda={legendaSaldoPrevisto} />
     </div>
   );
 }
