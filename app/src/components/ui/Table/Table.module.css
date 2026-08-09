@@ -44,8 +44,12 @@
 }
 
 .colunaAcoes {
-  width: 44px;
-  text-align: center !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaco-xs);
+  width: 1%;
+  white-space: nowrap;
 }
 
 .colunaNumerica {
@@ -59,16 +63,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--espaco-sm);
+  border: 1px solid var(--cor-borda);
   border-radius: var(--raio-sm);
   color: var(--cor-texto-secundario);
-  transition: background-color var(--transicao), color var(--transicao);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background-color var(--transicao), color var(--transicao), border-color var(--transicao);
 }
 
 .botaoAcao:hover {
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--cor-perigo);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .botaoAcao:disabled {
@@ -77,7 +86,7 @@
 }
 
 .rotuloBotaoAcao {
-  display: none;
+  display: inline;
 }
 
 /* ---------- CELULAR: cada linha vira um cartão de lançamento ---------- */
@@ -157,7 +166,7 @@
 
   .colunaAcoes {
     width: 100%;
-    justify-content: flex-end !important;
+    justify-content: flex-end;
     gap: var(--espaco-sm);
     padding-top: var(--espaco-sm);
   }
@@ -170,9 +179,7 @@
     width: auto;
     height: 40px;
     flex: 1;
-    gap: 6px;
     padding: 0 var(--espaco-md);
-    border: 1px solid var(--cor-borda);
     border-radius: var(--raio-md);
   }
 
@@ -183,7 +190,6 @@
   }
 
   .rotuloBotaoAcao {
-    display: inline;
     font-size: 0.85rem;
     font-weight: 600;
   }
