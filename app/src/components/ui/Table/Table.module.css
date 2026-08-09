@@ -156,6 +156,7 @@
   }
 
   .colunaAcoes {
+    width: 100%;
     justify-content: flex-end !important;
     gap: var(--espaco-sm);
     padding-top: var(--espaco-sm);
