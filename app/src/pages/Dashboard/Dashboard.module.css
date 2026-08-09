@@ -73,7 +73,9 @@
   gap: 6px;
   padding: 0 var(--espaco-xs);
   border-radius: var(--raio-sm);
-  font-size: 0.82rem;
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--cor-texto);
   white-space: nowrap;
@@ -85,6 +87,8 @@
 }
 
 .seletorMesLabel svg {
+  width: 14px;
+  height: 14px;
   color: var(--cor-texto-secundario);
   flex-shrink: 0;
 }
