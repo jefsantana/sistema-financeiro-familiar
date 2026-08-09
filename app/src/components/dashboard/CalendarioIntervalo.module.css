@@ -63,7 +63,9 @@
 }
 
 .noIntervalo {
-  background-color: rgba(123, 97, 255, 0.12);
+  background-color: rgba(123, 97, 255, 0.22);
+  color: var(--cor-primaria);
+  font-weight: 600;
   border-radius: 0;
 }
 

@@ -34,11 +34,14 @@
   color: var(--cor-primaria);
   font-size: 0.82rem;
   font-weight: 600;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .seletorMesContainer {
   position: relative;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .seletorMes {
