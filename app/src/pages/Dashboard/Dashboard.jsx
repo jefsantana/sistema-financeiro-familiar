@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { Loading, EmptyState, Button, Input } from '../../components/ui/index.js';
+import { Loading, EmptyState, Button } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { SummaryCards } from '../../components/dashboard/SummaryCards.jsx';
 import { UpcomingBills } from '../../components/dashboard/UpcomingBills.jsx';
@@ -23,6 +23,7 @@ import { SpendingByPerson } from '../../components/dashboard/SpendingByPerson.js
 import { GoalsWidget } from '../../components/dashboard/GoalsWidget.jsx';
 import { BudgetsWidget } from '../../components/dashboard/BudgetsWidget.jsx';
 import { FinancialInsights } from '../../components/dashboard/FinancialInsights.jsx';
+import { CalendarioIntervalo } from '../../components/dashboard/CalendarioIntervalo.jsx';
 import { GraficoLinha } from '../../components/charts/GraficoLinha.jsx';
 import { GraficoDonut } from '../../components/charts/GraficoDonut.jsx';
 import { useDashboardData } from '../../hooks/useDashboardData.js';
@@ -123,10 +124,14 @@ export default function Dashboard() {
     setSeletorAberto((atual) => !atual);
   }
 
-  function aplicarIntervaloPersonalizado(evento) {
-    evento.preventDefault();
-    if (rascunhoInicio > rascunhoFim) {
-      toast.erro('A data inicial precisa ser antes da data final.');
+  function aoMudarSelecaoCalendario({ inicio, fim }) {
+    setRascunhoInicio(inicio);
+    setRascunhoFim(fim);
+  }
+
+  function aplicarIntervaloPersonalizado() {
+    if (!rascunhoInicio || !rascunhoFim) {
+      toast.erro('Selecione a data inicial e a data final no calendário.');
       return;
     }
     setIntervaloPersonalizado({ inicio: rascunhoInicio, fim: rascunhoFim });
@@ -228,18 +233,17 @@ export default function Dashboard() {
           </div>
 
           {seletorAberto && (
-            <form className={styles.popoverData} onSubmit={aplicarIntervaloPersonalizado}>
-              <Input rotulo="De" type="date" value={rascunhoInicio} onChange={(e) => setRascunhoInicio(e.target.value)} />
-              <Input rotulo="Até" type="date" value={rascunhoFim} onChange={(e) => setRascunhoFim(e.target.value)} />
+            <div className={styles.popoverData}>
+              <CalendarioIntervalo inicio={rascunhoInicio} fim={rascunhoFim} aoMudar={aoMudarSelecaoCalendario} />
               <div className={styles.popoverAcoes}>
                 <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" tamanho="pequeno">
+                <Button type="button" tamanho="pequeno" onClick={aplicarIntervaloPersonalizado}>
                   Aplicar
                 </Button>
               </div>
-            </form>
+            </div>
           )}
         </div>
       </div>

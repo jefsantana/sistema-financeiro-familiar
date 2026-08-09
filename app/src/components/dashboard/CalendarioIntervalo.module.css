@@ -1,0 +1,75 @@
+.calendario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.cabecalho span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.cabecalho button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.cabecalho button:hover {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.diaSemana {
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--cor-texto-secundario);
+  padding: 4px 0;
+}
+
+.dia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--raio-sm);
+  font-size: 0.8rem;
+  color: var(--cor-texto);
+  transition: background-color var(--transicao);
+}
+
+.dia:hover {
+  background-color: var(--cor-fundo);
+}
+
+.noIntervalo {
+  background-color: rgba(123, 97, 255, 0.12);
+  border-radius: 0;
+}
+
+.extremo {
+  background-color: var(--cor-primaria) !important;
+  color: #FFFFFF;
+  border-radius: var(--raio-sm);
+  font-weight: 700;
+}

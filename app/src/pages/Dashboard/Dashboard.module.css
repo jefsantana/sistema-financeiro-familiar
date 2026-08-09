@@ -97,7 +97,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--espaco-sm);
-  width: 240px;
+  width: 280px;
   max-width: calc(100vw - 2 * var(--espaco-md));
   padding: var(--espaco-md);
   border: 1px solid var(--cor-borda);
