@@ -73,9 +73,8 @@
   gap: 6px;
   padding: 0 var(--espaco-xs);
   border-radius: var(--raio-sm);
-  font-family: var(--fonte-numeros);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
+  font-family: var(--fonte-corpo);
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--cor-texto);
   white-space: nowrap;
