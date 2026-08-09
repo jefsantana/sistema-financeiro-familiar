@@ -221,13 +221,13 @@ export default function Dashboard() {
         )}
         <div className={styles.seletorMesContainer} ref={seletorRef}>
           <div className={styles.seletorMes}>
-            <button type="button" onClick={() => mudarMes(-1)} aria-label="Mês anterior">
+            <button type="button" className={styles.setaMes} onClick={() => mudarMes(-1)} aria-label="Mês anterior">
               <ChevronLeft size={16} />
             </button>
             <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
               <Calendar size={14} /> {textoPeriodo}
             </button>
-            <button type="button" onClick={() => mudarMes(1)} aria-label="Próximo mês">
+            <button type="button" className={styles.setaMes} onClick={() => mudarMes(1)} aria-label="Próximo mês">
               <ChevronRight size={16} />
             </button>
           </div>

@@ -54,18 +54,19 @@
   padding: 4px;
 }
 
-.seletorMes > button {
+.setaMes {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
+  flex-shrink: 0;
   border-radius: var(--raio-sm);
   color: var(--cor-texto-secundario);
   transition: background-color var(--transicao), color var(--transicao);
 }
 
-.seletorMes > button:hover {
+.setaMes:hover {
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
