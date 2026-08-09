@@ -31,7 +31,7 @@ export function StatCard({ icone: Icone, corIcone = 'primaria', rotulo, valor, t
           }`}
         >
           {tendencia.subiu ? <ArrowUp /> : <ArrowDown />}
-          {tendencia.percentual}% vs. mês anterior
+          {tendencia.percentual}% vs mês passado
         </p>
       ) : legenda ? (
         <p className={`${styles.tendencia} ${destaque ? styles.tendenciaDestaque : styles.tendenciaNeutra}`}>

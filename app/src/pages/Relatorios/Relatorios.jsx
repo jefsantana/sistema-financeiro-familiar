@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, ArrowUpDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpDown, Calendar } from 'lucide-react';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { GraficoBarras } from '../../components/charts/GraficoBarras.jsx';
+import { GraficoLinha } from '../../components/charts/GraficoLinha.jsx';
+import { MonthlyTable } from '../../components/dashboard/MonthlyTable.jsx';
 import { Loading, Select } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { agruparPorCategoria, obterMesAno, mesAnoDe, somar, calcularTendencia } from '../../utils/financeiro.js';
+import {
+  agruparPorCategoria,
+  obterMesAno,
+  mesAnoDe,
+  somar,
+  calcularTendencia,
+  calcularResumoMensal,
+} from '../../utils/financeiro.js';
 import { formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import styles from './Relatorios.module.css';
 
@@ -46,6 +55,8 @@ export default function Relatorios() {
 
   const tendenciaEntradas = calcularTendencia(entradasMesAtual, entradasMesPassado);
   const tendenciaGastos = calcularTendencia(gastosMesAtual, gastosMesPassado, true);
+
+  const resumoMensal = calcularResumoMensal(entradas.filter(porPessoa), gastos.filter(porPessoa));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--espaco-lg)' }}>
@@ -96,6 +107,14 @@ export default function Relatorios() {
 
       <Panel icone={TrendingUp} titulo="Entradas por Categoria" subtitulo={subtituloPeriodo}>
         <GraficoBarras dados={entradasPorCategoria} cor="#10B981" />
+      </Panel>
+
+      <Panel icone={TrendingUp} titulo="Evolução Financeira" subtitulo={resumoMensal.length === 1 ? 'último mês' : `últimos ${resumoMensal.length} meses`}>
+        <GraficoLinha pontos={[...resumoMensal].reverse().map((m) => ({ mes: m.nomeCurto, entrada: m.entrada, saida: m.saida, saldo: m.saldo }))} />
+      </Panel>
+
+      <Panel icone={Calendar} titulo="Resumo Mensal">
+        <MonthlyTable resumo={resumoMensal} />
       </Panel>
     </div>
   );

@@ -15,6 +15,79 @@
   margin-top: 2px;
 }
 
+.faixaTopo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+}
+
+.bannerSaldo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--raio-md);
+  background-color: rgba(123, 97, 255, 0.1);
+  color: var(--cor-primaria);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.seletorMes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background-color: var(--cor-superficie);
+  padding: 4px;
+}
+
+.seletorMes button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.seletorMes button:hover {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.seletorMes span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--espaco-xs);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  white-space: nowrap;
+}
+
+.seletorMes span svg {
+  color: var(--cor-texto-secundario);
+}
+
+.subtituloSecao {
+  margin-top: var(--espaco-xl);
+  margin-bottom: var(--espaco-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-secundario);
+}
+
 .secao {
   margin-top: var(--espaco-lg);
 }
@@ -26,21 +99,12 @@
   align-items: start;
 }
 
-.grade3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--espaco-md);
-  align-items: start;
-}
-
-.grade > *,
-.grade3 > * {
+.grade > * {
   min-width: 0;
 }
 
 @media (max-width: 1024px) {
-  .grade,
-  .grade3 {
+  .grade {
     grid-template-columns: 1fr;
   }
 }
