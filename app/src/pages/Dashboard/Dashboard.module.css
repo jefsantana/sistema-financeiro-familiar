@@ -98,6 +98,7 @@
   flex-direction: column;
   gap: var(--espaco-sm);
   width: 240px;
+  max-width: calc(100vw - 2 * var(--espaco-md));
   padding: var(--espaco-md);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-lg);
@@ -110,6 +111,34 @@
   justify-content: flex-end;
   gap: var(--espaco-xs);
   margin-top: 2px;
+}
+
+/* ---------- CELULAR: banner e seletor de mês empilhados, cada um
+   ocupando a largura toda (senão o texto "01 a 31 de Agosto"
+   estoura pra fora da tela) ---------- */
+@media (max-width: 640px) {
+  .faixaTopo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bannerSaldo {
+    width: 100%;
+  }
+
+  .seletorMesContainer {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .seletorMes {
+    width: 100%;
+  }
+
+  .seletorMesLabel {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .painelPrincipal {
