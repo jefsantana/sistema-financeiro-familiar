@@ -1,11 +1,10 @@
 import { useRef, useState } from 'react';
-import { Upload, FileUp, X } from 'lucide-react';
+import { Upload, FileUp, X, ShieldCheck, FileText, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button, Select, Badge, EmptyState, InfoBanner, Table, TableColunaNumerica } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { criar } from '../../services/dados.js';
-import { analisarOfx } from '../../utils/ofx.js';
 import { inferirCategoriaPorDescricao } from '../../utils/classificarTransacao.js';
 import { formatarData, formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
@@ -20,8 +19,6 @@ export default function ImportarExtrato() {
   const toast = useToast();
   const inputArquivoRef = useRef(null);
 
-  const [nomeArquivo, setNomeArquivo] = useState('');
-  const [origemPdf, setOrigemPdf] = useState(false);
   const [transacoes, setTransacoes] = useState([]);
   const [importando, setImportando] = useState(false);
   const [lendoArquivo, setLendoArquivo] = useState(false);
@@ -29,37 +26,23 @@ export default function ImportarExtrato() {
 
   const selecionadas = transacoes.filter((t) => t.selecionada);
   const totalDuplicados = transacoes.filter((t) => t.duplicado).length;
+  const totalEntradas = transacoes.filter((t) => t.tipo === 'entrada').length;
+  const totalGastos = transacoes.filter((t) => t.tipo === 'gasto').length;
 
   async function aoSelecionarArquivo(evento) {
     const arquivo = evento.target.files[0];
     if (!arquivo) return;
     evento.target.value = '';
 
-    const ehPdf = arquivo.name.toLowerCase().endsWith('.pdf');
     setLendoArquivo(true);
     setTextoNaoReconhecido('');
     try {
-      let brutas;
-      let linhasBrutas = [];
-      if (ehPdf) {
-        const { analisarPdf } = await import('../../utils/pdfExtrato.js');
-        const resultado = await analisarPdf(arquivo);
-        brutas = resultado.transacoes;
-        linhasBrutas = resultado.linhas;
-      } else {
-        const texto = await arquivo.text();
-        brutas = analisarOfx(texto);
-      }
+      const { analisarPdf } = await import('../../utils/pdfExtrato.js');
+      const { transacoes: brutas, linhas: linhasBrutas } = await analisarPdf(arquivo);
 
       if (brutas.length === 0) {
-        toast.erro(
-          ehPdf
-            ? 'Não conseguimos reconhecer nenhum lançamento nesse PDF. O layout desse extrato pode não ser suportado.'
-            : 'Não encontramos transações nesse arquivo. Confira se é um extrato OFX válido.'
-        );
-        if (ehPdf) {
-          setTextoNaoReconhecido(linhasBrutas.filter((l) => l.trim()).join('\n'));
-        }
+        toast.erro('Não conseguimos reconhecer nenhum lançamento nesse PDF. O layout desse extrato pode não ser suportado.');
+        setTextoNaoReconhecido(linhasBrutas.filter((l) => l.trim()).join('\n'));
         return;
       }
 
@@ -71,10 +54,8 @@ export default function ImportarExtrato() {
       });
 
       setTransacoes(comMetadados);
-      setNomeArquivo(arquivo.name);
-      setOrigemPdf(ehPdf);
     } catch {
-      toast.erro('Não foi possível ler esse arquivo. Tente novamente ou exporte em outro formato.');
+      toast.erro('Não foi possível ler esse arquivo. Tente novamente.');
     } finally {
       setLendoArquivo(false);
     }
@@ -82,8 +63,6 @@ export default function ImportarExtrato() {
 
   function limpar() {
     setTransacoes([]);
-    setNomeArquivo('');
-    setOrigemPdf(false);
     setTextoNaoReconhecido('');
   }
 
@@ -153,25 +132,30 @@ export default function ImportarExtrato() {
       </div>
 
       <InfoBanner>
-        Exporte o extrato da sua conta no aplicativo/site do banco no formato <strong>OFX</strong> (mais confiável) ou{' '}
-        <strong>PDF</strong> (leitura experimental — confira cada linha com atenção) e anexe aqui. Cartão de crédito
-        ainda não é suportado por aqui — use a tela de Gastos ou o lançamento rápido para compras no cartão. O
-        lançamento manual continua funcionando normalmente.
+        Exporte o extrato da sua conta em <strong>PDF</strong> no aplicativo/site do banco e anexe aqui. A leitura é
+        experimental — confira cada linha com atenção antes de importar. Cartão de crédito ainda não é suportado por
+        aqui — use a tela de Gastos ou o lançamento rápido para compras no cartão.
       </InfoBanner>
+
+      <div className={styles.avisoSeguranca}>
+        <ShieldCheck size={16} />
+        Seus dados ficam seguros: o arquivo é lido aqui mesmo, no seu navegador — nada é enviado pra fora até você
+        conferir e confirmar a importação.
+      </div>
 
       {transacoes.length === 0 ? (
         <>
           <input
             ref={inputArquivoRef}
             type="file"
-            accept=".ofx,.qfx,.pdf"
+            accept=".pdf"
             onChange={aoSelecionarArquivo}
             className={styles.inputArquivo}
           />
           <EmptyState
             icone={FileUp}
             titulo="Nenhum arquivo selecionado"
-            descricao="Escolha um arquivo .ofx ou .pdf exportado do seu banco pra ver os lançamentos encontrados."
+            descricao="Escolha um arquivo .pdf exportado do seu banco pra ver os lançamentos encontrados."
             acao={
               <Button carregando={lendoArquivo} onClick={() => inputArquivoRef.current?.click()}>
                 Escolher arquivo
@@ -201,22 +185,24 @@ export default function ImportarExtrato() {
         </>
       ) : (
         <>
-          {origemPdf && (
-            <InfoBanner>
-              Leitura de PDF é experimental: confira com atenção se a data, a descrição e o valor de cada linha vieram
-              corretos antes de importar.
-            </InfoBanner>
-          )}
-
           <div className={styles.resumo}>
-            <div>
-              <p className={styles.nomeArquivo}>{nomeArquivo}</p>
-              <p className={styles.contagem}>
-                {transacoes.length} lançamento(s) encontrado(s)
-                {totalDuplicados > 0 && ` · ${totalDuplicados} possível(is) duplicado(s) já desmarcado(s)`}
-              </p>
+            <div className={styles.resumoIcone}>
+              <FileText size={20} />
             </div>
-            <Button variante="secundario" tamanho="pequeno" onClick={limpar}>
+            <div className={styles.resumoTextos}>
+              <p className={styles.tituloResumo}>Extrato PDF anexado</p>
+              <div className={styles.contagem}>
+                <span>{transacoes.length} lançamento(s)</span>
+                <span className={styles.contagemEntrada}>
+                  <TrendingUp size={13} /> {totalEntradas} entrada(s)
+                </span>
+                <span className={styles.contagemGasto}>
+                  <TrendingDown size={13} /> {totalGastos} gasto(s)
+                </span>
+                {totalDuplicados > 0 && <span>{totalDuplicados} possível(is) duplicado(s) já desmarcado(s)</span>}
+              </div>
+            </div>
+            <Button variante="secundario" tamanho="pequeno" className={styles.botaoTrocar} onClick={limpar}>
               <X size={16} /> Trocar arquivo
             </Button>
           </div>
@@ -257,49 +243,43 @@ export default function ImportarExtrato() {
                     </td>
                     <td data-rotulo="Data">{formatarData(transacao.data)}</td>
                     <td data-rotulo="Descrição">
-                      {transacao.descricao}
-                      {transacao.duplicado && (
-                        <Badge cor="alerta" className={styles.badgeDuplicado}>
-                          Possível duplicado
-                        </Badge>
-                      )}
+                      <div className={styles.celulaDescricao}>
+                        <span>{transacao.descricao}</span>
+                        {transacao.duplicado && <Badge cor="alerta">Possível duplicado</Badge>}
+                      </div>
                     </td>
                     <td data-rotulo="Tipo">
-                      <Select
-                        aria-label="Tipo"
-                        value={transacao.tipo}
-                        onChange={(e) => definirTipo(transacao.id, e.target.value)}
-                        className={styles.selectTipo}
-                      >
-                        <option value="entrada">Entrada</option>
-                        <option value="gasto">Gasto</option>
-                      </Select>
-                      {transacao.tipoIncerto && (
-                        <Badge cor="alerta" className={styles.badgeDuplicado}>
-                          Confirme o tipo
-                        </Badge>
-                      )}
+                      <div className={styles.celulaCampo}>
+                        <Select
+                          aria-label="Tipo"
+                          value={transacao.tipo}
+                          onChange={(e) => definirTipo(transacao.id, e.target.value)}
+                          className={styles.selectTipo}
+                        >
+                          <option value="entrada">Entrada</option>
+                          <option value="gasto">Gasto</option>
+                        </Select>
+                        {transacao.tipoIncerto && <Badge cor="alerta">Confirme o tipo</Badge>}
+                      </div>
                     </td>
                     <td data-rotulo="Categoria">
-                      <Select
-                        aria-label="Categoria"
-                        icone={icones[transacao.categoria]}
-                        value={transacao.categoria}
-                        onChange={(e) => definirCategoria(transacao.id, e.target.value)}
-                        className={styles.selectCategoria}
-                      >
-                        <option value="">Selecione</option>
-                        {opcoes.map((nome) => (
-                          <option key={nome} value={nome}>
-                            {nome}
-                          </option>
-                        ))}
-                      </Select>
-                      {transacao.categoriaSugerida && (
-                        <Badge cor="info" className={styles.badgeDuplicado}>
-                          Sugerida
-                        </Badge>
-                      )}
+                      <div className={styles.celulaCampo}>
+                        <Select
+                          aria-label="Categoria"
+                          icone={icones[transacao.categoria]}
+                          value={transacao.categoria}
+                          onChange={(e) => definirCategoria(transacao.id, e.target.value)}
+                          className={styles.selectCategoria}
+                        >
+                          <option value="">Selecione</option>
+                          {opcoes.map((nome) => (
+                            <option key={nome} value={nome}>
+                              {nome}
+                            </option>
+                          ))}
+                        </Select>
+                        {transacao.categoriaSugerida && <Badge cor="info">Sugerida</Badge>}
+                      </div>
                     </td>
                     <TableColunaNumerica data-rotulo="Valor">
                       <span className={transacao.tipo === 'entrada' ? 'valor-positivo' : 'valor-negativo'}>
@@ -313,7 +293,7 @@ export default function ImportarExtrato() {
           </Table>
 
           <div className={styles.rodape}>
-            <Button carregando={importando} onClick={importarSelecionadas}>
+            <Button carregando={importando} onClick={importarSelecionadas} className={styles.botaoImportar}>
               Importar {selecionadas.length} lançamento(s)
             </Button>
           </div>

@@ -2,12 +2,27 @@
   display: none;
 }
 
+.avisoSeguranca {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--cor-sucesso);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.avisoSeguranca svg {
+  flex-shrink: 0;
+}
+
 .resumo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--espaco-md);
-  flex-wrap: wrap;
   margin: var(--espaco-md) 0;
   padding: var(--espaco-md);
   border: 1px solid var(--cor-borda);
@@ -15,15 +30,54 @@
   background-color: var(--cor-superficie);
 }
 
-.nomeArquivo {
+.resumoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background-color: rgba(123, 97, 255, 0.12);
+  color: var(--cor-primaria);
+}
+
+.resumoTextos {
+  flex: 1;
+  min-width: 0;
+}
+
+.tituloResumo {
   font-weight: 700;
   font-size: 0.9rem;
 }
 
 .contagem {
-  font-size: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--espaco-sm);
+  font-size: 0.78rem;
   color: var(--cor-texto-secundario);
-  margin-top: 2px;
+  margin-top: 4px;
+}
+
+.contagem span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.contagemEntrada {
+  color: var(--cor-sucesso);
+}
+
+.contagemGasto {
+  color: var(--cor-perigo);
+}
+
+.botaoTrocar {
+  flex-shrink: 0;
 }
 
 .acoesSelecao {
@@ -46,10 +100,12 @@
   opacity: 0.5;
 }
 
-.badgeDuplicado {
-  display: inline-flex;
-  margin-left: var(--espaco-xs);
-  vertical-align: middle;
+.celulaDescricao,
+.celulaCampo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .selectCategoria {
@@ -91,4 +147,43 @@
   font-family: var(--fonte-numeros);
   font-size: 0.78rem;
   resize: vertical;
+}
+
+/* ---------- CELULAR ---------- */
+@media (max-width: 640px) {
+  .resumo {
+    flex-wrap: wrap;
+  }
+
+  .resumoTextos {
+    flex-basis: 100%;
+  }
+
+  .botaoTrocar {
+    flex: 1;
+  }
+
+  .acoesSelecao {
+    gap: var(--espaco-lg);
+  }
+
+  .celulaDescricao,
+  .celulaCampo {
+    align-items: flex-end;
+    width: 100%;
+  }
+
+  .selectCategoria,
+  .selectTipo {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .rodape {
+    margin-top: var(--espaco-md);
+  }
+
+  .botaoImportar {
+    width: 100%;
+  }
 }

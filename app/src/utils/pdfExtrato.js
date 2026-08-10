@@ -1,11 +1,11 @@
-// Leitura "melhor esforço" de extrato bancário em PDF. Diferente do
-// OFX, o PDF não tem estrutura — é só texto solto na posição da
-// página — então aqui usamos heurística (uma expressão regular numa
-// linha reconstruída pela posição vertical do texto) pra tentar
-// reconhecer o padrão "data + descrição + valor". Funciona bem pra
-// extratos com layout simples em tabela; pode falhar ou vir com
-// erros em layouts mais elaborados — por isso a tela sempre pede
-// conferência linha a linha antes de importar.
+// Leitura "melhor esforço" de extrato bancário em PDF. O PDF não tem
+// estrutura — é só texto solto na posição da página — então aqui
+// usamos heurística (uma expressão regular numa linha reconstruída
+// pela posição vertical do texto) pra tentar reconhecer o padrão
+// "data + descrição + valor". Funciona bem pra extratos com layout
+// simples em tabela; pode falhar ou vir com erros em layouts mais
+// elaborados — por isso a tela sempre pede conferência linha a linha
+// antes de importar.
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { parseValorMonetario } from './formatadores.js';
 import { inferirTipoPorDescricao } from './classificarTransacao.js';

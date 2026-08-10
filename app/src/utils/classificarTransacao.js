@@ -1,7 +1,7 @@
 // Palavras comuns em descrições de extrato bancário brasileiro,
 // usadas pra adivinhar se uma transação é entrada ou gasto quando o
-// arquivo não informa isso diretamente — é o caso típico de PDF, que
-// (ao contrário do OFX) não tem um campo estruturado de débito/crédito.
+// PDF não deixa isso claro (sem sinal negativo nem marcador D/C ao
+// lado do valor).
 const PALAVRAS_GASTO = [
   'compra',
   'pagamento',
