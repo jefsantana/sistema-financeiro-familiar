@@ -36,6 +36,7 @@ import {
   RefreshCcw,
   PlusCircle,
   Award,
+  Upload,
 } from 'lucide-react';
 
 export const ICONES_NAV = {
@@ -53,6 +54,7 @@ export const ICONES_NAV = {
   Settings,
   Wallet,
   Receipt,
+  Upload,
 };
 
 // Ícone de cada categoria fixa (gasto e entrada) — usado no lugar do

@@ -1,0 +1,63 @@
+.inputArquivo {
+  display: none;
+}
+
+.resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  flex-wrap: wrap;
+  margin: var(--espaco-md) 0;
+  padding: var(--espaco-md);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background-color: var(--cor-superficie);
+}
+
+.nomeArquivo {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.contagem {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  margin-top: 2px;
+}
+
+.acoesSelecao {
+  display: flex;
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-sm);
+}
+
+.acoesSelecao button {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+.acoesSelecao button:hover {
+  text-decoration: underline;
+}
+
+.linhaDesmarcada {
+  opacity: 0.5;
+}
+
+.badgeDuplicado {
+  display: inline-flex;
+  margin-left: var(--espaco-xs);
+  vertical-align: middle;
+}
+
+.selectCategoria {
+  min-width: 170px;
+}
+
+.rodape {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--espaco-lg);
+}

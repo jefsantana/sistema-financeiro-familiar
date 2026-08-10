@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { path: '/orcamentos', label: 'Orçamentos', icon: 'Wallet', grupo: 'Planejamento' },
   { path: '/relatorios', label: 'Relatórios', icon: 'BarChart3', grupo: 'Planejamento' },
   { path: '/historico', label: 'Histórico', icon: 'History', grupo: 'Planejamento' },
+  { path: '/importar-extrato', label: 'Importar Extrato', icon: 'Upload', grupo: 'Planejamento' },
   { path: '/lixeira', label: 'Lixeira', icon: 'Trash2', grupo: 'Sistema' },
   { path: '/configuracoes', label: 'Configurações', icon: 'Settings', grupo: 'Sistema' },
 ];

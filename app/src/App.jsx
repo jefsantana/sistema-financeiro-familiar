@@ -18,6 +18,7 @@ import Metas from './pages/Metas/Metas.jsx';
 import Orcamentos from './pages/Orcamentos/Orcamentos.jsx';
 import Relatorios from './pages/Relatorios/Relatorios.jsx';
 import Historico from './pages/Historico/Historico.jsx';
+import ImportarExtrato from './pages/ImportarExtrato/ImportarExtrato.jsx';
 import Lixeira from './pages/Lixeira/Lixeira.jsx';
 import Configuracoes from './pages/Configuracoes/Configuracoes.jsx';
 import NaoEncontrado from './pages/NaoEncontrado/NaoEncontrado.jsx';
@@ -46,6 +47,7 @@ export default function App() {
                 <Route path="/orcamentos" element={<Orcamentos />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/historico" element={<Historico />} />
+                <Route path="/importar-extrato" element={<ImportarExtrato />} />
                 <Route path="/lixeira" element={<Lixeira />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
               </Route>
