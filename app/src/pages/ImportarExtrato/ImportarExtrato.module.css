@@ -56,6 +56,10 @@
   min-width: 170px;
 }
 
+.selectTipo {
+  min-width: 110px;
+}
+
 .rodape {
   display: flex;
   justify-content: flex-end;

@@ -20,8 +20,10 @@ export default function ImportarExtrato() {
   const inputArquivoRef = useRef(null);
 
   const [nomeArquivo, setNomeArquivo] = useState('');
+  const [origemPdf, setOrigemPdf] = useState(false);
   const [transacoes, setTransacoes] = useState([]);
   const [importando, setImportando] = useState(false);
+  const [lendoArquivo, setLendoArquivo] = useState(false);
 
   const selecionadas = transacoes.filter((t) => t.selecionada);
   const totalDuplicados = transacoes.filter((t) => t.duplicado).length;
@@ -29,30 +31,49 @@ export default function ImportarExtrato() {
   async function aoSelecionarArquivo(evento) {
     const arquivo = evento.target.files[0];
     if (!arquivo) return;
-
-    const texto = await arquivo.text();
-    const brutas = analisarOfx(texto);
-
-    if (brutas.length === 0) {
-      toast.erro('Não encontramos transações nesse arquivo. Confira se é um extrato OFX válido.');
-      evento.target.value = '';
-      return;
-    }
-
-    const existentes = [...entradas, ...gastos];
-    const comMetadados = brutas.map((t) => {
-      const duplicado = existentes.some((e) => e.data === t.data && Math.abs(Number(e.valor) - t.valor) < 0.01);
-      return { ...t, categoria: '', selecionada: !duplicado, duplicado };
-    });
-
-    setTransacoes(comMetadados);
-    setNomeArquivo(arquivo.name);
     evento.target.value = '';
+
+    const ehPdf = arquivo.name.toLowerCase().endsWith('.pdf');
+    setLendoArquivo(true);
+    try {
+      let brutas;
+      if (ehPdf) {
+        const { analisarPdf } = await import('../../utils/pdfExtrato.js');
+        brutas = await analisarPdf(arquivo);
+      } else {
+        const texto = await arquivo.text();
+        brutas = analisarOfx(texto);
+      }
+
+      if (brutas.length === 0) {
+        toast.erro(
+          ehPdf
+            ? 'Não conseguimos reconhecer nenhum lançamento nesse PDF. O layout desse extrato pode não ser suportado.'
+            : 'Não encontramos transações nesse arquivo. Confira se é um extrato OFX válido.'
+        );
+        return;
+      }
+
+      const existentes = [...entradas, ...gastos];
+      const comMetadados = brutas.map((t) => {
+        const duplicado = existentes.some((e) => e.data === t.data && Math.abs(Number(e.valor) - t.valor) < 0.01);
+        return { ...t, categoria: '', selecionada: !duplicado, duplicado };
+      });
+
+      setTransacoes(comMetadados);
+      setNomeArquivo(arquivo.name);
+      setOrigemPdf(ehPdf);
+    } catch {
+      toast.erro('Não foi possível ler esse arquivo. Tente novamente ou exporte em outro formato.');
+    } finally {
+      setLendoArquivo(false);
+    }
   }
 
   function limpar() {
     setTransacoes([]);
     setNomeArquivo('');
+    setOrigemPdf(false);
   }
 
   function alternarSelecao(id) {
@@ -61,6 +82,10 @@ export default function ImportarExtrato() {
 
   function definirCategoria(id, categoria) {
     setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, categoria } : t)));
+  }
+
+  function definirTipo(id, tipo) {
+    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '' } : t)));
   }
 
   function selecionarTodas(valor) {
@@ -115,8 +140,9 @@ export default function ImportarExtrato() {
       </div>
 
       <InfoBanner>
-        Exporte o extrato da sua conta no aplicativo/site do banco no formato <strong>OFX</strong> e anexe aqui. Cartão de
-        crédito ainda não é suportado por aqui — use a tela de Gastos ou o lançamento rápido para compras no cartão. O
+        Exporte o extrato da sua conta no aplicativo/site do banco no formato <strong>OFX</strong> (mais confiável) ou{' '}
+        <strong>PDF</strong> (leitura experimental — confira cada linha com atenção) e anexe aqui. Cartão de crédito
+        ainda não é suportado por aqui — use a tela de Gastos ou o lançamento rápido para compras no cartão. O
         lançamento manual continua funcionando normalmente.
       </InfoBanner>
 
@@ -125,19 +151,30 @@ export default function ImportarExtrato() {
           <input
             ref={inputArquivoRef}
             type="file"
-            accept=".ofx,.qfx"
+            accept=".ofx,.qfx,.pdf"
             onChange={aoSelecionarArquivo}
             className={styles.inputArquivo}
           />
           <EmptyState
             icone={FileUp}
             titulo="Nenhum arquivo selecionado"
-            descricao="Escolha um arquivo .ofx exportado do seu banco pra ver os lançamentos encontrados."
-            acao={<Button onClick={() => inputArquivoRef.current?.click()}>Escolher arquivo</Button>}
+            descricao="Escolha um arquivo .ofx ou .pdf exportado do seu banco pra ver os lançamentos encontrados."
+            acao={
+              <Button carregando={lendoArquivo} onClick={() => inputArquivoRef.current?.click()}>
+                Escolher arquivo
+              </Button>
+            }
           />
         </>
       ) : (
         <>
+          {origemPdf && (
+            <InfoBanner>
+              Leitura de PDF é experimental: confira com atenção se a data, a descrição e o valor de cada linha vieram
+              corretos antes de importar.
+            </InfoBanner>
+          )}
+
           <div className={styles.resumo}>
             <div>
               <p className={styles.nomeArquivo}>{nomeArquivo}</p>
@@ -166,6 +203,7 @@ export default function ImportarExtrato() {
                 <th />
                 <th>Data</th>
                 <th>Descrição</th>
+                <th>Tipo</th>
                 <th>Categoria</th>
                 <th>Valor</th>
               </tr>
@@ -192,6 +230,17 @@ export default function ImportarExtrato() {
                           Possível duplicado
                         </Badge>
                       )}
+                    </td>
+                    <td data-rotulo="Tipo">
+                      <Select
+                        aria-label="Tipo"
+                        value={transacao.tipo}
+                        onChange={(e) => definirTipo(transacao.id, e.target.value)}
+                        className={styles.selectTipo}
+                      >
+                        <option value="entrada">Entrada</option>
+                        <option value="gasto">Gasto</option>
+                      </Select>
                     </td>
                     <td data-rotulo="Categoria">
                       <Select
