@@ -37,11 +37,32 @@ async function extrairLinhas(arquivo) {
     const porLinha = new Map();
     conteudo.items.forEach((item) => {
       const y = Math.round(item.transform[5]);
+      const x = item.transform[4];
       if (!porLinha.has(y)) porLinha.set(y, []);
-      porLinha.get(y).push(item.str);
+      porLinha.get(y).push({ texto: item.str, x, largura: item.width || 0, altura: item.height || 10 });
     });
 
-    [...porLinha.keys()].sort((a, b) => b - a).forEach((y) => linhas.push(porLinha.get(y).join(' ')));
+    // Dentro de cada linha, só insere espaço entre dois fragmentos
+    // quando há um vão horizontal real entre eles — muitos PDFs de
+    // banco quebram o texto letra por letra, e juntar tudo com um
+    // espaço fixo bagunçaria as palavras (ex: "CONSOLIDADO" viraria
+    // "CONSOL I DADO").
+    [...porLinha.keys()]
+      .sort((a, b) => b - a)
+      .forEach((y) => {
+        const fragmentos = porLinha.get(y).sort((a, b) => a.x - b.x);
+        let linha = '';
+        let fimAnterior = null;
+        fragmentos.forEach((fragmento) => {
+          if (fimAnterior !== null) {
+            const vao = fragmento.x - fimAnterior;
+            if (vao > fragmento.altura * 0.28) linha += ' ';
+          }
+          linha += fragmento.texto;
+          fimAnterior = fragmento.x + fragmento.largura;
+        });
+        linhas.push(linha);
+      });
   }
 
   return linhas;
