@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Upload, FileUp, X, ShieldCheck, FileText, TrendingUp, TrendingDown } from 'lucide-react';
+import { Upload, FileUp, X, ShieldCheck, FileText, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { Button, Select, Badge, EmptyState, InfoBanner, Table, TableColunaNumerica } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -206,6 +206,23 @@ export default function ImportarExtrato() {
               <X size={16} /> Trocar arquivo
             </Button>
           </div>
+
+          {totalDuplicados > 0 && (
+            <div className={styles.avisoDuplicados}>
+              <AlertTriangle size={20} />
+              <div>
+                <p className={styles.tituloAvisoDuplicados}>
+                  {totalDuplicados === transacoes.length
+                    ? 'Esse extrato parece já ter sido importado antes!'
+                    : `${totalDuplicados} de ${transacoes.length} lançamentos já existem no seu histórico.`}
+                </p>
+                <p className={styles.textoAvisoDuplicados}>
+                  Já desmarcamos os prováveis duplicados pra você — confira a lista abaixo com atenção antes de
+                  importar, pra não lançar a mesma coisa duas vezes.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className={styles.acoesSelecao}>
             <button type="button" onClick={() => selecionarTodas(true)}>
