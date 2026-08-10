@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, ArrowUpDown, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, Users, Check } from 'lucide-react';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { GraficoBarras } from '../../components/charts/GraficoBarras.jsx';
 import { MonthlyTable } from '../../components/dashboard/MonthlyTable.jsx';
-import { Loading, Select } from '../../components/ui/index.js';
+import { Loading, Select, Avatar, Card } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import {
@@ -57,6 +57,23 @@ export default function Relatorios() {
 
   const resumoMensal = calcularResumoMensal(entradas.filter(porPessoa), gastos.filter(porPessoa));
 
+  const mostrarComparativo = pessoas.length > 1 && filtroPessoa === 'todos';
+  const comparativoPorPessoa = mostrarComparativo
+    ? pessoas.map((pessoa) => {
+        const entradasPessoa = entradas.filter((e) => e.pessoa === pessoa).filter(porPeriodo);
+        const gastosPessoa = gastos.filter((g) => g.pessoa === pessoa).filter(porPeriodo);
+        const totalEntradasPessoa = somar(entradasPessoa);
+        const totalGastosPessoa = somar(gastosPessoa);
+        return {
+          pessoa,
+          totalEntradas: totalEntradasPessoa,
+          totalGastos: totalGastosPessoa,
+          saldo: totalEntradasPessoa - totalGastosPessoa,
+          principaisCategorias: agruparPorCategoria(gastosPessoa, 3),
+        };
+      })
+    : [];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--espaco-lg)' }}>
       <div className={styles.filtros}>
@@ -66,16 +83,73 @@ export default function Relatorios() {
           <option value="anterior">Mês passado</option>
         </Select>
         {pessoas.length > 1 && (
-          <Select className={styles.filtroSelect} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)}>
-            <option value="todos">Todas as pessoas</option>
+          <div className={styles.seletorPessoa} role="group" aria-label="Filtrar por pessoa">
+            <button
+              type="button"
+              className={`${styles.opcaoPessoa} ${filtroPessoa === 'todos' ? styles.opcaoPessoaAtiva : ''}`}
+              onClick={() => setFiltroPessoa('todos')}
+            >
+              <Users size={15} />
+              Todos
+              {filtroPessoa === 'todos' && <Check size={14} />}
+            </button>
             {pessoas.map((p) => (
-              <option key={p} value={p}>
+              <button
+                key={p}
+                type="button"
+                className={`${styles.opcaoPessoa} ${filtroPessoa === p ? styles.opcaoPessoaAtiva : ''}`}
+                onClick={() => setFiltroPessoa(p)}
+              >
+                <Avatar nome={p} tamanho="pequeno" />
                 {p}
-              </option>
+                {filtroPessoa === p && <Check size={14} />}
+              </button>
             ))}
-          </Select>
+          </div>
         )}
       </div>
+
+      {mostrarComparativo && (
+        <Panel icone={Users} titulo="Comparativo entre Pessoas" subtitulo={subtituloPeriodo}>
+          <div className={styles.gradeComparativo}>
+            {comparativoPorPessoa.map((item) => (
+              <Card key={item.pessoa} className={styles.cardPessoa}>
+                <div className={styles.cabecalhoCardPessoa}>
+                  <Avatar nome={item.pessoa} />
+                  <span>{item.pessoa}</span>
+                </div>
+                <div className={styles.linhasCardPessoa}>
+                  <div className={styles.linhaCardPessoa}>
+                    <span>Entradas</span>
+                    <span className="valor-positivo">{formatarMoeda(item.totalEntradas)}</span>
+                  </div>
+                  <div className={styles.linhaCardPessoa}>
+                    <span>Gastos</span>
+                    <span className="valor-negativo">{formatarMoeda(item.totalGastos)}</span>
+                  </div>
+                  <div className={styles.linhaCardPessoa}>
+                    <span>Saldo</span>
+                    <span className={item.saldo >= 0 ? 'valor-positivo' : 'valor-negativo'}>
+                      {formatarMoeda(item.saldo)}
+                    </span>
+                  </div>
+                </div>
+                {item.principaisCategorias.length > 0 && (
+                  <div className={styles.categoriasCardPessoa}>
+                    <p className={styles.tituloCategoriasCardPessoa}>Maiores gastos</p>
+                    {item.principaisCategorias.map((c) => (
+                      <div key={c.label} className={styles.linhaCategoriaCardPessoa}>
+                        <span>{c.label}</span>
+                        <span>{formatarMoeda(c.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </Panel>
+      )}
 
       <Panel icone={ArrowUpDown} titulo="Este mês vs. mês passado" subtitulo={nomeMesAno(hoje)}>
         <div className={styles.comparativo}>

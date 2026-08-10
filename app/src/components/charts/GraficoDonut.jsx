@@ -2,6 +2,7 @@ import './registroChartJs.js';
 import { Doughnut } from 'react-chartjs-2';
 import { formatarMoeda } from '../../utils/formatadores.js';
 import { useChartTheme, CORES_SERIE } from './useChartTheme.js';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { EmptyState } from '../ui/index.js';
 import { PieChart } from 'lucide-react';
 
@@ -31,6 +32,7 @@ function pluginTextoCentral(total, cor) {
 
 export function GraficoDonut({ dados, altura = 220 }) {
   const cor = useChartTheme();
+  const { ehEscuro } = useTheme();
   const total = dados.reduce((soma, d) => soma + d.valor, 0);
 
   if (total === 0) {
@@ -81,7 +83,12 @@ export function GraficoDonut({ dados, altura = 220 }) {
 
   return (
     <div style={{ height: altura }}>
-      <Doughnut data={data} options={options} plugins={[pluginTextoCentral(total, cor)]} />
+      {/* A troca de tema muda só as cores desenhadas dentro do canvas
+          (pelo plugin), e o react-chartjs-2 não redesenha isso sozinho
+          quando só a cor muda — por isso a key força recriar o
+          gráfico e garantir que o texto "TOTAL" sempre saia com a
+          cor certa pro tema atual. */}
+      <Doughnut key={ehEscuro ? 'escuro' : 'claro'} data={data} options={options} plugins={[pluginTextoCentral(total, cor)]} />
     </div>
   );
 }

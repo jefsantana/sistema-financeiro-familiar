@@ -9,6 +9,97 @@
   min-width: 180px;
 }
 
+.seletorPessoa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+}
+
+.opcaoPessoa {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  background-color: var(--cor-fundo);
+  transition: border-color var(--transicao), color var(--transicao), background-color var(--transicao);
+}
+
+.opcaoPessoaAtiva {
+  border-color: var(--cor-primaria);
+  color: #FFFFFF;
+  background-color: var(--cor-primaria);
+  box-shadow: 0 2px 8px rgba(123, 97, 255, 0.35);
+}
+
+.gradeComparativo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.cardPessoa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.cabecalhoCardPessoa {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.linhasCardPessoa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: var(--espaco-sm);
+  border-top: 1px dashed var(--cor-borda);
+}
+
+.linhaCardPessoa {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+}
+
+.linhaCardPessoa span:first-child {
+  font-family: var(--fonte-corpo);
+  color: var(--cor-texto-secundario);
+}
+
+.categoriasCardPessoa {
+  padding-top: var(--espaco-sm);
+  border-top: 1px dashed var(--cor-borda);
+}
+
+.tituloCategoriasCardPessoa {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 4px;
+}
+
+.linhaCategoriaCardPessoa {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+}
+
 .comparativo {
   display: flex;
   gap: var(--espaco-xl);
