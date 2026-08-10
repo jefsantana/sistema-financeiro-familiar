@@ -36,6 +36,7 @@ import {
   mesAnoDe,
   calcularAlertasContasFixas,
   calcularAlertasParcelamentos,
+  calcularAlertasFaturas,
   agruparPorCategoria,
   agruparPorPessoa,
   calcularTendencia,
@@ -152,7 +153,8 @@ export default function Dashboard() {
   if (carregando || !dados) return <Loading texto="Carregando seu painel financeiro..." />;
 
   const nomeUsuario = nomeExibicao(perfil, usuario).split(' ')[0] || 'por aí';
-  const { entradas, gastos, contasFixas, pagamentos, parcelamentos, pagamentosParcelamentos, metas, orcamentos } = dados;
+  const { entradas, gastos, contasFixas, pagamentos, parcelamentos, pagamentosParcelamentos, metas, orcamentos, cartoes, comprasCartao } =
+    dados;
 
   const hoje = new Date();
   const ehPeriodoAtualReal = !intervaloPersonalizado && mesAnoDe(dataReferencia) === mesAnoDe(hoje);
@@ -181,7 +183,8 @@ export default function Dashboard() {
 
   const alertasContas = calcularAlertasContasFixas(contasFixas, pagamentos);
   const alertasParcelas = calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamentos);
-  const vencimentos = [...alertasContas, ...alertasParcelas].sort((a, b) => a.diasRestantes - b.diasRestantes);
+  const alertasFaturas = calcularAlertasFaturas(comprasCartao, cartoes);
+  const vencimentos = [...alertasContas, ...alertasParcelas, ...alertasFaturas].sort((a, b) => a.diasRestantes - b.diasRestantes);
 
   const categoriasMes = agruparPorCategoria(gastosMes);
   const categoriasMesAnterior = agruparPorCategoria(gastosMesAnterior);

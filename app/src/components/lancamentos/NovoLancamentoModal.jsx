@@ -5,6 +5,7 @@ import { Input, Select, Button } from '../ui/index.js';
 import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
+import { criarCompraNoCartao } from '../../utils/comprasCartao.js';
 import { parseValorMonetario, mascaraMoeda, nomeExibicao, dataLocalDeHoje } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
@@ -131,6 +132,21 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           { parcelamentoId: parcelamento.id, mesAno: `${ano}-${mes}`, pessoa },
           familiaId
         );
+      } else if (tipo === 'gasto' && campos.cartao) {
+        // Compra à vista no cartão: não vira Gasto na hora, entra
+        // pendente na fatura do cartão (e só afeta o saldo quando a
+        // fatura for paga, no Dashboard) — assim como acontece de
+        // verdade com cartão de crédito.
+        await criarCompraNoCartao({
+          descricao: campos.descricao,
+          valor: parseValorMonetario(campos.valor),
+          data: campos.data,
+          categoria: campos.categoria,
+          cartao: campos.cartao,
+          pessoa: nomeExibicao(perfil, usuario).split(' ')[0],
+          familiaId,
+          cartoes,
+        });
       } else {
         const tabela = tipo === 'entrada' ? 'Entradas' : 'Gastos';
         await criar(
@@ -149,7 +165,9 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
       toast.sucesso(
         tipo === 'gasto' && parcelado
           ? 'Compra parcelada lançada: 1ª parcela já entrou no seu gasto de hoje'
-          : 'Lançamento salvo com sucesso'
+          : tipo === 'gasto' && campos.cartao
+            ? 'Compra lançada na fatura do cartão'
+            : 'Lançamento salvo com sucesso'
       );
       aoFechar();
     } catch {

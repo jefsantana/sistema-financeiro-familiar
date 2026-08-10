@@ -91,7 +91,7 @@ export async function excluirPermanente(tabela, id) {
 // ordem respeita as referências entre tabelas (pagamentos antes das
 // contas/parcelamentos que apontam).
 export async function limparDadosFamilia(familiaId) {
-  const tabelasDependentes = ['pagamentos_contas_fixas', 'pagamentos_parcelamentos'];
+  const tabelasDependentes = ['pagamentos_contas_fixas', 'pagamentos_parcelamentos', 'compras_cartao'];
   const tabelasPrincipais = [
     'entradas',
     'gastos',

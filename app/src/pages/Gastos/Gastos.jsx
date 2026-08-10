@@ -1,15 +1,18 @@
 import { TrendingDown } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
+import { useToast } from '../../contexts/ToastContext.jsx';
 import { Avatar } from '../../components/ui/index.js';
 import { formatarData, formatarMoeda } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
+import { criarCompraNoCartao } from '../../utils/comprasCartao.js';
 
 export default function Gastos() {
   const { registros: cartoes } = useCrudMock('Cartoes');
   const nomesCartoes = cartoes.map((c) => c.nome);
+  const toast = useToast();
 
   const config = {
     tabela: 'Gastos',
@@ -17,6 +20,27 @@ export default function Gastos() {
     tituloForm: 'Novo Gasto',
     tituloLista: 'Gastos cadastrados',
     textoVazioLista: 'Cadastre o primeiro gasto usando o formulário acima.',
+    dica: 'Escolheu um cartão de crédito? A compra entra na fatura do cartão e só vira gasto quando a fatura for paga, no Dashboard — não conta no seu saldo agora.',
+    criarAlternativo: async ({ dados, familiaId, pessoa }) => {
+      if (!dados.cartao) return false;
+      try {
+        await criarCompraNoCartao({
+          descricao: dados.descricao,
+          valor: dados.valor,
+          data: dados.data,
+          categoria: dados.categoria,
+          cartao: dados.cartao,
+          pessoa,
+          familiaId,
+          cartoes,
+        });
+        toast.sucesso('Compra lançada na fatura do cartão');
+        return true;
+      } catch (erro) {
+        toast.erro('Não foi possível salvar. Tente novamente.');
+        throw erro;
+      }
+    },
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Supermercado' },
       { nome: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', obrigatorio: true },

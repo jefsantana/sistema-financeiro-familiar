@@ -98,6 +98,72 @@ export function calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamen
     });
 }
 
+/**
+ * Determina em qual fatura (mês) uma compra à vista no cartão cai,
+ * com base no dia de fechamento do cartão: comprou até o fechamento
+ * -> entra na fatura que fecha neste mês; comprou depois -> só entra
+ * na fatura do mês seguinte (regra padrão de cartão de crédito).
+ */
+export function mesFaturaDeCompra(dataCompraIso, diaFechamento) {
+  const [ano, mes, dia] = dataCompraIso.split('-').map(Number);
+  if (!diaFechamento || dia <= diaFechamento) {
+    return `${ano}-${String(mes).padStart(2, '0')}`;
+  }
+  const proximoMes = new Date(ano, mes, 1);
+  return `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Data em que a fatura de um determinado mês vence: sempre no mês
+ * seguinte ao mês em que a fatura fechou, no dia de vencimento
+ * cadastrado no cartão (com um padrão de dia 10 se não informado).
+ */
+export function vencimentoDaFatura(mesFatura, diaVencimento) {
+  const [ano, mes] = mesFatura.split('-').map(Number);
+  const dia = Math.min(diaVencimento || 10, 28);
+  return new Date(ano, mes, dia);
+}
+
+export function diasAteVencimentoEm(data) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const alvo = new Date(data);
+  alvo.setHours(0, 0, 0, 0);
+  return Math.round((alvo - hoje) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Agrupa compras de cartão ainda não pagas em faturas (por cartão +
+ * mês da fatura), pra aparecer nos Próximos Vencimentos do Dashboard.
+ */
+export function calcularAlertasFaturas(comprasCartao, cartoes) {
+  const grupos = {};
+  comprasCartao
+    .filter((c) => !c.paga)
+    .forEach((c) => {
+      const chave = `${c.cartao}__${c.mesFatura}`;
+      if (!grupos[chave]) grupos[chave] = { cartao: c.cartao, mesFatura: c.mesFatura, valor: 0, itens: [] };
+      grupos[chave].valor += Number(c.valor);
+      grupos[chave].itens.push(c);
+    });
+
+  return Object.entries(grupos).map(([chave, grupo]) => {
+    const cartaoInfo = cartoes.find((c) => c.nome === grupo.cartao);
+    const vencimento = vencimentoDaFatura(grupo.mesFatura, cartaoInfo?.diaVencimento);
+    return {
+      tipo: 'fatura',
+      id: chave,
+      descricao: `Fatura ${grupo.cartao}`,
+      valor: grupo.valor,
+      categoria: 'Cartão de Crédito',
+      cartao: grupo.cartao,
+      mesFatura: grupo.mesFatura,
+      itens: grupo.itens,
+      diasRestantes: diasAteVencimentoEm(vencimento),
+    };
+  });
+}
+
 export function agruparPorCategoria(lista, limite = 5) {
   const mapa = {};
   lista.forEach(item => {

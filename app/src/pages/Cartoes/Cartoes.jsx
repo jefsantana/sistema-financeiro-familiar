@@ -9,16 +9,18 @@ export default function Cartoes() {
     tituloForm: 'Novo Cartão',
     tituloLista: 'Cartões cadastrados',
     textoVazioLista: 'Cadastre o primeiro cartão usando o formulário acima.',
-    dica: 'Aqui você cadastra o cartão em si (limite e dia de fechamento). As compras parceladas feitas nele entram em "Parcelamentos", vinculadas a este cartão.',
+    dica: 'Compras à vista no cartão entram automaticamente na fatura (com base no dia de fechamento) e só viram gasto quando a fatura for paga, no Dashboard. Compras parceladas continuam entrando em "Parcelamentos".',
     campos: [
       { nome: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Nubank' },
       { nome: 'limite', rotulo: 'Limite (R$)', tipo: 'moeda', obrigatorio: true },
       { nome: 'diaFechamento', rotulo: 'Dia de fechamento', tipo: 'numero', obrigatorio: true, min: 1, max: 31 },
+      { nome: 'diaVencimento', rotulo: 'Dia de vencimento da fatura', tipo: 'numero', obrigatorio: true, min: 1, max: 31 },
     ],
     colunas: [
       { chave: 'nome', rotulo: 'Nome' },
       { chave: 'limite', rotulo: 'Limite', numerica: true, render: (r) => formatarMoeda(r.limite) },
       { chave: 'diaFechamento', rotulo: 'Fechamento', render: (r) => `Dia ${r.diaFechamento}` },
+      { chave: 'diaVencimento', rotulo: 'Vencimento', render: (r) => (r.diaVencimento ? `Dia ${r.diaVencimento}` : '-') },
     ],
   };
 

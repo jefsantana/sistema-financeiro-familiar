@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PartyPopper, Layers, Pin } from 'lucide-react';
+import { PartyPopper, Layers, Pin, CreditCard } from 'lucide-react';
 import { EmptyState, ConfirmDialog } from '../ui/index.js';
 import { formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -26,7 +26,7 @@ export function UpcomingBills({ vencimentos, aoPagar, pagando }) {
     <ul className={styles.lista}>
       {vencimentos.map((item) => {
         const status = textoStatus(item.diasRestantes);
-        const IconeTipo = item.tipo === 'parcelamento' ? Layers : Pin;
+        const IconeTipo = item.tipo === 'fatura' ? CreditCard : item.tipo === 'parcelamento' ? Layers : Pin;
 
         return (
           <li key={item.id} className={`${styles.item} ${status.classe}`}>

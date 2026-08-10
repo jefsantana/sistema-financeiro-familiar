@@ -183,6 +183,26 @@ create table cartoes (
   nome text not null,
   limite numeric(12,2),
   dia_fechamento int check (dia_fechamento between 1 and 31),
+  dia_vencimento int check (dia_vencimento between 1 and 31),
+  criado_em timestamptz not null default now(),
+  excluido_em timestamptz,
+  excluido_por text
+);
+
+-- Compras à vista no cartão de crédito: não entram direto como Gasto,
+-- ficam pendentes aqui (agrupadas por fatura) até a fatura ser paga —
+-- é aí que uma linha correspondente é criada em "gastos".
+create table compras_cartao (
+  id uuid primary key default gen_random_uuid(),
+  familia_id uuid not null references familias(id),
+  descricao text not null,
+  valor numeric(12,2) not null,
+  categoria text,
+  cartao text not null,
+  pessoa text,
+  data_compra date not null,
+  mes_fatura text not null,
+  paga boolean not null default false,
   criado_em timestamptz not null default now(),
   excluido_em timestamptz,
   excluido_por text
@@ -263,6 +283,7 @@ alter table orcamentos enable row level security;
 alter table transferencias enable row level security;
 alter table pagamentos_contas_fixas enable row level security;
 alter table pagamentos_parcelamentos enable row level security;
+alter table compras_cartao enable row level security;
 
 create policy "ver_proprio_perfil" on perfis
   for select using (id = auth.uid());
@@ -280,7 +301,7 @@ begin
   foreach tabela in array array[
     'categorias', 'entradas', 'gastos', 'contas_fixas', 'parcelamentos',
     'cartoes', 'metas', 'orcamentos', 'transferencias',
-    'pagamentos_contas_fixas', 'pagamentos_parcelamentos'
+    'pagamentos_contas_fixas', 'pagamentos_parcelamentos', 'compras_cartao'
   ]
   loop
     execute format(

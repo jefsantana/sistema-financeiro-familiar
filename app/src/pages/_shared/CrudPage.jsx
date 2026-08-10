@@ -112,8 +112,12 @@ export default function CrudPage({ config }) {
         if (temColunaPessoa) {
           dados.pessoa = pessoaLogada;
         }
-        await salvar(dados);
-        toast.sucesso('Lançamento salvo com sucesso');
+        const tratadoPorAlternativa =
+          config.criarAlternativo && (await config.criarAlternativo({ dados, familiaId: perfil?.familia_id, pessoa: pessoaLogada }));
+        if (!tratadoPorAlternativa) {
+          await salvar(dados);
+          toast.sucesso('Lançamento salvo com sucesso');
+        }
       }
     } catch {
       return;
