@@ -97,9 +97,10 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
         const pessoa = nomeExibicao(perfil, usuario).split(' ')[0];
         const [ano, mes] = campos.data.split('-');
 
-        // A 1ª parcela já foi consumida no cartão hoje, então vira um
-        // Gasto normal (aparece em Lançamentos/Histórico). O parcelamento
-        // já nasce na 2ª parcela, controlando só as próximas cobranças.
+        // A 1ª parcela já foi consumida hoje. Se foi no cartão, ela entra
+        // pendente na fatura (igual uma compra à vista); sem cartão, vira
+        // um Gasto normal na hora. O parcelamento já nasce na 2ª parcela,
+        // controlando só as próximas cobranças.
         const parcelamento = await criar(
           'Parcelamentos',
           {
@@ -114,18 +115,31 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
 
-        await criar(
-          'Gastos',
-          {
+        if (campos.cartao) {
+          await criarCompraNoCartao({
             descricao: `${campos.descricao} (1/${totalParcelas})`,
             valor: valorParcela,
             data: campos.data,
             categoria: campos.categoria,
             cartao: campos.cartao,
             pessoa,
-          },
-          familiaId
-        );
+            familiaId,
+            cartoes,
+          });
+        } else {
+          await criar(
+            'Gastos',
+            {
+              descricao: `${campos.descricao} (1/${totalParcelas})`,
+              valor: valorParcela,
+              data: campos.data,
+              categoria: campos.categoria,
+              cartao: campos.cartao,
+              pessoa,
+            },
+            familiaId
+          );
+        }
 
         await criar(
           'PagamentosParcelamentos',
