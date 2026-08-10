@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { criar } from '../../services/dados.js';
 import { analisarOfx } from '../../utils/ofx.js';
+import { inferirCategoriaPorDescricao } from '../../utils/classificarTransacao.js';
 import { formatarData, formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
@@ -65,7 +66,8 @@ export default function ImportarExtrato() {
       const existentes = [...entradas, ...gastos];
       const comMetadados = brutas.map((t) => {
         const duplicado = existentes.some((e) => e.data === t.data && Math.abs(Number(e.valor) - t.valor) < 0.01);
-        return { ...t, categoria: '', selecionada: !duplicado, duplicado };
+        const categoriaSugerida = inferirCategoriaPorDescricao(t.descricao, t.tipo) || '';
+        return { ...t, categoria: categoriaSugerida, categoriaSugerida: Boolean(categoriaSugerida), selecionada: !duplicado, duplicado };
       });
 
       setTransacoes(comMetadados);
@@ -90,11 +92,13 @@ export default function ImportarExtrato() {
   }
 
   function definirCategoria(id, categoria) {
-    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, categoria } : t)));
+    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, categoria, categoriaSugerida: false } : t)));
   }
 
   function definirTipo(id, tipo) {
-    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '', tipoIncerto: false } : t)));
+    setTransacoes((atual) =>
+      atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '', categoriaSugerida: false, tipoIncerto: false } : t))
+    );
   }
 
   function selecionarTodas(valor) {
@@ -291,6 +295,11 @@ export default function ImportarExtrato() {
                           </option>
                         ))}
                       </Select>
+                      {transacao.categoriaSugerida && (
+                        <Badge cor="info" className={styles.badgeDuplicado}>
+                          Sugerida
+                        </Badge>
+                      )}
                     </td>
                     <TableColunaNumerica data-rotulo="Valor">
                       <span className={transacao.tipo === 'entrada' ? 'valor-positivo' : 'valor-negativo'}>
