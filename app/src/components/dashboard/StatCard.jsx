@@ -4,7 +4,7 @@ import { formatarMoeda } from '../../utils/formatadores.js';
 import { useEhCelular } from '../../hooks/useMediaQuery.js';
 import styles from './StatCard.module.css';
 
-export function StatCard({ icone: Icone, corIcone = 'primaria', rotulo, valor, tendencia, legenda, extra, destaque = false }) {
+export function StatCard({ icone: Icone, corIcone = 'primaria', rotulo, valor, tendencia, legenda, destaque = false }) {
   const ehCelular = useEhCelular();
 
   return (
@@ -39,8 +39,6 @@ export function StatCard({ icone: Icone, corIcone = 'primaria', rotulo, valor, t
           {legenda}
         </p>
       ) : null}
-
-      {extra && <div className={styles.extra}>{extra}</div>}
     </Card>
   );
 }

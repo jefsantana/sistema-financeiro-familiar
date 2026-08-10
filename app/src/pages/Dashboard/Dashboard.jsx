@@ -174,11 +174,11 @@ export default function Dashboard() {
   const totalEntradasMes = somar(entradasMes);
   const totalSaidasMes = somar(gastosMes);
 
-  // "Saldo Atual" é o acumulado até o fim do período selecionado
-  // (comparável com o fim do período anterior de mesma duração).
-  const saldoAtual = somar(entradas.filter((e) => e.data <= dataFimEfetiva)) - somar(gastos.filter((g) => g.data <= dataFimEfetiva));
-  const saldoAcumuladoAnterior =
-    somar(entradas.filter((e) => e.data <= dataFimAnterior)) - somar(gastos.filter((g) => g.data <= dataFimAnterior));
+  // "Saldo Acumulado de Entradas" é a soma de todas as entradas (sem
+  // descontar gastos) até o fim do período selecionado, comparável
+  // com o fim do período anterior de mesma duração.
+  const saldoAtual = somar(entradas.filter((e) => e.data <= dataFimEfetiva));
+  const saldoAcumuladoAnterior = somar(entradas.filter((e) => e.data <= dataFimAnterior));
   const tendenciaSaldo = calcularTendencia(saldoAtual, saldoAcumuladoAnterior);
 
   const alertasContas = calcularAlertasContasFixas(contasFixas, pagamentos);
@@ -192,7 +192,6 @@ export default function Dashboard() {
   const resumoMensal = calcularResumoMensal(entradas, gastos);
   const ultimosLancamentos = montarUltimosLancamentos(entradas, gastos);
   const pessoasGasto = agruparPorPessoa(gastosMes);
-  const pessoasEntradasMes = agruparPorPessoa(entradasMes);
 
   const subtituloMes = ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`;
   const textoPeriodo = intervaloPersonalizado
@@ -259,7 +258,6 @@ export default function Dashboard() {
         saidasMes={totalSaidasMes}
         entradasMesAnterior={somar(entradasMesAnterior)}
         saidasMesAnterior={somar(gastosMesAnterior)}
-        pessoasEntradas={pessoasEntradasMes}
       />
 
       <div className={styles.painelPrincipal}>
