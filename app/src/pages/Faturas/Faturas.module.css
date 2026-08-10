@@ -1,0 +1,82 @@
+.secaoCartao {
+  margin-top: var(--espaco-lg);
+}
+
+.tituloCartao {
+  font-family: var(--fonte-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: var(--espaco-sm);
+}
+
+.semCompras {
+  color: var(--cor-texto-secundario);
+  font-size: 0.85rem;
+}
+
+.listaFaturas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.cardFatura {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.linhaTopoFatura {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+}
+
+.mesFatura {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.totalFatura {
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.resumoTipos {
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+}
+
+.itensFatura {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: var(--espaco-sm);
+  border-top: 1px dashed var(--cor-borda);
+}
+
+.itensFatura li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  font-size: 0.78rem;
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+}
+
+.descricaoItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--fonte-corpo);
+  color: var(--cor-texto-secundario);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

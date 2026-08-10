@@ -3,7 +3,19 @@ import { StatCard } from './StatCard.jsx';
 import { calcularTendencia } from '../../utils/financeiro.js';
 import styles from './SummaryCards.module.css';
 
-export function SummaryCards({ saldoAtual, tendenciaSaldo, entradasMes, saidasMes, entradasMesAnterior, saidasMesAnterior }) {
+function moedaCompacta(valor) {
+  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+}
+
+export function SummaryCards({
+  saldoAtual,
+  tendenciaSaldo,
+  entradasMes,
+  saidasMes,
+  entradasMesAnterior,
+  saidasMesAnterior,
+  pessoasEntradas = [],
+}) {
   const saldoMes = entradasMes - saidasMes;
   const saldoMesAnterior = entradasMesAnterior - saidasMesAnterior;
 
@@ -16,6 +28,15 @@ export function SummaryCards({ saldoAtual, tendenciaSaldo, entradasMes, saidasMe
         rotulo="Entradas do mês"
         valor={entradasMes}
         tendencia={calcularTendencia(entradasMes, entradasMesAnterior)}
+        extra={
+          pessoasEntradas.length > 1
+            ? pessoasEntradas.map((p) => (
+                <span key={p.pessoa}>
+                  {p.pessoa}: {moedaCompacta(p.valor)}
+                </span>
+              ))
+            : null
+        }
       />
       <StatCard
         icone={TrendingDown}

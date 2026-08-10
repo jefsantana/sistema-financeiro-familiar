@@ -52,6 +52,7 @@ export const ICONES_NAV = {
   Trash2,
   Settings,
   Wallet,
+  Receipt,
 };
 
 // Ícone de cada categoria fixa (gasto e entrada) — usado no lugar do

@@ -192,6 +192,7 @@ export default function Dashboard() {
   const resumoMensal = calcularResumoMensal(entradas, gastos);
   const ultimosLancamentos = montarUltimosLancamentos(entradas, gastos);
   const pessoasGasto = agruparPorPessoa(gastosMes);
+  const pessoasEntradasMes = agruparPorPessoa(entradasMes);
 
   const subtituloMes = ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`;
   const textoPeriodo = intervaloPersonalizado
@@ -258,6 +259,7 @@ export default function Dashboard() {
         saidasMes={totalSaidasMes}
         entradasMesAnterior={somar(entradasMesAnterior)}
         saidasMesAnterior={somar(gastosMesAnterior)}
+        pessoasEntradas={pessoasEntradasMes}
       />
 
       <div className={styles.painelPrincipal}>

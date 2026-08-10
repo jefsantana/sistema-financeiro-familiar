@@ -164,6 +164,30 @@ export function calcularAlertasFaturas(comprasCartao, cartoes) {
   });
 }
 
+/**
+ * Agrupa as compras de um cartão (à vista ou parceladas) em faturas
+ * por mês, pra montar o resumo da tela "Fatura do Cartão". Detecta
+ * se uma compra veio de um parcelamento pelo sufixo "(1/N)" que a
+ * gente mesmo adiciona na descrição ao gerar a 1ª parcela.
+ */
+export function agruparComprasPorFatura(comprasCartao) {
+  const grupos = {};
+  comprasCartao.forEach((c) => {
+    const chave = c.mesFatura;
+    if (!grupos[chave]) {
+      grupos[chave] = { mesFatura: c.mesFatura, valorTotal: 0, totalAVista: 0, totalParcelado: 0, paga: true, itens: [] };
+    }
+    const parcelado = /\(\d+\/\d+\)$/.test(c.descricao || '');
+    grupos[chave].valorTotal += Number(c.valor);
+    if (parcelado) grupos[chave].totalParcelado += Number(c.valor);
+    else grupos[chave].totalAVista += Number(c.valor);
+    if (!c.paga) grupos[chave].paga = false;
+    grupos[chave].itens.push({ ...c, parcelado });
+  });
+
+  return Object.values(grupos).sort((a, b) => b.mesFatura.localeCompare(a.mesFatura));
+}
+
 export function agruparPorCategoria(lista, limite = 5) {
   const mapa = {};
   lista.forEach(item => {
@@ -200,7 +224,7 @@ export function agruparPorPessoa(lista) {
     .sort((a, b) => b.valor - a.valor);
 }
 
-function nomeDoMes(mesAno, formato) {
+export function nomeDoMes(mesAno, formato) {
   const [ano, mes] = mesAno.split('-');
   const data = new Date(Number(ano), Number(mes) - 1, 1);
   if (formato === 'short') {

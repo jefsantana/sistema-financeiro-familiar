@@ -97,6 +97,16 @@
   height: 13px;
 }
 
+.extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 0.72rem;
+  color: var(--cor-texto-secundario);
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+}
+
 .tendenciaBoa { color: var(--cor-sucesso); }
 .tendenciaRuim { color: var(--cor-perigo); }
 .tendenciaNeutra { color: var(--cor-texto-secundario); font-weight: 500; }

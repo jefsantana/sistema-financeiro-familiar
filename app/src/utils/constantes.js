@@ -6,6 +6,7 @@ export const NAV_ITEMS = [
   { path: '/contas', label: 'Contas Fixas', icon: 'FileText', grupo: 'Movimentações' },
   { path: '/parcelamentos', label: 'Parcelamentos', icon: 'Layers', grupo: 'Movimentações' },
   { path: '/cartoes', label: 'Cartões', icon: 'CreditCard', grupo: 'Movimentações' },
+  { path: '/faturas', label: 'Fatura do Cartão', icon: 'Receipt', grupo: 'Movimentações' },
   { path: '/metas', label: 'Metas', icon: 'Target', grupo: 'Planejamento' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'Wallet', grupo: 'Planejamento' },
   { path: '/relatorios', label: 'Relatórios', icon: 'BarChart3', grupo: 'Planejamento' },
