@@ -4,16 +4,12 @@
   gap: var(--espaco-md);
 }
 
-.card {
-  position: relative;
-}
-
 .acoesCard {
-  position: absolute;
-  top: var(--espaco-sm);
-  right: var(--espaco-sm);
   display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: var(--espaco-xs);
+  margin-bottom: var(--espaco-sm);
 }
 
 .descricao {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2, Pencil, X, Check, Target } from 'lucide-react';
-import { Input, Button, Card, ProgressBar, EmptyState, ConfirmDialog, SkeletonCard } from '../../components/ui/index.js';
+import { Input, Button, Card, ProgressBar, EmptyState, ConfirmDialog, SkeletonCard, TableBotaoAcao } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { formatarMoeda, parseValorMonetario, mascaraMoeda } from '../../utils/formatadores.js';
@@ -147,42 +147,30 @@ export default function Metas() {
             const emEdicao = edicao?.id === meta.id;
             const percentual = Math.min(100, Math.round((Number(meta.valorAtual) / Number(meta.valorAlvo)) * 100));
             return (
-              <Card key={meta.id} className={styles.card}>
+              <Card key={meta.id}>
                 <div className={styles.acoesCard}>
                   {emEdicao ? (
                     <>
-                      <button type="button" onClick={salvarEdicao} aria-label="Salvar meta" style={{ color: 'var(--cor-sucesso)' }}>
+                      <TableBotaoAcao title="Salvar" rotulo="Salvar" onClick={salvarEdicao}>
                         <Check size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelarEdicao}
-                        aria-label="Cancelar edição"
-                        style={{ color: 'var(--cor-texto-secundario)' }}
-                      >
+                      </TableBotaoAcao>
+                      <TableBotaoAcao title="Cancelar" rotulo="Cancelar" onClick={cancelarEdicao}>
                         <X size={16} />
-                      </button>
+                      </TableBotaoAcao>
                     </>
                   ) : (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => iniciarEdicao(meta)}
-                        aria-label="Editar meta"
-                        disabled={Boolean(edicao)}
-                        style={{ color: 'var(--cor-texto-secundario)' }}
-                      >
+                      <TableBotaoAcao title="Editar" rotulo="Editar" disabled={Boolean(edicao)} onClick={() => iniciarEdicao(meta)}>
                         <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setParaExcluir(meta.id)}
-                        aria-label="Excluir meta"
+                      </TableBotaoAcao>
+                      <TableBotaoAcao
+                        title="Excluir"
+                        rotulo="Excluir"
                         disabled={Boolean(edicao)}
-                        style={{ color: 'var(--cor-texto-secundario)' }}
+                        onClick={() => setParaExcluir(meta.id)}
                       >
-                        <Trash2 size={17} />
-                      </button>
+                        <Trash2 size={16} />
+                      </TableBotaoAcao>
                     </>
                   )}
                 </div>

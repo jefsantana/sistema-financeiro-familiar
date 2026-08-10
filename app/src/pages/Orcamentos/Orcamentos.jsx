@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Wallet, Pencil, Trash2, X, Check } from 'lucide-react';
-import { Card, Button, Select, Input, ProgressBar, ConfirmDialog, EmptyState } from '../../components/ui/index.js';
+import { Card, Button, Select, Input, ProgressBar, ConfirmDialog, EmptyState, TableBotaoAcao } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -162,40 +162,46 @@ export default function Orcamentos() {
 
             return (
               <Card key={orcamento.id} className={styles.item}>
-                <div className={styles.linhaTopo}>
-                  {!emEdicao && (
+                <div className={styles.acoesItem}>
+                  {emEdicao ? (
+                    <>
+                      <TableBotaoAcao title="Salvar" rotulo="Salvar" onClick={salvarEdicao}>
+                        <Check size={16} />
+                      </TableBotaoAcao>
+                      <TableBotaoAcao title="Cancelar" rotulo="Cancelar" onClick={cancelarEdicao}>
+                        <X size={16} />
+                      </TableBotaoAcao>
+                    </>
+                  ) : (
+                    <>
+                      <TableBotaoAcao
+                        title="Editar"
+                        rotulo="Editar"
+                        disabled={Boolean(edicao)}
+                        onClick={() => iniciarEdicao(orcamento)}
+                      >
+                        <Pencil size={16} />
+                      </TableBotaoAcao>
+                      <TableBotaoAcao
+                        title="Excluir"
+                        rotulo="Excluir"
+                        disabled={Boolean(edicao)}
+                        onClick={() => setParaExcluir(orcamento.id)}
+                      >
+                        <Trash2 size={16} />
+                      </TableBotaoAcao>
+                    </>
+                  )}
+                </div>
+
+                {!emEdicao && (
+                  <div className={styles.linhaTopo}>
                     <span className={styles.categoria}>
                       {Icone && <Icone size={16} />}
                       {orcamento.categoria}
                     </span>
-                  )}
-                  <div className={styles.acoesItem}>
-                    {emEdicao ? (
-                      <>
-                        <button type="button" onClick={salvarEdicao} title="Salvar" style={{ color: 'var(--cor-sucesso)' }}>
-                          <Check size={15} />
-                        </button>
-                        <button type="button" onClick={cancelarEdicao} title="Cancelar">
-                          <X size={15} />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button type="button" onClick={() => iniciarEdicao(orcamento)} title="Editar" disabled={Boolean(edicao)}>
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setParaExcluir(orcamento.id)}
-                          title="Excluir"
-                          disabled={Boolean(edicao)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </>
-                    )}
                   </div>
-                </div>
+                )}
 
                 {emEdicao ? (
                   <div className={styles.formEdicao}>

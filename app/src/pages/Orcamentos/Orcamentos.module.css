@@ -27,23 +27,9 @@
 
 .acoesItem {
   display: flex;
-  gap: 4px;
-}
-
-.acoesItem button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--raio-sm);
-  color: var(--cor-texto-secundario);
-  transition: background-color var(--transicao), color var(--transicao);
-}
-
-.acoesItem button:hover {
-  background-color: var(--cor-fundo);
-  color: var(--cor-texto);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
 }
 
 .valores {
