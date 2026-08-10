@@ -48,9 +48,12 @@ async function extrairLinhas(arquivo) {
 }
 
 /**
- * Recebe um File de PDF e devolve a lista de transações que
- * conseguiu reconhecer: { id, data, descricao, valor, tipo }.
- * Best-effort — layouts fora do padrão podem não ser reconhecidos.
+ * Recebe um File de PDF e devolve { transacoes, linhas }: as
+ * transações que conseguiu reconhecer — { id, data, descricao,
+ * valor, tipo } — e o texto bruto extraído, linha por linha (usado
+ * pra mostrar na tela quando nada é reconhecido, pra dar pra ver o
+ * que deu errado sem precisar do PDF original). Best-effort —
+ * layouts fora do padrão podem não ser reconhecidos.
  */
 export async function analisarPdf(arquivo) {
   const linhas = await extrairLinhas(arquivo);
@@ -75,5 +78,5 @@ export async function analisarPdf(arquivo) {
     });
   });
 
-  return transacoes;
+  return { transacoes, linhas };
 }

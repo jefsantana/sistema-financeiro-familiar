@@ -24,6 +24,7 @@ export default function ImportarExtrato() {
   const [transacoes, setTransacoes] = useState([]);
   const [importando, setImportando] = useState(false);
   const [lendoArquivo, setLendoArquivo] = useState(false);
+  const [textoNaoReconhecido, setTextoNaoReconhecido] = useState('');
 
   const selecionadas = transacoes.filter((t) => t.selecionada);
   const totalDuplicados = transacoes.filter((t) => t.duplicado).length;
@@ -35,11 +36,15 @@ export default function ImportarExtrato() {
 
     const ehPdf = arquivo.name.toLowerCase().endsWith('.pdf');
     setLendoArquivo(true);
+    setTextoNaoReconhecido('');
     try {
       let brutas;
+      let linhasBrutas = [];
       if (ehPdf) {
         const { analisarPdf } = await import('../../utils/pdfExtrato.js');
-        brutas = await analisarPdf(arquivo);
+        const resultado = await analisarPdf(arquivo);
+        brutas = resultado.transacoes;
+        linhasBrutas = resultado.linhas;
       } else {
         const texto = await arquivo.text();
         brutas = analisarOfx(texto);
@@ -51,6 +56,9 @@ export default function ImportarExtrato() {
             ? 'Não conseguimos reconhecer nenhum lançamento nesse PDF. O layout desse extrato pode não ser suportado.'
             : 'Não encontramos transações nesse arquivo. Confira se é um extrato OFX válido.'
         );
+        if (ehPdf) {
+          setTextoNaoReconhecido(linhasBrutas.filter((l) => l.trim()).join('\n'));
+        }
         return;
       }
 
@@ -74,6 +82,7 @@ export default function ImportarExtrato() {
     setTransacoes([]);
     setNomeArquivo('');
     setOrigemPdf(false);
+    setTextoNaoReconhecido('');
   }
 
   function alternarSelecao(id) {
@@ -165,6 +174,26 @@ export default function ImportarExtrato() {
               </Button>
             }
           />
+
+          {textoNaoReconhecido && (
+            <div className={styles.blocoDiagnostico}>
+              <p className={styles.tituloDiagnostico}>
+                Texto extraído do PDF (não reconhecemos nenhuma linha como lançamento). Copie e envie esse texto pra
+                gente ajustar a leitura pro layout do seu banco:
+              </p>
+              <textarea readOnly value={textoNaoReconhecido} className={styles.areaDiagnostico} />
+              <Button
+                variante="secundario"
+                tamanho="pequeno"
+                onClick={() => {
+                  navigator.clipboard.writeText(textoNaoReconhecido);
+                  toast.sucesso('Texto copiado');
+                }}
+              >
+                Copiar texto
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <>
