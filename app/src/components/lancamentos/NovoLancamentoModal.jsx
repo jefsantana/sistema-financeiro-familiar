@@ -28,6 +28,8 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   const [tipo, setTipo] = useState('gasto');
   const { perfil, usuario, pessoas } = useAuth();
   const [campos, setCampos] = useState(() => estadoInicial(pessoas));
+  const [parcelado, setParcelado] = useState(false);
+  const [numeroParcelas, setNumeroParcelas] = useState('2');
   const [salvando, setSalvando] = useState(false);
   const { registros: cartoes } = useCrudMock('Cartoes');
   const toast = useToast();
@@ -37,6 +39,8 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
     if (aberto) {
       setTipo('gasto');
       setCampos(estadoInicial(pessoas));
+      setParcelado(false);
+      setNumeroParcelas('2');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto]);
@@ -65,6 +69,10 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
       toast.erro('Escolha uma categoria.');
       return;
     }
+    if (tipo === 'gasto' && parcelado && Number(numeroParcelas) < 2) {
+      toast.erro('Informe pelo menos 2 parcelas.');
+      return;
+    }
 
     const familiaId = perfil?.familia_id;
     setSalvando(true);
@@ -78,6 +86,20 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
             data: campos.data,
             pessoaOrigem: campos.pessoaOrigem,
             pessoaDestino: campos.pessoaDestino,
+          },
+          familiaId
+        );
+      } else if (tipo === 'gasto' && parcelado) {
+        await criar(
+          'Parcelamentos',
+          {
+            descricao: campos.descricao,
+            valorTotal: parseValorMonetario(campos.valor),
+            numeroParcelas: Number(numeroParcelas),
+            parcelaAtual: 1,
+            diaVencimento: Number(campos.data.split('-')[2]),
+            cartao: campos.cartao,
+            categoria: campos.categoria,
           },
           familiaId
         );
@@ -96,7 +118,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
       }
-      toast.sucesso('Lançamento salvo com sucesso');
+      toast.sucesso(tipo === 'gasto' && parcelado ? 'Parcelamento cadastrado com sucesso' : 'Lançamento salvo com sucesso');
       aoFechar();
     } catch {
       toast.erro('Não foi possível salvar. Tente novamente.');
@@ -147,7 +169,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
 
         <div className={styles.linha}>
           <Input
-            rotulo="Valor (R$)"
+            rotulo={parcelado ? 'Valor total (R$)' : 'Valor (R$)'}
             required
             inputMode="decimal"
             placeholder="0,00"
@@ -194,6 +216,36 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
                   </option>
                 ))}
               </Select>
+            )}
+          </div>
+        )}
+
+        {tipo === 'gasto' && (
+          <div className={styles.parcelamento}>
+            <label className={styles.checkboxParcelar}>
+              <input type="checkbox" checked={parcelado} onChange={(e) => setParcelado(e.target.checked)} />
+              Parcelar essa compra
+            </label>
+            {parcelado && (
+              <>
+                <Input
+                  rotulo="Número de parcelas"
+                  type="number"
+                  min="2"
+                  required
+                  value={numeroParcelas}
+                  onChange={(e) => setNumeroParcelas(e.target.value)}
+                />
+                {parseValorMonetario(campos.valor) > 0 && Number(numeroParcelas) >= 2 && (
+                  <span className={styles.valorParcela}>
+                    {numeroParcelas}x de{' '}
+                    {(parseValorMonetario(campos.valor) / Number(numeroParcelas)).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )}
