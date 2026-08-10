@@ -8,6 +8,7 @@
 // conferência linha a linha antes de importar.
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { parseValorMonetario } from './formatadores.js';
+import { inferirTipoPorDescricao } from './classificarTransacao.js';
 
 const REGEX_LINHA = /(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(.+?)\s+(-?R?\$?\s?[\d.,]+)\s*([CD])?\s*$/;
 
@@ -71,10 +72,13 @@ async function extrairLinhas(arquivo) {
 /**
  * Recebe um File de PDF e devolve { transacoes, linhas }: as
  * transações que conseguiu reconhecer — { id, data, descricao,
- * valor, tipo } — e o texto bruto extraído, linha por linha (usado
- * pra mostrar na tela quando nada é reconhecido, pra dar pra ver o
- * que deu errado sem precisar do PDF original). Best-effort —
- * layouts fora do padrão podem não ser reconhecidos.
+ * valor, tipo, tipoIncerto } — e o texto bruto extraído, linha por
+ * linha (usado pra mostrar na tela quando nada é reconhecido, pra
+ * dar pra ver o que deu errado sem precisar do PDF original).
+ * `tipoIncerto` vem true quando o tipo (entrada/gasto) foi um chute
+ * sem nenhuma pista confiável — vale a pena a tela destacar essas
+ * linhas pra conferência. Best-effort — layouts fora do padrão podem
+ * não ser reconhecidos.
  */
 export async function analisarPdf(arquivo) {
   const linhas = await extrairLinhas(arquivo);
@@ -89,13 +93,36 @@ export async function analisarPdf(arquivo) {
     const valorNumerico = parseValorMonetario(valorBruto);
     if (!data || !valorNumerico) return;
 
-    const negativo = valorNumerico < 0 || marcador === 'D';
+    const descricao = descricaoBruta.trim();
+
+    // Decide o tipo em camadas, da pista mais confiável pra menos
+    // confiável: sinal do valor (quando o extrato já vem com "-") ou
+    // marcador D/C explícito primeiro; sem isso, tenta reconhecer
+    // pela descrição; e só em último caso usa um padrão, sinalizando
+    // a linha como incerta pra pedir atenção extra na conferência.
+    let tipo;
+    let tipoIncerto = false;
+    if (valorNumerico < 0 || marcador === 'D') {
+      tipo = 'gasto';
+    } else if (marcador === 'C') {
+      tipo = 'entrada';
+    } else {
+      const porPalavra = inferirTipoPorDescricao(descricao);
+      if (porPalavra) {
+        tipo = porPalavra;
+      } else {
+        tipo = 'gasto';
+        tipoIncerto = true;
+      }
+    }
+
     transacoes.push({
       id: `pdf-${indice}-${data}-${valorBruto}`,
       data,
-      descricao: descricaoBruta.trim(),
+      descricao,
       valor: Math.abs(valorNumerico),
-      tipo: negativo ? 'gasto' : 'entrada',
+      tipo,
+      tipoIncerto,
     });
   });
 

@@ -94,7 +94,7 @@ export default function ImportarExtrato() {
   }
 
   function definirTipo(id, tipo) {
-    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '' } : t)));
+    setTransacoes((atual) => atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '', tipoIncerto: false } : t)));
   }
 
   function selecionarTodas(valor) {
@@ -270,6 +270,11 @@ export default function ImportarExtrato() {
                         <option value="entrada">Entrada</option>
                         <option value="gasto">Gasto</option>
                       </Select>
+                      {transacao.tipoIncerto && (
+                        <Badge cor="alerta" className={styles.badgeDuplicado}>
+                          Confirme o tipo
+                        </Badge>
+                      )}
                     </td>
                     <td data-rotulo="Categoria">
                       <Select
