@@ -5,7 +5,7 @@ import { Input, Select, Button } from '../ui/index.js';
 import { SeletorPessoa } from './SeletorPessoa.jsx';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
-import { parseValorMonetario, nomeExibicao, dataLocalDeHoje } from '../../utils/formatadores.js';
+import { parseValorMonetario, mascaraMoeda, nomeExibicao, dataLocalDeHoje } from '../../utils/formatadores.js';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -46,7 +46,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   }, [aberto]);
 
   function atualizarCampo(nome, valor) {
-    const valorLimpo = nome === 'valor' ? valor.replace(/-/g, '') : valor;
+    const valorLimpo = nome === 'valor' ? mascaraMoeda(valor) : valor;
     setCampos((atual) => ({ ...atual, [nome]: valorLimpo }));
   }
 
@@ -90,17 +90,45 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
       } else if (tipo === 'gasto' && parcelado) {
-        await criar(
+        const valorTotal = parseValorMonetario(campos.valor);
+        const totalParcelas = Number(numeroParcelas);
+        const valorParcela = valorTotal / totalParcelas;
+        const pessoa = nomeExibicao(perfil, usuario).split(' ')[0];
+        const [ano, mes] = campos.data.split('-');
+
+        // A 1ª parcela já foi consumida no cartão hoje, então vira um
+        // Gasto normal (aparece em Lançamentos/Histórico). O parcelamento
+        // já nasce na 2ª parcela, controlando só as próximas cobranças.
+        const parcelamento = await criar(
           'Parcelamentos',
           {
             descricao: campos.descricao,
-            valorTotal: parseValorMonetario(campos.valor),
-            numeroParcelas: Number(numeroParcelas),
-            parcelaAtual: 1,
+            valorTotal,
+            numeroParcelas: totalParcelas,
+            parcelaAtual: 2,
             diaVencimento: Number(campos.data.split('-')[2]),
             cartao: campos.cartao,
             categoria: campos.categoria,
           },
+          familiaId
+        );
+
+        await criar(
+          'Gastos',
+          {
+            descricao: `${campos.descricao} (1/${totalParcelas})`,
+            valor: valorParcela,
+            data: campos.data,
+            categoria: campos.categoria,
+            cartao: campos.cartao,
+            pessoa,
+          },
+          familiaId
+        );
+
+        await criar(
+          'PagamentosParcelamentos',
+          { parcelamentoId: parcelamento.id, mesAno: `${ano}-${mes}`, pessoa },
           familiaId
         );
       } else {
@@ -118,7 +146,11 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
           familiaId
         );
       }
-      toast.sucesso(tipo === 'gasto' && parcelado ? 'Parcelamento cadastrado com sucesso' : 'Lançamento salvo com sucesso');
+      toast.sucesso(
+        tipo === 'gasto' && parcelado
+          ? 'Compra parcelada lançada: 1ª parcela já entrou no seu gasto de hoje'
+          : 'Lançamento salvo com sucesso'
+      );
       aoFechar();
     } catch {
       toast.erro('Não foi possível salvar. Tente novamente.');

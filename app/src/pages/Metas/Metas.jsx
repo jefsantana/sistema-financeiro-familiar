@@ -3,7 +3,7 @@ import { Trash2, Pencil, X, Target } from 'lucide-react';
 import { Input, Button, Card, ProgressBar, EmptyState, ConfirmDialog, SkeletonCard } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
-import { formatarMoeda, parseValorMonetario } from '../../utils/formatadores.js';
+import { formatarMoeda, parseValorMonetario, mascaraMoeda } from '../../utils/formatadores.js';
 import formStyles from '../_shared/CrudPage.module.css';
 import styles from './Metas.module.css';
 
@@ -17,7 +17,8 @@ export default function Metas() {
   const toast = useToast();
 
   function atualizarCampo(nome, valor) {
-    setCampos((atual) => ({ ...atual, [nome]: valor.replace(/-/g, '') }));
+    const ehMoeda = nome === 'valorAlvo' || nome === 'valorAtual';
+    setCampos((atual) => ({ ...atual, [nome]: ehMoeda ? mascaraMoeda(valor) : valor }));
   }
 
   function iniciarEdicao(meta) {

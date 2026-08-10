@@ -6,7 +6,7 @@ import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
 import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
-import { formatarMoeda, parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
+import { formatarMoeda, parseValorMonetario, mascaraMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import { mesAnoDe, obterMesAno } from '../../utils/financeiro.js';
 import stylesForm from '../_shared/CrudPage.module.css';
 import styles from './Orcamentos.module.css';
@@ -112,7 +112,7 @@ export default function Orcamentos() {
           inputMode="decimal"
           placeholder="0,00"
           value={limite}
-          onChange={(e) => setLimite(e.target.value)}
+          onChange={(e) => setLimite(mascaraMoeda(e.target.value))}
           className={stylesForm.campoFlex}
         />
         <div className={stylesForm.acoesFormulario}>

@@ -49,6 +49,20 @@ export function parseValorMonetario(texto) {
   return isNaN(numero) ? 0 : numero;
 }
 
+/**
+ * Máscara de moeda para campos de digitação: aplica a cada tecla,
+ * tratando os últimos 2 dígitos como centavos (padrão de apps de
+ * banco). Ex: digitar "2" -> "0,02", "200" -> "2,00", "200000" ->
+ * "2.000,00". Ignora tudo que não é dígito, então funciona mesmo
+ * colando um valor já formatado como "1.250,90".
+ */
+export function mascaraMoeda(valorDigitado) {
+  const somenteDigitos = (valorDigitado || '').replace(/\D/g, '');
+  if (!somenteDigitos) return '';
+  const numero = Number(somenteDigitos) / 100;
+  return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function dataPorExtenso(data) {
   const texto = data.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
   return texto.charAt(0).toUpperCase() + texto.slice(1);

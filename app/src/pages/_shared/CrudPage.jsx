@@ -16,7 +16,7 @@ import {
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { parseValorMonetario, nomeExibicao } from '../../utils/formatadores.js';
+import { parseValorMonetario, mascaraMoeda, nomeExibicao } from '../../utils/formatadores.js';
 import styles from './CrudPage.module.css';
 
 function estadoInicial(campos) {
@@ -50,16 +50,8 @@ export default function CrudPage({ config }) {
   );
 
   function atualizarCampo(nome, valor, tipo) {
-    const valorLimpo = tipo === 'moeda' ? valor.replace(/-/g, '') : valor;
+    const valorLimpo = tipo === 'moeda' ? mascaraMoeda(valor) : valor;
     setValores((atual) => ({ ...atual, [nome]: valorLimpo }));
-  }
-
-  function formatarCampoMoedaAoSair(nome) {
-    setValores((atual) => {
-      if (!atual[nome]) return atual;
-      const numero = parseValorMonetario(atual[nome]);
-      return { ...atual, [nome]: numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) };
-    });
   }
 
   function iniciarEdicao(registro) {
@@ -183,7 +175,6 @@ export default function CrudPage({ config }) {
               placeholder={campo.placeholder || (campo.tipo === 'moeda' ? '0,00' : undefined)}
               value={valores[campo.nome]}
               onChange={(e) => atualizarCampo(campo.nome, e.target.value, campo.tipo)}
-              onBlur={campo.tipo === 'moeda' ? () => formatarCampoMoedaAoSair(campo.nome) : undefined}
               className={styles.campoFlex}
             />
           );
