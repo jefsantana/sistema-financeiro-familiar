@@ -18,6 +18,12 @@ export default function Parcelamentos() {
     tituloLista: 'Parcelamentos cadastrados',
     textoVazioLista: 'Cadastre o primeiro parcelamento usando o formulário acima.',
     dica: 'Use para uma compra dividida em várias vezes, geralmente no cartão de crédito (ex: um notebook em 10x). Uma conta que se repete todo mês com o mesmo valor, como aluguel ou internet, vai em "Contas Fixas".',
+    validar: (dados) => {
+      if (Number(dados.parcelaAtual) > Number(dados.numeroParcelas)) {
+        return 'A "Parcela atual" não pode ser maior que o "Nº de parcelas".';
+      }
+      return null;
+    },
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Notebook' },
       { nome: 'valorTotal', rotulo: 'Valor total (R$)', tipo: 'moeda', obrigatorio: true },

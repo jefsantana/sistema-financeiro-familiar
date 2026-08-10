@@ -104,23 +104,39 @@ export default function CrudPage({ config }) {
       dados[campo.nome] = converterValor(campo, valores[campo.nome]);
     });
 
-    if (editando) {
-      await editar(editando.id, dados);
-      toast.sucesso('Alterações salvas com sucesso');
-    } else {
-      if (temColunaPessoa) {
-        dados.pessoa = pessoaLogada;
+    if (config.validar) {
+      const mensagemErro = config.validar(dados);
+      if (mensagemErro) {
+        toast.erro(mensagemErro);
+        return;
       }
-      await salvar(dados);
-      toast.sucesso('Lançamento salvo com sucesso');
+    }
+
+    try {
+      if (editando) {
+        await editar(editando.id, dados);
+        toast.sucesso('Alterações salvas com sucesso');
+      } else {
+        if (temColunaPessoa) {
+          dados.pessoa = pessoaLogada;
+        }
+        await salvar(dados);
+        toast.sucesso('Lançamento salvo com sucesso');
+      }
+    } catch {
+      return;
     }
     setEditando(null);
     setValores(estadoInicial(campos));
   }
 
   async function confirmarExclusao() {
-    await remover(paraExcluir, pessoaLogada);
-    toast.sucesso('Registro movido para a lixeira');
+    try {
+      await remover(paraExcluir, pessoaLogada);
+      toast.sucesso('Registro movido para a lixeira');
+    } catch {
+      // erro já sinalizado pelo hook useCrudMock
+    }
   }
 
   return (

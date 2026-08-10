@@ -6,7 +6,11 @@ import { useToast } from '../../contexts/ToastContext.jsx';
 import { formatarData } from '../../utils/formatadores.js';
 
 function nomeExibicao(item) {
-  return item.descricao || item.nome || 'Registro sem descrição';
+  if (item.descricao) return item.descricao;
+  if (item.nome) return item.nome;
+  if (item.mesAno) return `Pagamento de ${item.mesAno}`;
+  if (item.categoria) return item.categoria;
+  return 'Registro sem descrição';
 }
 
 export default function Lixeira() {

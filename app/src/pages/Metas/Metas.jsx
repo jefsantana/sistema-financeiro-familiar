@@ -48,20 +48,28 @@ export default function Metas() {
       valorAtual: parseValorMonetario(campos.valorAtual),
     };
 
-    if (editandoId) {
-      await editar(editandoId, dados);
-      toast.sucesso('Alterações salvas com sucesso');
-    } else {
-      await salvar(dados);
-      toast.sucesso('Meta salva com sucesso');
+    try {
+      if (editandoId) {
+        await editar(editandoId, dados);
+        toast.sucesso('Alterações salvas com sucesso');
+      } else {
+        await salvar(dados);
+        toast.sucesso('Meta salva com sucesso');
+      }
+    } catch {
+      return;
     }
     setEditandoId(null);
     setCampos(CAMPOS_VAZIOS);
   }
 
   async function confirmarExclusao() {
-    await remover(paraExcluir);
-    toast.sucesso('Meta movida para a lixeira');
+    try {
+      await remover(paraExcluir);
+      toast.sucesso('Meta movida para a lixeira');
+    } catch {
+      // erro já sinalizado pelo hook useCrudMock
+    }
   }
 
   return (

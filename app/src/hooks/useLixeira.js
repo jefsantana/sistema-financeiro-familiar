@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listarExcluidos, restaurar, excluirPermanente } from '../services/dados.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../contexts/ToastContext.jsx';
 
 const TABELAS_VISIVEIS = {
   Entradas: 'Entrada',
@@ -10,11 +11,15 @@ const TABELAS_VISIVEIS = {
   Parcelamentos: 'Parcelamento',
   Cartoes: 'Cartão',
   Metas: 'Meta',
+  Orcamentos: 'Orçamento',
   Transferencias: 'Transferência',
+  PagamentosContasFixas: 'Pagamento de Conta',
+  PagamentosParcelamentos: 'Pagamento de Parcela',
 };
 
 export function useLixeira() {
   const { perfil } = useAuth();
+  const toast = useToast();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -29,10 +34,13 @@ export function useLixeira() {
       );
       const todos = listas.flat().sort((a, b) => new Date(b.excluidoEm) - new Date(a.excluidoEm));
       setItens(todos);
+    } catch (erro) {
+      toast.erro('Não foi possível carregar a lixeira. Tente novamente.');
+      throw erro;
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (perfil?.familia_id) recarregar();
@@ -40,18 +48,28 @@ export function useLixeira() {
 
   const restaurarItem = useCallback(
     async (tabela, id) => {
-      await restaurar(tabela, id);
-      await recarregar();
+      try {
+        await restaurar(tabela, id);
+        await recarregar();
+      } catch (erro) {
+        toast.erro('Não foi possível restaurar o registro. Tente novamente.');
+        throw erro;
+      }
     },
-    [recarregar]
+    [recarregar, toast]
   );
 
   const excluirItemPermanente = useCallback(
     async (tabela, id) => {
-      await excluirPermanente(tabela, id);
-      await recarregar();
+      try {
+        await excluirPermanente(tabela, id);
+        await recarregar();
+      } catch (erro) {
+        toast.erro('Não foi possível excluir permanentemente. Tente novamente.');
+        throw erro;
+      }
     },
-    [recarregar]
+    [recarregar, toast]
   );
 
   return { itens, carregando, restaurarItem, excluirItemPermanente, recarregar };

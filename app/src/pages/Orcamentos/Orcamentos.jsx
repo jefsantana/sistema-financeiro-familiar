@@ -60,19 +60,27 @@ export default function Orcamentos() {
       return;
     }
 
-    if (editando) {
-      await editar(editando.id, { categoria, limiteMensal: parseValorMonetario(limite) });
-      toast.sucesso('Orçamento atualizado');
-    } else {
-      await salvar({ categoria, limiteMensal: parseValorMonetario(limite) });
-      toast.sucesso('Orçamento criado');
+    try {
+      if (editando) {
+        await editar(editando.id, { categoria, limiteMensal: parseValorMonetario(limite) });
+        toast.sucesso('Orçamento atualizado');
+      } else {
+        await salvar({ categoria, limiteMensal: parseValorMonetario(limite) });
+        toast.sucesso('Orçamento criado');
+      }
+    } catch {
+      return;
     }
     limparFormulario();
   }
 
   async function confirmarExclusao() {
-    await remover(paraExcluir, nomeExibicao(perfil, usuario).split(' ')[0]);
-    toast.sucesso('Orçamento movido para a lixeira');
+    try {
+      await remover(paraExcluir, nomeExibicao(perfil, usuario).split(' ')[0]);
+      toast.sucesso('Orçamento movido para a lixeira');
+    } catch {
+      // erro já sinalizado pelo hook useCrudMock
+    }
   }
 
   return (

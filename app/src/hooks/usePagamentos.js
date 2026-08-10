@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
 import { criar, atualizar } from '../services/dados.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../contexts/ToastContext.jsx';
 import { dataLocalDeHoje } from '../utils/formatadores.js';
 
 export function usePagamentos(aoConcluir) {
   const { perfil } = useAuth();
+  const toast = useToast();
   const [pagando, setPagando] = useState(null);
 
   const pagar = useCallback(
@@ -33,11 +35,13 @@ export function usePagamentos(aoConcluir) {
         );
 
         await aoConcluir?.();
+      } catch {
+        toast.erro('Não foi possível registrar o pagamento. Tente novamente.');
       } finally {
         setPagando(null);
       }
     },
-    [aoConcluir, perfil?.familia_id]
+    [aoConcluir, perfil?.familia_id, toast]
   );
 
   return { pagar, pagando };
