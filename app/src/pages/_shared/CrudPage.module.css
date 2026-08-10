@@ -40,6 +40,11 @@
   min-width: 240px;
 }
 
+.campoInline {
+  width: 100%;
+  min-width: 110px;
+}
+
 .botaoSalvar {
   align-self: flex-end;
 }

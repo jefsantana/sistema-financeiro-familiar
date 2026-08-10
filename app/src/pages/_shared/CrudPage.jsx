@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Trash2, Pencil, X } from 'lucide-react';
+import { Trash2, Pencil, X, Check } from 'lucide-react';
 import {
   Input,
   Select,
@@ -33,11 +33,23 @@ function converterValor(campo, bruto) {
   return bruto;
 }
 
+function valoresDoRegistro(registro, campos) {
+  const valores = {};
+  campos.forEach((campo) => {
+    const bruto = registro[campo.nome];
+    valores[campo.nome] =
+      campo.tipo === 'moeda' && typeof bruto === 'number'
+        ? bruto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : (bruto ?? '');
+  });
+  return valores;
+}
+
 export default function CrudPage({ config }) {
   const { tabela, icone: Icone, tituloForm, tituloLista, campos, colunas, textoVazioLista, dica } = config;
   const { registros, carregando, salvando, salvar, editar, remover } = useCrudMock(tabela);
-  const [valores, setValores] = useState(estadoInicial(campos));
-  const [editando, setEditando] = useState(null);
+  const [valoresNovo, setValoresNovo] = useState(estadoInicial(campos));
+  const [edicao, setEdicao] = useState(null);
   const [paraExcluir, setParaExcluir] = useState(null);
   const toast = useToast();
   const { perfil, usuario } = useAuth();
@@ -49,81 +61,91 @@ export default function CrudPage({ config }) {
     [registros]
   );
 
-  function atualizarCampo(nome, valor, tipo) {
+  function atualizarCampoNovo(nome, valor, tipo) {
     const valorLimpo = tipo === 'moeda' ? mascaraMoeda(valor) : valor;
-    setValores((atual) => ({ ...atual, [nome]: valorLimpo }));
+    setValoresNovo((atual) => ({ ...atual, [nome]: valorLimpo }));
+  }
+
+  function atualizarCampoEdicao(nome, valor, tipo) {
+    const valorLimpo = tipo === 'moeda' ? mascaraMoeda(valor) : valor;
+    setEdicao((atual) => ({ ...atual, valores: { ...atual.valores, [nome]: valorLimpo } }));
   }
 
   function iniciarEdicao(registro) {
-    const valoresDoRegistro = {};
-    campos.forEach((campo) => {
-      const bruto = registro[campo.nome];
-      valoresDoRegistro[campo.nome] =
-        campo.tipo === 'moeda' && typeof bruto === 'number'
-          ? bruto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : (bruto ?? '');
-    });
-    setEditando({ id: registro.id, rotulo: registro.descricao || registro.nome || '' });
-    setValores(valoresDoRegistro);
+    setEdicao({ id: registro.id, valores: valoresDoRegistro(registro, campos) });
   }
 
   function cancelarEdicao() {
-    setEditando(null);
-    setValores(estadoInicial(campos));
+    setEdicao(null);
   }
 
-  async function aoSalvar(evento) {
-    evento.preventDefault();
-
+  // Valida os campos e monta o objeto pronto pra salvar; mostra o
+  // toast de erro e retorna null quando algo está inválido.
+  function validarEConstruir(valoresParaValidar) {
     const campoVazio = campos.find(
-      (campo) => campo.obrigatorio && campo.tipo !== 'moeda' && !String(valores[campo.nome] ?? '').trim()
+      (campo) => campo.obrigatorio && campo.tipo !== 'moeda' && !String(valoresParaValidar[campo.nome] ?? '').trim()
     );
     if (campoVazio) {
       toast.erro(`Preencha o campo "${campoVazio.rotulo}".`);
-      return;
+      return null;
     }
 
     const campoMoedaInvalido = campos.find(
-      (campo) => campo.tipo === 'moeda' && campo.obrigatorio && parseValorMonetario(valores[campo.nome]) <= 0
+      (campo) => campo.tipo === 'moeda' && campo.obrigatorio && parseValorMonetario(valoresParaValidar[campo.nome]) <= 0
     );
     if (campoMoedaInvalido) {
       toast.erro(`Informe um valor maior que zero em "${campoMoedaInvalido.rotulo}".`);
-      return;
+      return null;
     }
 
     const dados = {};
     campos.forEach((campo) => {
-      dados[campo.nome] = converterValor(campo, valores[campo.nome]);
+      dados[campo.nome] = converterValor(campo, valoresParaValidar[campo.nome]);
     });
 
     if (config.validar) {
       const mensagemErro = config.validar(dados);
       if (mensagemErro) {
         toast.erro(mensagemErro);
-        return;
+        return null;
       }
     }
 
+    return dados;
+  }
+
+  async function aoCriar(evento) {
+    evento.preventDefault();
+    const dados = validarEConstruir(valoresNovo);
+    if (!dados) return;
+
     try {
-      if (editando) {
-        await editar(editando.id, dados);
-        toast.sucesso('Alterações salvas com sucesso');
-      } else {
-        if (temColunaPessoa) {
-          dados.pessoa = pessoaLogada;
-        }
-        const tratadoPorAlternativa =
-          config.criarAlternativo && (await config.criarAlternativo({ dados, familiaId: perfil?.familia_id, pessoa: pessoaLogada }));
-        if (!tratadoPorAlternativa) {
-          await salvar(dados);
-          toast.sucesso('Lançamento salvo com sucesso');
-        }
+      if (temColunaPessoa) {
+        dados.pessoa = pessoaLogada;
+      }
+      const tratadoPorAlternativa =
+        config.criarAlternativo && (await config.criarAlternativo({ dados, familiaId: perfil?.familia_id, pessoa: pessoaLogada }));
+      if (!tratadoPorAlternativa) {
+        await salvar(dados);
+        toast.sucesso('Lançamento salvo com sucesso');
       }
     } catch {
       return;
     }
-    setEditando(null);
-    setValores(estadoInicial(campos));
+    setValoresNovo(estadoInicial(campos));
+  }
+
+  async function salvarEdicao() {
+    const dados = validarEConstruir(edicao.valores);
+    if (!dados) return;
+
+    try {
+      await editar(edicao.id, dados);
+      toast.sucesso('Alterações salvas com sucesso');
+    } catch {
+      return;
+    }
+    setEdicao(null);
   }
 
   async function confirmarExclusao() {
@@ -135,16 +157,54 @@ export default function CrudPage({ config }) {
     }
   }
 
+  function renderCampoInline(campo) {
+    const valorAtual = edicao.valores[campo.nome];
+    if (campo.tipo === 'select') {
+      return (
+        <Select
+          aria-label={campo.rotulo}
+          required={campo.obrigatorio}
+          icone={campo.iconePorValor ? campo.iconePorValor(valorAtual) : undefined}
+          value={valorAtual}
+          onChange={(e) => atualizarCampoEdicao(campo.nome, e.target.value)}
+          className={styles.campoInline}
+        >
+          <option value="">{campo.obrigatorio ? 'Selecione' : 'Nenhum'}</option>
+          {campo.opcoes.map((opcao) => (
+            <option key={opcao.valor ?? opcao} value={opcao.valor ?? opcao}>
+              {opcao.rotulo ?? opcao}
+            </option>
+          ))}
+        </Select>
+      );
+    }
+
+    return (
+      <Input
+        aria-label={campo.rotulo}
+        required={campo.obrigatorio}
+        type={campo.tipo === 'data' ? 'date' : campo.tipo === 'numero' ? 'number' : 'text'}
+        inputMode={campo.tipo === 'moeda' ? 'decimal' : undefined}
+        min={campo.min}
+        max={campo.max}
+        placeholder={campo.placeholder || (campo.tipo === 'moeda' ? '0,00' : undefined)}
+        value={valorAtual}
+        onChange={(e) => atualizarCampoEdicao(campo.nome, e.target.value, campo.tipo)}
+        className={styles.campoInline}
+      />
+    );
+  }
+
   return (
     <div>
       <div className={styles.cabecalhoPagina}>
         <Icone size={20} className={styles.iconePagina} />
-        <h1>{editando ? `Editando: ${editando.rotulo || tituloForm}` : tituloForm}</h1>
+        <h1>{tituloForm}</h1>
       </div>
 
       {dica && <InfoBanner>{dica}</InfoBanner>}
 
-      <form className={styles.formulario} onSubmit={aoSalvar} noValidate>
+      <form className={styles.formulario} onSubmit={aoCriar} noValidate>
         {campos.map((campo) => {
           if (campo.tipo === 'select') {
             return (
@@ -152,9 +212,9 @@ export default function CrudPage({ config }) {
                 key={campo.nome}
                 rotulo={campo.rotulo}
                 required={campo.obrigatorio}
-                icone={campo.iconePorValor ? campo.iconePorValor(valores[campo.nome]) : undefined}
-                value={valores[campo.nome]}
-                onChange={(e) => atualizarCampo(campo.nome, e.target.value)}
+                icone={campo.iconePorValor ? campo.iconePorValor(valoresNovo[campo.nome]) : undefined}
+                value={valoresNovo[campo.nome]}
+                onChange={(e) => atualizarCampoNovo(campo.nome, e.target.value)}
                 className={styles.campoFlex}
               >
                 <option value="">{campo.obrigatorio ? 'Selecione' : 'Nenhum'}</option>
@@ -177,8 +237,8 @@ export default function CrudPage({ config }) {
               min={campo.min}
               max={campo.max}
               placeholder={campo.placeholder || (campo.tipo === 'moeda' ? '0,00' : undefined)}
-              value={valores[campo.nome]}
-              onChange={(e) => atualizarCampo(campo.nome, e.target.value, campo.tipo)}
+              value={valoresNovo[campo.nome]}
+              onChange={(e) => atualizarCampoNovo(campo.nome, e.target.value, campo.tipo)}
               className={styles.campoFlex}
             />
           );
@@ -186,13 +246,8 @@ export default function CrudPage({ config }) {
 
         <div className={styles.acoesFormulario}>
           <Button type="submit" carregando={salvando} className={styles.botaoSalvar}>
-            {editando ? 'Salvar alterações' : 'Salvar'}
+            Salvar
           </Button>
-          {editando && (
-            <Button type="button" variante="secundario" onClick={cancelarEdicao}>
-              <X size={16} /> Cancelar
-            </Button>
-          )}
         </div>
       </form>
 
@@ -217,29 +272,64 @@ export default function CrudPage({ config }) {
             </tr>
           </thead>
           <tbody>
-            {registrosOrdenados.map((registro) => (
-              <tr key={registro.id}>
-                {colunas.map((coluna) =>
-                  coluna.numerica ? (
-                    <TableColunaNumerica key={coluna.chave} data-rotulo={coluna.rotulo}>
-                      {coluna.render ? coluna.render(registro) : registro[coluna.chave]}
-                    </TableColunaNumerica>
-                  ) : (
-                    <td key={coluna.chave} data-rotulo={coluna.rotulo}>
-                      {coluna.render ? coluna.render(registro) : registro[coluna.chave]}
-                    </td>
-                  )
-                )}
-                <TableColunaAcoes>
-                  <TableBotaoAcao title="Editar" rotulo="Editar" onClick={() => iniciarEdicao(registro)}>
-                    <Pencil size={16} />
-                  </TableBotaoAcao>
-                  <TableBotaoAcao title="Excluir" rotulo="Excluir" onClick={() => setParaExcluir(registro.id)}>
-                    <Trash2 size={16} />
-                  </TableBotaoAcao>
-                </TableColunaAcoes>
-              </tr>
-            ))}
+            {registrosOrdenados.map((registro) => {
+              const emEdicao = edicao?.id === registro.id;
+              return (
+                <tr key={registro.id}>
+                  {colunas.map((coluna) => {
+                    const campoCorrespondente = campos.find((c) => c.nome === coluna.chave);
+                    if (emEdicao && campoCorrespondente) {
+                      return (
+                        <td key={coluna.chave} data-rotulo={coluna.rotulo}>
+                          {renderCampoInline(campoCorrespondente)}
+                        </td>
+                      );
+                    }
+                    const conteudo = coluna.render ? coluna.render(registro) : registro[coluna.chave];
+                    return coluna.numerica ? (
+                      <TableColunaNumerica key={coluna.chave} data-rotulo={coluna.rotulo}>
+                        {conteudo}
+                      </TableColunaNumerica>
+                    ) : (
+                      <td key={coluna.chave} data-rotulo={coluna.rotulo}>
+                        {conteudo}
+                      </td>
+                    );
+                  })}
+                  <TableColunaAcoes>
+                    {emEdicao ? (
+                      <>
+                        <TableBotaoAcao title="Salvar" rotulo="Salvar" onClick={salvarEdicao}>
+                          <Check size={16} />
+                        </TableBotaoAcao>
+                        <TableBotaoAcao title="Cancelar" rotulo="Cancelar" onClick={cancelarEdicao}>
+                          <X size={16} />
+                        </TableBotaoAcao>
+                      </>
+                    ) : (
+                      <>
+                        <TableBotaoAcao
+                          title="Editar"
+                          rotulo="Editar"
+                          disabled={Boolean(edicao)}
+                          onClick={() => iniciarEdicao(registro)}
+                        >
+                          <Pencil size={16} />
+                        </TableBotaoAcao>
+                        <TableBotaoAcao
+                          title="Excluir"
+                          rotulo="Excluir"
+                          disabled={Boolean(edicao)}
+                          onClick={() => setParaExcluir(registro.id)}
+                        >
+                          <Trash2 size={16} />
+                        </TableBotaoAcao>
+                      </>
+                    )}
+                  </TableColunaAcoes>
+                </tr>
+              );
+            })}
           </tbody>
         </Table>
       )}

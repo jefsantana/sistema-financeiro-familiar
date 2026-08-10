@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Pencil, X, Target } from 'lucide-react';
+import { Trash2, Pencil, X, Check, Target } from 'lucide-react';
 import { Input, Button, Card, ProgressBar, EmptyState, ConfirmDialog, SkeletonCard } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -9,59 +9,77 @@ import styles from './Metas.module.css';
 
 const CAMPOS_VAZIOS = { descricao: '', valorAlvo: '', valorAtual: '' };
 
+function valoresDaMeta(meta) {
+  return {
+    descricao: meta.descricao,
+    valorAlvo: Number(meta.valorAlvo).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    valorAtual: Number(meta.valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  };
+}
+
 export default function Metas() {
   const { registros: metas, carregando, salvando, salvar, editar, remover } = useCrudMock('Metas');
-  const [campos, setCampos] = useState(CAMPOS_VAZIOS);
-  const [editandoId, setEditandoId] = useState(null);
+  const [camposNovo, setCamposNovo] = useState(CAMPOS_VAZIOS);
+  const [edicao, setEdicao] = useState(null);
   const [paraExcluir, setParaExcluir] = useState(null);
   const toast = useToast();
 
-  function atualizarCampo(nome, valor) {
+  function atualizarCampoNovo(nome, valor) {
     const ehMoeda = nome === 'valorAlvo' || nome === 'valorAtual';
-    setCampos((atual) => ({ ...atual, [nome]: ehMoeda ? mascaraMoeda(valor) : valor }));
+    setCamposNovo((atual) => ({ ...atual, [nome]: ehMoeda ? mascaraMoeda(valor) : valor }));
+  }
+
+  function atualizarCampoEdicao(nome, valor) {
+    const ehMoeda = nome === 'valorAlvo' || nome === 'valorAtual';
+    setEdicao((atual) => ({ ...atual, valores: { ...atual.valores, [nome]: ehMoeda ? mascaraMoeda(valor) : valor } }));
   }
 
   function iniciarEdicao(meta) {
-    setEditandoId(meta.id);
-    setCampos({
-      descricao: meta.descricao,
-      valorAlvo: Number(meta.valorAlvo).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      valorAtual: Number(meta.valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    });
+    setEdicao({ id: meta.id, valores: valoresDaMeta(meta) });
   }
 
   function cancelarEdicao() {
-    setEditandoId(null);
-    setCampos(CAMPOS_VAZIOS);
+    setEdicao(null);
   }
 
-  async function aoSalvar(evento) {
+  async function aoCriar(evento) {
     evento.preventDefault();
 
-    if (parseValorMonetario(campos.valorAlvo) <= 0) {
+    if (parseValorMonetario(camposNovo.valorAlvo) <= 0) {
       toast.erro('Informe um valor alvo maior que zero.');
       return;
     }
 
-    const dados = {
-      descricao: campos.descricao,
-      valorAlvo: parseValorMonetario(campos.valorAlvo),
-      valorAtual: parseValorMonetario(campos.valorAtual),
-    };
-
     try {
-      if (editandoId) {
-        await editar(editandoId, dados);
-        toast.sucesso('Alterações salvas com sucesso');
-      } else {
-        await salvar(dados);
-        toast.sucesso('Meta salva com sucesso');
-      }
+      await salvar({
+        descricao: camposNovo.descricao,
+        valorAlvo: parseValorMonetario(camposNovo.valorAlvo),
+        valorAtual: parseValorMonetario(camposNovo.valorAtual),
+      });
+      toast.sucesso('Meta salva com sucesso');
     } catch {
       return;
     }
-    setEditandoId(null);
-    setCampos(CAMPOS_VAZIOS);
+    setCamposNovo(CAMPOS_VAZIOS);
+  }
+
+  async function salvarEdicao() {
+    if (parseValorMonetario(edicao.valores.valorAlvo) <= 0) {
+      toast.erro('Informe um valor alvo maior que zero.');
+      return;
+    }
+
+    try {
+      await editar(edicao.id, {
+        descricao: edicao.valores.descricao,
+        valorAlvo: parseValorMonetario(edicao.valores.valorAlvo),
+        valorAtual: parseValorMonetario(edicao.valores.valorAtual),
+      });
+      toast.sucesso('Alterações salvas com sucesso');
+    } catch {
+      return;
+    }
+    setEdicao(null);
   }
 
   async function confirmarExclusao() {
@@ -77,16 +95,16 @@ export default function Metas() {
     <div>
       <div className={formStyles.cabecalhoPagina}>
         <Target size={20} className={formStyles.iconePagina} />
-        <h1>{editandoId ? 'Editando meta' : 'Nova Meta'}</h1>
+        <h1>Nova Meta</h1>
       </div>
 
-      <form onSubmit={aoSalvar} className={formStyles.formulario}>
+      <form onSubmit={aoCriar} className={formStyles.formulario}>
         <Input
           rotulo="Descrição"
           required
           placeholder="Ex: Viagem"
-          value={campos.descricao}
-          onChange={(e) => atualizarCampo('descricao', e.target.value)}
+          value={camposNovo.descricao}
+          onChange={(e) => atualizarCampoNovo('descricao', e.target.value)}
           className={formStyles.campoFlex}
         />
         <Input
@@ -94,8 +112,8 @@ export default function Metas() {
           required
           inputMode="decimal"
           placeholder="0,00"
-          value={campos.valorAlvo}
-          onChange={(e) => atualizarCampo('valorAlvo', e.target.value)}
+          value={camposNovo.valorAlvo}
+          onChange={(e) => atualizarCampoNovo('valorAlvo', e.target.value)}
           className={formStyles.campoFlex}
         />
         <Input
@@ -103,19 +121,14 @@ export default function Metas() {
           required
           inputMode="decimal"
           placeholder="0,00"
-          value={campos.valorAtual}
-          onChange={(e) => atualizarCampo('valorAtual', e.target.value)}
+          value={camposNovo.valorAtual}
+          onChange={(e) => atualizarCampoNovo('valorAtual', e.target.value)}
           className={formStyles.campoFlex}
         />
         <div className={formStyles.acoesFormulario}>
           <Button type="submit" carregando={salvando} className={formStyles.botaoSalvar}>
-            {editandoId ? 'Salvar alterações' : 'Salvar Meta'}
+            Salvar Meta
           </Button>
-          {editandoId && (
-            <Button type="button" variante="secundario" onClick={cancelarEdicao}>
-              <X size={16} /> Cancelar
-            </Button>
-          )}
         </div>
       </form>
 
@@ -131,33 +144,81 @@ export default function Metas() {
       ) : (
         <div className={styles.grade}>
           {metas.map((meta) => {
+            const emEdicao = edicao?.id === meta.id;
             const percentual = Math.min(100, Math.round((Number(meta.valorAtual) / Number(meta.valorAlvo)) * 100));
             return (
               <Card key={meta.id} className={styles.card}>
                 <div className={styles.acoesCard}>
-                  <button
-                    type="button"
-                    onClick={() => iniciarEdicao(meta)}
-                    aria-label="Editar meta"
-                    style={{ color: 'var(--cor-texto-secundario)' }}
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setParaExcluir(meta.id)}
-                    aria-label="Excluir meta"
-                    style={{ color: 'var(--cor-texto-secundario)' }}
-                  >
-                    <Trash2 size={17} />
-                  </button>
+                  {emEdicao ? (
+                    <>
+                      <button type="button" onClick={salvarEdicao} aria-label="Salvar meta" style={{ color: 'var(--cor-sucesso)' }}>
+                        <Check size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelarEdicao}
+                        aria-label="Cancelar edição"
+                        style={{ color: 'var(--cor-texto-secundario)' }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => iniciarEdicao(meta)}
+                        aria-label="Editar meta"
+                        disabled={Boolean(edicao)}
+                        style={{ color: 'var(--cor-texto-secundario)' }}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setParaExcluir(meta.id)}
+                        aria-label="Excluir meta"
+                        disabled={Boolean(edicao)}
+                        style={{ color: 'var(--cor-texto-secundario)' }}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </>
+                  )}
                 </div>
-                <p className={styles.descricao}>{meta.descricao}</p>
-                <p className={styles.valores}>
-                  {formatarMoeda(meta.valorAtual)} de {formatarMoeda(meta.valorAlvo)}{' '}
-                  <span className={styles.percentual}>({percentual}%)</span>
-                </p>
-                <ProgressBar percentual={percentual} cor="sucesso" />
+
+                {emEdicao ? (
+                  <div className={styles.formEdicao}>
+                    <Input
+                      aria-label="Descrição"
+                      value={edicao.valores.descricao}
+                      onChange={(e) => atualizarCampoEdicao('descricao', e.target.value)}
+                    />
+                    <Input
+                      aria-label="Valor alvo"
+                      inputMode="decimal"
+                      placeholder="Valor alvo (R$)"
+                      value={edicao.valores.valorAlvo}
+                      onChange={(e) => atualizarCampoEdicao('valorAlvo', e.target.value)}
+                    />
+                    <Input
+                      aria-label="Valor já guardado"
+                      inputMode="decimal"
+                      placeholder="Valor guardado (R$)"
+                      value={edicao.valores.valorAtual}
+                      onChange={(e) => atualizarCampoEdicao('valorAtual', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p className={styles.descricao}>{meta.descricao}</p>
+                    <p className={styles.valores}>
+                      {formatarMoeda(meta.valorAtual)} de {formatarMoeda(meta.valorAlvo)}{' '}
+                      <span className={styles.percentual}>({percentual}%)</span>
+                    </p>
+                    <ProgressBar percentual={percentual} cor="sucesso" />
+                  </>
+                )}
               </Card>
             );
           })}

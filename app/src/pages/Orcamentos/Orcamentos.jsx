@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Wallet, Pencil, Trash2, X } from 'lucide-react';
+import { Wallet, Pencil, Trash2, X, Check } from 'lucide-react';
 import { Card, Button, Select, Input, ProgressBar, ConfirmDialog, EmptyState } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -17,9 +17,9 @@ export default function Orcamentos() {
   const { perfil, usuario } = useAuth();
   const toast = useToast();
 
-  const [categoria, setCategoria] = useState('');
-  const [limite, setLimite] = useState('');
-  const [editando, setEditando] = useState(null);
+  const [categoriaNova, setCategoriaNova] = useState('');
+  const [limiteNovo, setLimiteNovo] = useState('');
+  const [edicao, setEdicao] = useState(null);
   const [paraExcluir, setParaExcluir] = useState(null);
 
   const mesAtual = mesAnoDe(new Date());
@@ -33,45 +33,62 @@ export default function Orcamentos() {
     return mapa;
   }, [gastos, mesAtual]);
 
-  const categoriasDisponiveis = CATEGORIAS_GASTO_FIXAS.filter(
-    (nome) => nome === editando?.categoria || !orcamentos.some((o) => o.categoria === nome)
-  );
+  const categoriasParaNovo = CATEGORIAS_GASTO_FIXAS.filter((nome) => !orcamentos.some((o) => o.categoria === nome));
 
-  function limparFormulario() {
-    setCategoria('');
-    setLimite('');
-    setEditando(null);
+  function limparFormularioNovo() {
+    setCategoriaNova('');
+    setLimiteNovo('');
   }
 
   function iniciarEdicao(orcamento) {
-    setEditando(orcamento);
-    setCategoria(orcamento.categoria);
-    setLimite(Number(orcamento.limiteMensal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setEdicao({
+      id: orcamento.id,
+      categoria: orcamento.categoria,
+      limite: Number(orcamento.limiteMensal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    });
   }
 
-  async function aoSalvar(evento) {
+  function cancelarEdicao() {
+    setEdicao(null);
+  }
+
+  async function aoCriar(evento) {
     evento.preventDefault();
-    if (!categoria) {
+    if (!categoriaNova) {
       toast.erro('Escolha uma categoria.');
       return;
     }
-    if (parseValorMonetario(limite) <= 0) {
+    if (parseValorMonetario(limiteNovo) <= 0) {
       toast.erro('Informe um limite maior que zero.');
       return;
     }
 
     try {
-      if (editando) {
-        await editar(editando.id, { categoria, limiteMensal: parseValorMonetario(limite) });
-        toast.sucesso('Orçamento atualizado');
-      } else {
-        await salvar({ categoria, limiteMensal: parseValorMonetario(limite) });
-        toast.sucesso('Orçamento criado');
-      }
+      await salvar({ categoria: categoriaNova, limiteMensal: parseValorMonetario(limiteNovo) });
+      toast.sucesso('Orçamento criado');
     } catch {
       return;
     }
-    limparFormulario();
+    limparFormularioNovo();
+  }
+
+  async function salvarEdicao() {
+    if (!edicao.categoria) {
+      toast.erro('Escolha uma categoria.');
+      return;
+    }
+    if (parseValorMonetario(edicao.limite) <= 0) {
+      toast.erro('Informe um limite maior que zero.');
+      return;
+    }
+
+    try {
+      await editar(edicao.id, { categoria: edicao.categoria, limiteMensal: parseValorMonetario(edicao.limite) });
+      toast.sucesso('Orçamento atualizado');
+    } catch {
+      return;
+    }
+    setEdicao(null);
   }
 
   async function confirmarExclusao() {
@@ -87,20 +104,20 @@ export default function Orcamentos() {
     <div>
       <div className={stylesForm.cabecalhoPagina}>
         <Wallet size={20} className={stylesForm.iconePagina} />
-        <h1>{editando ? 'Editando orçamento' : 'Novo Orçamento'}</h1>
+        <h1>Novo Orçamento</h1>
       </div>
 
-      <form className={stylesForm.formulario} onSubmit={aoSalvar} noValidate>
+      <form className={stylesForm.formulario} onSubmit={aoCriar} noValidate>
         <Select
           rotulo="Categoria"
           required
-          icone={ICONES_CATEGORIA_GASTO[categoria]}
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
+          icone={ICONES_CATEGORIA_GASTO[categoriaNova]}
+          value={categoriaNova}
+          onChange={(e) => setCategoriaNova(e.target.value)}
           className={stylesForm.campoFlex}
         >
           <option value="">Selecione</option>
-          {categoriasDisponiveis.map((nome) => (
+          {categoriasParaNovo.map((nome) => (
             <option key={nome} value={nome}>
               {nome}
             </option>
@@ -111,19 +128,14 @@ export default function Orcamentos() {
           required
           inputMode="decimal"
           placeholder="0,00"
-          value={limite}
-          onChange={(e) => setLimite(mascaraMoeda(e.target.value))}
+          value={limiteNovo}
+          onChange={(e) => setLimiteNovo(mascaraMoeda(e.target.value))}
           className={stylesForm.campoFlex}
         />
         <div className={stylesForm.acoesFormulario}>
           <Button type="submit" carregando={salvando}>
-            {editando ? 'Salvar alterações' : 'Salvar'}
+            Salvar
           </Button>
-          {editando && (
-            <Button type="button" variante="secundario" onClick={limparFormulario}>
-              <X size={16} /> Cancelar
-            </Button>
-          )}
         </div>
       </form>
 
@@ -138,35 +150,86 @@ export default function Orcamentos() {
       ) : (
         <div className={styles.lista}>
           {orcamentos.map((orcamento) => {
+            const emEdicao = edicao?.id === orcamento.id;
             const Icone = ICONES_CATEGORIA_GASTO[orcamento.categoria];
             const gasto = gastoPorCategoria[orcamento.categoria] || 0;
             const limiteNum = Number(orcamento.limiteMensal);
             const percentual = limiteNum > 0 ? Math.round((gasto / limiteNum) * 100) : 0;
             const estourou = percentual > 100;
+            const categoriasParaEdicao = CATEGORIAS_GASTO_FIXAS.filter(
+              (nome) => nome === orcamento.categoria || !orcamentos.some((o) => o.categoria === nome)
+            );
 
             return (
               <Card key={orcamento.id} className={styles.item}>
                 <div className={styles.linhaTopo}>
-                  <span className={styles.categoria}>
-                    {Icone && <Icone size={16} />}
-                    {orcamento.categoria}
-                  </span>
+                  {!emEdicao && (
+                    <span className={styles.categoria}>
+                      {Icone && <Icone size={16} />}
+                      {orcamento.categoria}
+                    </span>
+                  )}
                   <div className={styles.acoesItem}>
-                    <button type="button" onClick={() => iniciarEdicao(orcamento)} title="Editar">
-                      <Pencil size={15} />
-                    </button>
-                    <button type="button" onClick={() => setParaExcluir(orcamento.id)} title="Excluir">
-                      <Trash2 size={15} />
-                    </button>
+                    {emEdicao ? (
+                      <>
+                        <button type="button" onClick={salvarEdicao} title="Salvar" style={{ color: 'var(--cor-sucesso)' }}>
+                          <Check size={15} />
+                        </button>
+                        <button type="button" onClick={cancelarEdicao} title="Cancelar">
+                          <X size={15} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => iniciarEdicao(orcamento)} title="Editar" disabled={Boolean(edicao)}>
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setParaExcluir(orcamento.id)}
+                          title="Excluir"
+                          disabled={Boolean(edicao)}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className={styles.valores}>
-                  <span className={estourou ? styles.estourado : ''}>
-                    {formatarMoeda(gasto)} de {formatarMoeda(limiteNum)}
-                  </span>
-                  <span>{percentual}%</span>
-                </div>
-                <ProgressBar percentual={percentual} cor={estourou ? 'perigo' : percentual > 80 ? 'alerta' : 'primaria'} />
+
+                {emEdicao ? (
+                  <div className={styles.formEdicao}>
+                    <Select
+                      aria-label="Categoria"
+                      icone={ICONES_CATEGORIA_GASTO[edicao.categoria]}
+                      value={edicao.categoria}
+                      onChange={(e) => setEdicao((atual) => ({ ...atual, categoria: e.target.value }))}
+                    >
+                      {categoriasParaEdicao.map((nome) => (
+                        <option key={nome} value={nome}>
+                          {nome}
+                        </option>
+                      ))}
+                    </Select>
+                    <Input
+                      aria-label="Limite mensal"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      value={edicao.limite}
+                      onChange={(e) => setEdicao((atual) => ({ ...atual, limite: mascaraMoeda(e.target.value) }))}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.valores}>
+                      <span className={estourou ? styles.estourado : ''}>
+                        {formatarMoeda(gasto)} de {formatarMoeda(limiteNum)}
+                      </span>
+                      <span>{percentual}%</span>
+                    </div>
+                    <ProgressBar percentual={percentual} cor={estourou ? 'perigo' : percentual > 80 ? 'alerta' : 'primaria'} />
+                  </>
+                )}
               </Card>
             );
           })}
