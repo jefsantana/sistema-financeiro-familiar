@@ -12,14 +12,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
 
-    const { data: assinatura } = supabase.auth.onAuthStateChange((evento, novaSessao) => {
+    const { data: assinatura } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
       setSessao(novaSessao);
-      // Só em login de verdade (não em restaurar sessão ao recarregar
-      // a página, nem em refresh de token) — assim o histórico reflete
-      // acessos reais, não toda navegação.
-      if (evento === 'SIGNED_IN' && novaSessao?.user) {
-        registrarAcesso({ perfilId: novaSessao.user.id, ...detectarDispositivo() }).catch(() => {});
-      }
     });
 
     return () => assinatura.subscription.unsubscribe();
@@ -50,7 +44,18 @@ export function AuthProvider({ children }) {
       familia,
       pessoas,
       carregando: sessao === undefined,
-      entrar: (email, senha) => supabase.auth.signInWithPassword({ email, password: senha }),
+      // Registra o histórico de acessos amarrado direto na ação de
+      // login — não num evento global do Supabase, que também dispara
+      // ao só recarregar a página com uma sessão já ativa (o que
+      // inflava o histórico com "acessos" que não eram logins de
+      // verdade).
+      entrar: async (email, senha) => {
+        const resultado = await supabase.auth.signInWithPassword({ email, password: senha });
+        if (!resultado.error && resultado.data?.user) {
+          registrarAcesso({ perfilId: resultado.data.user.id, ...detectarDispositivo() }).catch(() => {});
+        }
+        return resultado;
+      },
       cadastrar: (email, senha, { nome, pessoa2, nomeFamilia }) =>
         supabase.auth.signUp({
           email,
