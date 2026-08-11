@@ -38,10 +38,63 @@
   min-width: 0;
 }
 
+.controlesTopo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
 .seletorMesContainer {
   position: relative;
-  margin-left: auto;
   flex-shrink: 0;
+}
+
+.seletorPessoa {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.avatarPessoa,
+.avatarPessoaBotao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: box-shadow var(--transicao), transform var(--transicao);
+}
+
+.avatarPessoa {
+  border: 1px solid var(--cor-borda);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto-secundario);
+}
+
+.avatarPessoaBotao {
+  padding: 0;
+  opacity: 0.55;
+}
+
+.avatarPessoaBotao:hover {
+  opacity: 0.85;
+}
+
+.avatarPessoaAtivo {
+  opacity: 1;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px var(--cor-fundo), 0 0 0 4px var(--cor-primaria);
+}
+
+.avatarPessoa.avatarPessoaAtivo {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+  background-color: rgba(123, 97, 255, 0.1);
 }
 
 .seletorMes {
@@ -133,8 +186,16 @@
     width: 100%;
   }
 
-  .seletorMesContainer {
+  .controlesTopo {
     margin-left: 0;
+    width: 100%;
+  }
+
+  .seletorPessoa {
+    justify-content: center;
+  }
+
+  .seletorMesContainer {
     width: 100%;
   }
 

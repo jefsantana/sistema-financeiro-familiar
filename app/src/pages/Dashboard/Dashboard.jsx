@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { Loading, EmptyState, Button } from '../../components/ui/index.js';
+import { Loading, EmptyState, Button, Avatar } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { SummaryCards } from '../../components/dashboard/SummaryCards.jsx';
 import { UpcomingBills } from '../../components/dashboard/UpcomingBills.jsx';
@@ -89,7 +89,7 @@ function diferencaEmDias(isoFim, isoInicio) {
 
 export default function Dashboard() {
   const { dados, carregando, erro, recarregar } = useDashboardData();
-  const { perfil, usuario } = useAuth();
+  const { perfil, usuario, pessoas } = useAuth();
   const toast = useToast();
   const { pagar, pagando } = usePagamentos(async () => {
     await recarregar();
@@ -98,6 +98,7 @@ export default function Dashboard() {
 
   const [dataReferencia, setDataReferencia] = useState(() => new Date());
   const [intervaloPersonalizado, setIntervaloPersonalizado] = useState(null);
+  const [filtroPessoa, setFiltroPessoa] = useState('todos');
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [rascunhoInicio, setRascunhoInicio] = useState('');
   const [rascunhoFim, setRascunhoFim] = useState('');
@@ -166,10 +167,18 @@ export default function Dashboard() {
   const dataFimAnterior = somarDias(dataInicioEfetiva, -1);
   const dataInicioAnterior = somarDias(dataInicioEfetiva, -duracaoDias);
 
-  const entradasMes = entradas.filter((e) => e.data >= dataInicioEfetiva && e.data <= dataFimEfetiva);
-  const gastosMes = gastos.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
-  const entradasMesAnterior = entradas.filter((e) => e.data >= dataInicioAnterior && e.data <= dataFimAnterior);
-  const gastosMesAnterior = gastos.filter((g) => g.data >= dataInicioAnterior && g.data <= dataFimAnterior);
+  // O seletor de pessoa no topo filtra entradas/gastos e tudo que é
+  // calculado a partir deles — menos "Gastos por Pessoa" (que existe
+  // justamente pra comparar todo mundo) e os vencimentos/metas/
+  // orçamentos, que são compromissos da família como um todo.
+  const porPessoa = (item) => filtroPessoa === 'todos' || item.pessoa === filtroPessoa;
+  const entradasFiltradas = entradas.filter(porPessoa);
+  const gastosFiltrados = gastos.filter(porPessoa);
+
+  const entradasMes = entradasFiltradas.filter((e) => e.data >= dataInicioEfetiva && e.data <= dataFimEfetiva);
+  const gastosMes = gastosFiltrados.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
+  const entradasMesAnterior = entradasFiltradas.filter((e) => e.data >= dataInicioAnterior && e.data <= dataFimAnterior);
+  const gastosMesAnterior = gastosFiltrados.filter((g) => g.data >= dataInicioAnterior && g.data <= dataFimAnterior);
 
   const totalEntradasMes = somar(entradasMes);
   const totalSaidasMes = somar(gastosMes);
@@ -177,8 +186,8 @@ export default function Dashboard() {
   // "Saldo Acumulado de Entradas" é a soma de todas as entradas (sem
   // descontar gastos) até o fim do período selecionado, comparável
   // com o fim do período anterior de mesma duração.
-  const saldoAtual = somar(entradas.filter((e) => e.data <= dataFimEfetiva));
-  const saldoAcumuladoAnterior = somar(entradas.filter((e) => e.data <= dataFimAnterior));
+  const saldoAtual = somar(entradasFiltradas.filter((e) => e.data <= dataFimEfetiva));
+  const saldoAcumuladoAnterior = somar(entradasFiltradas.filter((e) => e.data <= dataFimAnterior));
   const tendenciaSaldo = calcularTendencia(saldoAtual, saldoAcumuladoAnterior);
 
   const alertasContas = calcularAlertasContasFixas(contasFixas, pagamentos);
@@ -189,11 +198,14 @@ export default function Dashboard() {
   const categoriasMes = agruparPorCategoria(gastosMes);
   const categoriasMesAnterior = agruparPorCategoria(gastosMesAnterior);
   const gastosPorCategoriaMapa = Object.fromEntries(agruparPorCategoria(gastosMes, 999).map((c) => [c.label, c.valor]));
-  const resumoMensal = calcularResumoMensal(entradas, gastos);
-  const ultimosLancamentos = montarUltimosLancamentos(entradas, gastos);
-  const pessoasGasto = agruparPorPessoa(gastosMes);
+  const resumoMensal = calcularResumoMensal(entradasFiltradas, gastosFiltrados);
+  const ultimosLancamentos = montarUltimosLancamentos(entradasFiltradas, gastosFiltrados);
+  const gastosMesTodos = gastos.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
+  const pessoasGasto = agruparPorPessoa(gastosMesTodos);
 
-  const subtituloMes = ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`;
+  const subtituloMes =
+    (ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`) +
+    (filtroPessoa !== 'todos' ? ` · ${filtroPessoa}` : '');
   const textoPeriodo = intervaloPersonalizado
     ? `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`
     : textoIntervaloMes(dataReferencia);
@@ -222,32 +234,60 @@ export default function Dashboard() {
             anterior.
           </div>
         )}
-        <div className={styles.seletorMesContainer} ref={seletorRef}>
-          <div className={styles.seletorMes}>
-            <button type="button" className={styles.setaMes} onClick={() => mudarMes(-1)} aria-label="Mês anterior">
-              <ChevronLeft size={16} />
-            </button>
-            <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
-              <Calendar size={14} /> {textoPeriodo}
-            </button>
-            <button type="button" className={styles.setaMes} onClick={() => mudarMes(1)} aria-label="Próximo mês">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-
-          {seletorAberto && (
-            <div className={styles.popoverData}>
-              <CalendarioIntervalo inicio={rascunhoInicio} fim={rascunhoFim} aoMudar={aoMudarSelecaoCalendario} />
-              <div className={styles.popoverAcoes}>
-                <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
-                  Cancelar
-                </Button>
-                <Button type="button" tamanho="pequeno" onClick={aplicarIntervaloPersonalizado}>
-                  Aplicar
-                </Button>
-              </div>
+        <div className={styles.controlesTopo}>
+          {pessoas.length > 1 && (
+            <div className={styles.seletorPessoa} role="group" aria-label="Filtrar por pessoa">
+              <button
+                type="button"
+                className={`${styles.avatarPessoa} ${filtroPessoa === 'todos' ? styles.avatarPessoaAtivo : ''}`}
+                onClick={() => setFiltroPessoa('todos')}
+                title="Todos"
+                aria-pressed={filtroPessoa === 'todos'}
+              >
+                <Users size={14} />
+              </button>
+              {pessoas.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`${styles.avatarPessoaBotao} ${filtroPessoa === p ? styles.avatarPessoaAtivo : ''}`}
+                  onClick={() => setFiltroPessoa(p)}
+                  title={p}
+                  aria-pressed={filtroPessoa === p}
+                >
+                  <Avatar nome={p} tamanho="pequeno" />
+                </button>
+              ))}
             </div>
           )}
+
+          <div className={styles.seletorMesContainer} ref={seletorRef}>
+            <div className={styles.seletorMes}>
+              <button type="button" className={styles.setaMes} onClick={() => mudarMes(-1)} aria-label="Mês anterior">
+                <ChevronLeft size={16} />
+              </button>
+              <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
+                <Calendar size={14} /> {textoPeriodo}
+              </button>
+              <button type="button" className={styles.setaMes} onClick={() => mudarMes(1)} aria-label="Próximo mês">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {seletorAberto && (
+              <div className={styles.popoverData}>
+                <CalendarioIntervalo inicio={rascunhoInicio} fim={rascunhoFim} aoMudar={aoMudarSelecaoCalendario} />
+                <div className={styles.popoverAcoes}>
+                  <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="button" tamanho="pequeno" onClick={aplicarIntervaloPersonalizado}>
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

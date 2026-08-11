@@ -1,19 +1,46 @@
-import { useRef, useState } from 'react';
-import { Settings, Pencil, KeyRound, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Settings,
+  Pencil,
+  KeyRound,
+  Trash2,
+  UserX,
+  Palette,
+  Sun,
+  Moon,
+  MonitorSmartphone,
+  Check,
+  History,
+  Monitor,
+  Smartphone,
+} from 'lucide-react';
 import { Card, Button, Avatar, Input, ConfirmDialog } from '../../components/ui/index.js';
 import { AjustarFotoPerfilModal } from '../../components/configuracoes/AjustarFotoPerfilModal.jsx';
-import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { useTheme, ACENTOS } from '../../contexts/ThemeContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { nomeExibicao, posicaoDaPessoa } from '../../utils/formatadores.js';
-import { limparDadosFamilia } from '../../services/dados.js';
+import { limparDadosFamilia, listarHistoricoAcessos } from '../../services/dados.js';
 import styles from './Configuracoes.module.css';
 
+function formatarDataAcesso(dataIso) {
+  const data = new Date(dataIso);
+  const hoje = new Date();
+  const ontem = new Date(hoje);
+  ontem.setDate(hoje.getDate() - 1);
+  const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  if (data.toDateString() === hoje.toDateString()) return `Hoje, ${hora}`;
+  if (data.toDateString() === ontem.toDateString()) return `Ontem, ${hora}`;
+  return `${data.toLocaleDateString('pt-BR')}, ${hora}`;
+}
+
 const TEXTO_CONFIRMACAO_LIMPEZA = 'APAGAR TUDO';
+const TEXTO_CONFIRMACAO_CONTA = 'EXCLUIR MINHA CONTA';
 
 export default function Configuracoes() {
-  const { ehEscuro, alternarTema } = useTheme();
-  const { perfil, usuario, sair, pessoas, atualizarFotoPessoal, atualizarSenha } = useAuth();
+  const { tema, setTema, acento, setAcento } = useTheme();
+  const { perfil, usuario, sair, pessoas, atualizarFotoPessoal, atualizarSenha, excluirConta } = useAuth();
   const toast = useToast();
   const nomeExibido = nomeExibicao(perfil, usuario);
   const posicaoPropria = posicaoDaPessoa(pessoas, nomeExibido);
@@ -27,6 +54,16 @@ export default function Configuracoes() {
 
   const [limpezaAberta, setLimpezaAberta] = useState(false);
   const [textoLimpeza, setTextoLimpeza] = useState('');
+
+  const [exclusaoAberta, setExclusaoAberta] = useState(false);
+  const [textoExclusao, setTextoExclusao] = useState('');
+
+  const [historicoAcessos, setHistoricoAcessos] = useState([]);
+  useEffect(() => {
+    listarHistoricoAcessos(5)
+      .then(setHistoricoAcessos)
+      .catch(() => {});
+  }, []);
 
   function aoSelecionarFoto(evento) {
     const arquivo = evento.target.files?.[0];
@@ -79,6 +116,15 @@ export default function Configuracoes() {
     } finally {
       setTextoLimpeza('');
     }
+  }
+
+  async function aoConfirmarExclusaoConta() {
+    const { error } = await excluirConta();
+    if (error) {
+      toast.erro('Não foi possível excluir sua conta. Tente novamente.');
+      return;
+    }
+    setTextoExclusao('');
   }
 
   return (
@@ -161,16 +207,90 @@ export default function Configuracoes() {
       </Card>
 
       <Card className={styles.secao}>
-        <div className={styles.linha}>
-          <div>
-            <p className={styles.rotuloLinha}>Modo escuro</p>
-            <p className={styles.descricaoLinha}>Alterna entre o tema claro e escuro em todo o sistema.</p>
-          </div>
-          <label className={styles.switch}>
-            <input type="checkbox" checked={ehEscuro} onChange={alternarTema} />
-            <span className={styles.trilho} />
-          </label>
+        <div className={styles.linhaTitulo}>
+          <Palette size={16} style={{ color: 'var(--cor-primaria)' }} />
+          <p className={styles.rotuloLinha}>Aparência</p>
         </div>
+
+        <div className={styles.blocoAparencia}>
+          <p className={styles.descricaoLinha}>Tema</p>
+          <div className={styles.opcoesTema}>
+            <button
+              type="button"
+              className={`${styles.opcaoTema} ${tema === 'light' ? styles.opcaoTemaAtiva : ''}`}
+              onClick={() => setTema('light')}
+            >
+              <Sun size={16} /> Claro
+            </button>
+            <button
+              type="button"
+              className={`${styles.opcaoTema} ${tema === 'dark' ? styles.opcaoTemaAtiva : ''}`}
+              onClick={() => setTema('dark')}
+            >
+              <Moon size={16} /> Escuro
+            </button>
+            <button
+              type="button"
+              className={`${styles.opcaoTema} ${tema === 'auto' ? styles.opcaoTemaAtiva : ''}`}
+              onClick={() => setTema('auto')}
+            >
+              <MonitorSmartphone size={16} /> Automático
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.blocoAparencia}>
+          <p className={styles.descricaoLinha}>Cor de destaque</p>
+          <div className={styles.opcoesAcento}>
+            {ACENTOS.map((opcao) => (
+              <button
+                key={opcao.valor}
+                type="button"
+                className={`${styles.swatchAcento} ${acento === opcao.valor ? styles.swatchAcentoAtivo : ''}`}
+                style={{ background: `linear-gradient(135deg, ${opcao.cores[0]}, ${opcao.cores[1]})` }}
+                onClick={() => setAcento(opcao.valor)}
+                title={opcao.nome}
+                aria-label={opcao.nome}
+                aria-pressed={acento === opcao.valor}
+              >
+                {acento === opcao.valor && <Check size={14} color="#FFFFFF" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card className={styles.secao}>
+        <div className={styles.linhaTitulo}>
+          <History size={16} style={{ color: 'var(--cor-primaria)' }} />
+          <p className={styles.rotuloLinha}>Histórico de Acessos</p>
+        </div>
+
+        {historicoAcessos.length === 0 ? (
+          <p className={styles.descricaoLinha}>Ainda não temos registro de acessos.</p>
+        ) : (
+          <ul className={styles.listaAcessos}>
+            {historicoAcessos.map((acesso, indice) => {
+              const IconeDispositivo = acesso.dispositivo === 'mobile' ? Smartphone : Monitor;
+              return (
+                <li key={acesso.id} className={styles.itemAcesso}>
+                  <div className={styles.iconeAcesso}>
+                    <IconeDispositivo size={16} />
+                  </div>
+                  <div>
+                    {indice === 0 && <p className={styles.rotuloAcesso}>Último acesso</p>}
+                    <p className={indice === 0 ? styles.dataAcesso : styles.rotuloAcesso}>
+                      {formatarDataAcesso(acesso.criadoEm)}
+                    </p>
+                    <p className={styles.descricaoAcesso}>
+                      {acesso.navegador} • {acesso.sistema}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
 
       <Card className={`${styles.secao} ${styles.zonaPerigo}`}>
@@ -184,6 +304,22 @@ export default function Configuracoes() {
           </div>
           <Button variante="perigo" tamanho="pequeno" icone={Trash2} onClick={() => setLimpezaAberta(true)}>
             Apagar tudo
+          </Button>
+        </div>
+      </Card>
+
+      <Card className={`${styles.secao} ${styles.zonaPerigo}`}>
+        <div className={styles.linha}>
+          <div>
+            <p className={styles.rotuloLinha}>Excluir minha conta</p>
+            <p className={styles.descricaoLinha}>
+              Apaga seu login permanentemente — você não conseguirá mais entrar com este e-mail. Os dados financeiros
+              da família continuam intactos (inclusive pra outra pessoa, se houver). Se quiser apagar os dados
+              também, use "Apagar todos os dados" antes.
+            </p>
+          </div>
+          <Button variante="perigo" tamanho="pequeno" icone={UserX} onClick={() => setExclusaoAberta(true)}>
+            Excluir conta
           </Button>
         </div>
       </Card>
@@ -205,6 +341,26 @@ export default function Configuracoes() {
           value={textoLimpeza}
           onChange={(e) => setTextoLimpeza(e.target.value)}
           placeholder={TEXTO_CONFIRMACAO_LIMPEZA}
+        />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        aberto={exclusaoAberta}
+        aoFechar={() => {
+          setExclusaoAberta(false);
+          setTextoExclusao('');
+        }}
+        aoConfirmar={aoConfirmarExclusaoConta}
+        titulo="Excluir sua conta?"
+        mensagem="Essa ação é permanente e não pode ser desfeita. Seu login será apagado e você será desconectado. Os dados financeiros da família não são apagados."
+        textoConfirmar="Excluir minha conta"
+        confirmarDesabilitado={textoExclusao.trim().toUpperCase() !== TEXTO_CONFIRMACAO_CONTA}
+      >
+        <Input
+          rotulo={`Para confirmar, digite "${TEXTO_CONFIRMACAO_CONTA}"`}
+          value={textoExclusao}
+          onChange={(e) => setTextoExclusao(e.target.value)}
+          placeholder={TEXTO_CONFIRMACAO_CONTA}
         />
       </ConfirmDialog>
     </div>

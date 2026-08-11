@@ -34,6 +34,7 @@ create table familias (
   foto_casal_posicao int not null default 50,
   foto_pessoa_1 text,
   foto_pessoa_2 text,
+  dias_retencao_lixeira int not null default 30,
   criado_em timestamptz not null default now()
 );
 
@@ -106,6 +107,26 @@ stable
 as $$
   select familia_id from public.perfis where id = auth.uid();
 $$;
+
+-- Permite que a própria pessoa apague o login dela (chamada pela tela
+-- de Configurações → "Excluir minha conta"). Só remove o acesso —
+-- linha em auth.users (o que arrasta junto o "perfis" por causa do
+-- "on delete cascade") — nunca os dados financeiros da família, que
+-- podem ser compartilhados com a outra pessoa. Roda com privilégio
+-- elevado (security definer) porque apagar de auth.users normalmente
+-- exige acesso de administrador, mas aqui a função só deixa cada
+-- pessoa apagar a si mesma (auth.uid()), nunca outra conta.
+create function public.excluir_minha_conta()
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+grant execute on function public.excluir_minha_conta() to authenticated;
 
 -- ------------------------------------------------------------
 -- TABELAS DE DADOS FINANCEIROS
@@ -264,6 +285,18 @@ create table pagamentos_parcelamentos (
   excluido_por text
 );
 
+-- Um registro por login bem-sucedido — mostrado em Configurações →
+-- Histórico de Acessos. Diferente das outras tabelas, não é por
+-- família: cada pessoa só vê o próprio histórico de login.
+create table historico_acessos (
+  id uuid primary key default gen_random_uuid(),
+  perfil_id uuid not null references perfis(id) on delete cascade,
+  navegador text,
+  sistema text,
+  dispositivo text,
+  criado_em timestamptz not null default now()
+);
+
 -- ------------------------------------------------------------
 -- SEGURANÇA (Row Level Security)
 -- A partir daqui, cada tabela só pode ser lida ou alterada por
@@ -284,9 +317,16 @@ alter table transferencias enable row level security;
 alter table pagamentos_contas_fixas enable row level security;
 alter table pagamentos_parcelamentos enable row level security;
 alter table compras_cartao enable row level security;
+alter table historico_acessos enable row level security;
 
 create policy "ver_proprio_perfil" on perfis
   for select using (id = auth.uid());
+
+create policy "usuario_ve_proprio_historico_acessos" on historico_acessos
+  for select using (perfil_id = auth.uid());
+
+create policy "usuario_registra_proprio_acesso" on historico_acessos
+  for insert with check (perfil_id = auth.uid());
 
 create policy "familia_ve_a_propria_familia" on familias
   for select using (id = public.minha_familia());

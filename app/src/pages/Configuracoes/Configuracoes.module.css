@@ -56,46 +56,65 @@
   margin-top: 2px;
 }
 
-.switch {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  flex-shrink: 0;
+.blocoAparencia {
+  padding: var(--espaco-sm) 0;
 }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.blocoAparencia:not(:last-child) {
+  border-bottom: 1px solid var(--cor-borda);
 }
 
-.trilho {
-  position: absolute;
-  inset: 0;
-  background-color: var(--cor-borda);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background-color var(--transicao);
+.opcoesTema {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  margin-top: var(--espaco-sm);
 }
 
-.trilho::before {
-  content: '';
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  left: 3px;
-  top: 3px;
-  background-color: #FFFFFF;
-  border-radius: 50%;
-  transition: transform var(--transicao);
+.opcaoTema {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  background-color: var(--cor-fundo);
+  transition: border-color var(--transicao), color var(--transicao), background-color var(--transicao);
 }
 
-.switch input:checked + .trilho {
+.opcaoTemaAtiva {
+  border-color: var(--cor-primaria);
+  color: #FFFFFF;
   background-color: var(--cor-primaria);
 }
 
-.switch input:checked + .trilho::before {
-  transform: translateX(20px);
+.opcoesAcento {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-sm);
+}
+
+.swatchAcento {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+
+.swatchAcento:hover {
+  transform: scale(1.08);
+}
+
+.swatchAcentoAtivo {
+  box-shadow: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-texto);
 }
 
 .linhaTitulo {
@@ -120,6 +139,49 @@
   color: var(--cor-perigo);
   font-size: 0.82rem;
   font-weight: 500;
+}
+
+.listaAcessos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.itemAcesso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.iconeAcesso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background-color: rgba(123, 97, 255, 0.12);
+  color: var(--cor-primaria);
+}
+
+.rotuloAcesso {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dataAcesso {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.descricaoAcesso {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  margin-top: 1px;
 }
 
 .zonaPerigo {

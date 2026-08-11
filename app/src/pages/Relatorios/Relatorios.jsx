@@ -3,9 +3,10 @@ import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, Users, Check } from 'l
 import { Panel } from '../../components/dashboard/Panel.jsx';
 import { GraficoBarras } from '../../components/charts/GraficoBarras.jsx';
 import { MonthlyTable } from '../../components/dashboard/MonthlyTable.jsx';
-import { Loading, Select, Avatar, Card } from '../../components/ui/index.js';
+import { Loading, Select, Avatar, Card, MenuExportar } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useToast } from '../../contexts/ToastContext.jsx';
 import {
   agruparPorCategoria,
   obterMesAno,
@@ -14,13 +15,15 @@ import {
   calcularTendencia,
   calcularResumoMensal,
 } from '../../utils/financeiro.js';
-import { formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
+import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
+import { exportarExcel, exportarCsv, exportarPdf } from '../../utils/exportarRelatorio.js';
 import styles from './Relatorios.module.css';
 
 export default function Relatorios() {
   const { registros: entradas, carregando: carregandoEntradas } = useCrudMock('Entradas');
   const { registros: gastos, carregando: carregandoGastos } = useCrudMock('Gastos');
   const { pessoas } = useAuth();
+  const toast = useToast();
 
   const [periodo, setPeriodo] = useState('tudo');
   const [filtroPessoa, setFiltroPessoa] = useState('todos');
@@ -74,6 +77,57 @@ export default function Relatorios() {
       })
     : [];
 
+  const totalEntradasFiltradas = somar(entradasFiltradas);
+  const totalGastosFiltrados = somar(gastosFiltrados);
+
+  function dadosParaExportacao() {
+    const linhas = [
+      ...entradasFiltradas.map((e) => ({ ...e, tipo: 'entrada' })),
+      ...gastosFiltrados.map((g) => ({ ...g, tipo: 'gasto' })),
+    ]
+      .sort((a, b) => new Date(b.data) - new Date(a.data))
+      .map((item) => ({
+        data: formatarData(item.data),
+        tipo: item.tipo,
+        descricao: item.descricao,
+        categoria: item.categoria || '',
+        pessoa: item.pessoa || '',
+        valor: item.valor,
+      }));
+
+    return {
+      titulo: 'Sistema Financeiro Familiar — Relatório',
+      periodo: `${subtituloPeriodo}${filtroPessoa !== 'todos' ? ` · ${filtroPessoa}` : ''}`,
+      linhas,
+      totalEntradas: totalEntradasFiltradas,
+      totalGastos: totalGastosFiltrados,
+    };
+  }
+
+  async function aoExportarExcel() {
+    try {
+      await exportarExcel({ ...dadosParaExportacao(), nomeArquivo: `relatorio-${periodo}.xlsx` });
+    } catch {
+      toast.erro('Não foi possível gerar o Excel. Tente novamente.');
+    }
+  }
+
+  function aoExportarCsv() {
+    try {
+      exportarCsv({ ...dadosParaExportacao(), nomeArquivo: `relatorio-${periodo}.csv` });
+    } catch {
+      toast.erro('Não foi possível gerar o CSV. Tente novamente.');
+    }
+  }
+
+  async function aoExportarPdf() {
+    try {
+      await exportarPdf({ ...dadosParaExportacao(), nomeArquivo: `relatorio-${periodo}.pdf` });
+    } catch {
+      toast.erro('Não foi possível gerar o PDF. Tente novamente.');
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--espaco-lg)' }}>
       <div className={styles.filtros}>
@@ -107,6 +161,14 @@ export default function Relatorios() {
             ))}
           </div>
         )}
+        <div className={styles.exportarWrapper}>
+          <MenuExportar
+            aoExportarExcel={aoExportarExcel}
+            aoExportarCsv={aoExportarCsv}
+            aoExportarPdf={aoExportarPdf}
+            desabilitado={entradasFiltradas.length === 0 && gastosFiltrados.length === 0}
+          />
+        </div>
       </div>
 
       {mostrarComparativo && (

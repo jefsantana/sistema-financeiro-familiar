@@ -56,6 +56,37 @@
   --transicao: 0.2s ease;
 }
 
+/* Cores de destaque alternativas — escolhidas em Configurações →
+   Aparência. Substituem só a cor primária/acento; o resto da paleta
+   (fundo, superfície, texto) continua vindo do tema claro/escuro. */
+[data-acento="oceano"] {
+  --cor-primaria: #3B82F6;
+  --cor-primaria-hover: #2563EB;
+  --cor-acento: #06B6D4;
+  --cor-acento-hover: #0891B2;
+}
+
+[data-acento="floresta"] {
+  --cor-primaria: #10B981;
+  --cor-primaria-hover: #059669;
+  --cor-acento: #84CC16;
+  --cor-acento-hover: #65A30D;
+}
+
+[data-acento="vibrante"] {
+  --cor-primaria: #EC4899;
+  --cor-primaria-hover: #DB2777;
+  --cor-acento: #F97316;
+  --cor-acento-hover: #EA580C;
+}
+
+[data-acento="grafite"] {
+  --cor-primaria: #475569;
+  --cor-primaria-hover: #334155;
+  --cor-acento: #94A3B8;
+  --cor-acento-hover: #64748B;
+}
+
 [data-theme="dark"] {
   --cor-fundo: #14121F;
   --cor-superficie: #1E1B2E;

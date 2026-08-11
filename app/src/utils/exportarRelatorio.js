@@ -21,6 +21,36 @@ function baixarArquivo(blob, nomeArquivo) {
   URL.revokeObjectURL(url);
 }
 
+function celulaCsv(valor) {
+  const texto = String(valor ?? '');
+  // Só usa aspas quando precisa (vírgula, aspas ou quebra de linha no
+  // meio do texto) — mantém o arquivo mais limpo no caso comum.
+  return /[",\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+}
+
+/**
+ * Gera e baixa um .csv simples (sem estilo, texto puro) — mais leve e
+ * mais fácil de abrir em qualquer planilha, inclusive fora do Excel.
+ */
+export function exportarCsv({ linhas, totalEntradas, totalGastos, nomeArquivo }) {
+  const cabecalho = ['Data', 'Tipo', 'Descrição', 'Categoria', 'Pessoa', 'Valor'];
+  const corpo = linhas.map((item) =>
+    [item.data, ROTULO_TIPO[item.tipo] || item.tipo, item.descricao, item.categoria || '-', item.pessoa || '-', item.valor]
+      .map(celulaCsv)
+      .join(',')
+  );
+  const rodape = [
+    '',
+    ['', '', '', '', 'Total de Entradas', totalEntradas].map(celulaCsv).join(','),
+    ['', '', '', '', 'Total de Gastos', totalGastos].map(celulaCsv).join(','),
+    ['', '', '', '', 'Saldo do Período', Number(totalEntradas) - Number(totalGastos)].map(celulaCsv).join(','),
+  ];
+
+  const conteudo = [cabecalho.map(celulaCsv).join(','), ...corpo, ...rodape].join('\n');
+  // O BOM (﻿) na frente evita que o Excel abra acentos quebrados.
+  baixarArquivo(new Blob(['﻿' + conteudo], { type: 'text/csv;charset=utf-8;' }), nomeArquivo);
+}
+
 /**
  * Gera e baixa uma planilha .xlsx com cabeçalho estilizado (cor da
  * marca), valores em verde/vermelho por tipo, e uma linha de totais

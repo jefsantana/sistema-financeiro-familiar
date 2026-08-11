@@ -1,0 +1,85 @@
+.cardConfig {
+  margin-bottom: var(--espaco-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.linhaConfig {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  flex-wrap: wrap;
+}
+
+.blocoRetencao {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-width: 220px;
+  flex: 1;
+}
+
+.iconeRetencao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background-color: rgba(123, 97, 255, 0.12);
+  color: var(--cor-primaria);
+}
+
+.rotuloConfig {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.descricaoConfig {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario);
+  margin-top: 2px;
+}
+
+.entradaDias {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  flex-shrink: 0;
+}
+
+.campoDias {
+  width: 80px;
+}
+
+.sufixoDias {
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario);
+  font-weight: 600;
+}
+
+.linhaEsvaziar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--espaco-md);
+  border-top: 1px solid var(--cor-borda);
+}
+
+@media (max-width: 640px) {
+  .linhaConfig {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .entradaDias {
+    justify-content: stretch;
+  }
+
+  .campoDias {
+    flex: 1;
+    width: auto;
+  }
+}

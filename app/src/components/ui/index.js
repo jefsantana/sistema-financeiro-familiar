@@ -12,4 +12,5 @@ export { Loading } from './Loading/Loading.jsx';
 export { Skeleton, SkeletonCard, SkeletonLinha } from './Skeleton/Skeleton.jsx';
 export { Avatar } from './Avatar/Avatar.jsx';
 export { Dropdown } from './Dropdown/Dropdown.jsx';
+export { MenuExportar } from './MenuExportar/MenuExportar.jsx';
 export { Table, TableColunaAcoes, TableColunaNumerica, TableBotaoAcao } from './Table/Table.jsx';

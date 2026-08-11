@@ -84,6 +84,23 @@ export async function excluirPermanente(tabela, id) {
   if (error) throw error;
 }
 
+export async function registrarAcesso({ perfilId, navegador, sistema, dispositivo }) {
+  const { error } = await supabase
+    .from('historico_acessos')
+    .insert({ perfil_id: perfilId, navegador, sistema, dispositivo });
+  if (error) throw error;
+}
+
+export async function listarHistoricoAcessos(limite = 5) {
+  const { data, error } = await supabase
+    .from('historico_acessos')
+    .select('*')
+    .order('criado_em', { ascending: false })
+    .limit(limite);
+  if (error) throw error;
+  return data.map(linhaParaCamel);
+}
+
 // Apaga TODOS os dados da família (lançamentos e cadastros), de forma
 // permanente — como se a família tivesse acabado de se cadastrar. As
 // categorias não entram aqui: hoje são listas fixas definidas no

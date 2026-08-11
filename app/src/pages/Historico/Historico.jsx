@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, History, FileSpreadsheet, FileText } from 'lucide-react';
-import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNumerica, Button } from '../../components/ui/index.js';
+import { ChevronLeft, ChevronRight, Search, History } from 'lucide-react';
+import { Input, Select, Badge, Avatar, EmptyState, Loading, Table, TableColunaNumerica, MenuExportar } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { obterMesAno } from '../../utils/financeiro.js';
-import { exportarExcel, exportarPdf } from '../../utils/exportarRelatorio.js';
+import { exportarExcel, exportarCsv, exportarPdf } from '../../utils/exportarRelatorio.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
@@ -74,6 +74,14 @@ export default function Historico() {
       await exportarExcel({ ...dadosParaExportacao(), nomeArquivo: `lancamentos-${mesAnoAlvo}.xlsx` });
     } catch {
       toast.erro('Não foi possível gerar o Excel. Tente novamente.');
+    }
+  }
+
+  function aoExportarCsv() {
+    try {
+      exportarCsv({ ...dadosParaExportacao(), nomeArquivo: `lancamentos-${mesAnoAlvo}.csv` });
+    } catch {
+      toast.erro('Não foi possível gerar o CSV. Tente novamente.');
     }
   }
 
@@ -147,24 +155,12 @@ export default function Historico() {
           {lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''}
         </span>
         <div className={styles.botoesExportar}>
-          <Button
-            variante="secundario"
-            tamanho="pequeno"
-            icone={FileSpreadsheet}
-            onClick={aoExportarExcel}
-            disabled={lancamentos.length === 0}
-          >
-            Excel
-          </Button>
-          <Button
-            variante="secundario"
-            tamanho="pequeno"
-            icone={FileText}
-            onClick={aoExportarPdf}
-            disabled={lancamentos.length === 0}
-          >
-            PDF
-          </Button>
+          <MenuExportar
+            aoExportarExcel={aoExportarExcel}
+            aoExportarCsv={aoExportarCsv}
+            aoExportarPdf={aoExportarPdf}
+            desabilitado={lancamentos.length === 0}
+          />
         </div>
       </div>
 

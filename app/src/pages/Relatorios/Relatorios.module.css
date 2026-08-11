@@ -9,6 +9,10 @@
   min-width: 180px;
 }
 
+.exportarWrapper {
+  margin-left: auto;
+}
+
 .seletorPessoa {
   display: flex;
   flex-wrap: wrap;

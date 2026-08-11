@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../services/supabase.js';
+import { registrarAcesso } from '../services/dados.js';
+import { detectarDispositivo } from '../utils/deteccaoDispositivo.js';
 
 const AuthContext = createContext(null);
 
@@ -10,8 +12,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
 
-    const { data: assinatura } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
+    const { data: assinatura } = supabase.auth.onAuthStateChange((evento, novaSessao) => {
       setSessao(novaSessao);
+      // Só em login de verdade (não em restaurar sessão ao recarregar
+      // a página, nem em refresh de token) — assim o histórico reflete
+      // acessos reais, não toda navegação.
+      if (evento === 'SIGNED_IN' && novaSessao?.user) {
+        registrarAcesso({ perfilId: novaSessao.user.id, ...detectarDispositivo() }).catch(() => {});
+      }
     });
 
     return () => assinatura.subscription.unsubscribe();
@@ -25,7 +33,7 @@ export function AuthProvider({ children }) {
 
     supabase
       .from('perfis')
-      .select('nome, familia_id, familias(nome, pessoa_1, pessoa_2, foto_pessoa_1, foto_pessoa_2)')
+      .select('nome, familia_id, familias(nome, pessoa_1, pessoa_2, foto_pessoa_1, foto_pessoa_2, dias_retencao_lixeira)')
       .eq('id', sessao.user.id)
       .single()
       .then(({ data }) => setPerfil(data));
@@ -55,11 +63,26 @@ export function AuthProvider({ children }) {
           redirectTo: window.location.origin + import.meta.env.BASE_URL + 'redefinir-senha',
         }),
       atualizarSenha: (novaSenha) => supabase.auth.updateUser({ password: novaSenha }),
+      excluirConta: async () => {
+        const { error } = await supabase.rpc('excluir_minha_conta');
+        if (!error) await supabase.auth.signOut();
+        return { error };
+      },
       atualizarFotoPessoal: async (indice, dataUrl) => {
         const coluna = indice === 0 ? 'foto_pessoa_1' : 'foto_pessoa_2';
         const { error } = await supabase.from('familias').update({ [coluna]: dataUrl }).eq('id', perfil.familia_id);
         if (!error) {
           setPerfil((atual) => ({ ...atual, familias: { ...atual.familias, [coluna]: dataUrl } }));
+        }
+        return { error };
+      },
+      atualizarDiasRetencaoLixeira: async (dias) => {
+        const { error } = await supabase
+          .from('familias')
+          .update({ dias_retencao_lixeira: dias })
+          .eq('id', perfil.familia_id);
+        if (!error) {
+          setPerfil((atual) => ({ ...atual, familias: { ...atual.familias, dias_retencao_lixeira: dias } }));
         }
         return { error };
       },
