@@ -222,8 +222,36 @@ export default function Dashboard() {
   return (
     <div>
       <div className={styles.saudacao}>
-        <h1>{saudacao()}, {nomeUsuario}!</h1>
-        <p className={styles.data}>{dataPorExtenso(hoje)}</p>
+        <div>
+          <h1>{saudacao()}, {nomeUsuario}!</h1>
+          <p className={styles.data}>{dataPorExtenso(hoje)}</p>
+        </div>
+
+        {pessoas.length > 1 && (
+          <div className={styles.seletorPessoa} role="group" aria-label="Filtrar por pessoa">
+            <button
+              type="button"
+              className={`${styles.avatarPessoa} ${filtroPessoa === 'todos' ? styles.avatarPessoaAtivo : ''}`}
+              onClick={() => setFiltroPessoa('todos')}
+              title="Todos"
+              aria-pressed={filtroPessoa === 'todos'}
+            >
+              <Users size={14} />
+            </button>
+            {pessoas.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.avatarPessoaBotao} ${filtroPessoa === p ? styles.avatarPessoaAtivo : ''}`}
+                onClick={() => setFiltroPessoa(p)}
+                title={p}
+                aria-pressed={filtroPessoa === p}
+              >
+                <Avatar nome={p} tamanho="pequeno" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={styles.faixaTopo}>
@@ -234,60 +262,32 @@ export default function Dashboard() {
             anterior.
           </div>
         )}
-        <div className={styles.controlesTopo}>
-          {pessoas.length > 1 && (
-            <div className={styles.seletorPessoa} role="group" aria-label="Filtrar por pessoa">
-              <button
-                type="button"
-                className={`${styles.avatarPessoa} ${filtroPessoa === 'todos' ? styles.avatarPessoaAtivo : ''}`}
-                onClick={() => setFiltroPessoa('todos')}
-                title="Todos"
-                aria-pressed={filtroPessoa === 'todos'}
-              >
-                <Users size={14} />
-              </button>
-              {pessoas.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={`${styles.avatarPessoaBotao} ${filtroPessoa === p ? styles.avatarPessoaAtivo : ''}`}
-                  onClick={() => setFiltroPessoa(p)}
-                  title={p}
-                  aria-pressed={filtroPessoa === p}
-                >
-                  <Avatar nome={p} tamanho="pequeno" />
-                </button>
-              ))}
+        <div className={styles.seletorMesContainer} ref={seletorRef}>
+          <div className={styles.seletorMes}>
+            <button type="button" className={styles.setaMes} onClick={() => mudarMes(-1)} aria-label="Mês anterior">
+              <ChevronLeft size={16} />
+            </button>
+            <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
+              <Calendar size={14} /> {textoPeriodo}
+            </button>
+            <button type="button" className={styles.setaMes} onClick={() => mudarMes(1)} aria-label="Próximo mês">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {seletorAberto && (
+            <div className={styles.popoverData}>
+              <CalendarioIntervalo inicio={rascunhoInicio} fim={rascunhoFim} aoMudar={aoMudarSelecaoCalendario} />
+              <div className={styles.popoverAcoes}>
+                <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
+                  Cancelar
+                </Button>
+                <Button type="button" tamanho="pequeno" onClick={aplicarIntervaloPersonalizado}>
+                  Aplicar
+                </Button>
+              </div>
             </div>
           )}
-
-          <div className={styles.seletorMesContainer} ref={seletorRef}>
-            <div className={styles.seletorMes}>
-              <button type="button" className={styles.setaMes} onClick={() => mudarMes(-1)} aria-label="Mês anterior">
-                <ChevronLeft size={16} />
-              </button>
-              <button type="button" className={styles.seletorMesLabel} onClick={abrirSeletorDeDatas}>
-                <Calendar size={14} /> {textoPeriodo}
-              </button>
-              <button type="button" className={styles.setaMes} onClick={() => mudarMes(1)} aria-label="Próximo mês">
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {seletorAberto && (
-              <div className={styles.popoverData}>
-                <CalendarioIntervalo inicio={rascunhoInicio} fim={rascunhoFim} aoMudar={aoMudarSelecaoCalendario} />
-                <div className={styles.popoverAcoes}>
-                  <Button type="button" variante="secundario" tamanho="pequeno" onClick={() => setSeletorAberto(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="button" tamanho="pequeno" onClick={aplicarIntervaloPersonalizado}>
-                    Aplicar
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

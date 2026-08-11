@@ -1,4 +1,9 @@
 .saudacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaco-sm) var(--espaco-md);
   margin-bottom: var(--espaco-lg);
 }
 
@@ -38,16 +43,9 @@
   min-width: 0;
 }
 
-.controlesTopo {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-
 .seletorMesContainer {
   position: relative;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -56,6 +54,7 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .avatarPessoa,
@@ -186,16 +185,8 @@
     width: 100%;
   }
 
-  .controlesTopo {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .seletorPessoa {
-    justify-content: center;
-  }
-
   .seletorMesContainer {
+    margin-left: 0;
     width: 100%;
   }
 

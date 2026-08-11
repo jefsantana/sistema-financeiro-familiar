@@ -69,6 +69,32 @@ export function calcularAlertasContasFixas(contasFixas, pagamentos) {
 }
 
 /**
+ * Vencimento da 1ª parcela (a que ainda nunca foi paga): calculado a
+ * partir da data em que o parcelamento foi cadastrado, não do dia de
+ * hoje — se o dia de vencimento já tinha passado nessa data, a 1ª
+ * cobrança cai no mês seguinte (mesma lógica já usada na fatura do
+ * cartão). Faz diferença justo pra quem acabou de cadastrar: um
+ * parcelamento criado no dia 10 com vencimento no dia 1 não pode
+ * aparecer como "vencido há 9 dias" — o dia 1 relevante é o do mês
+ * que vem, não o que já passou antes mesmo da compra existir.
+ */
+function diasAteVencimentoDaCompra(diaVencimento, dataCompraIso) {
+  const dataCompra = new Date(dataCompraIso);
+  const ano = dataCompra.getFullYear();
+  const diaCompra = dataCompra.getDate();
+  const mes = dataCompra.getMonth() + (Number(diaVencimento) < diaCompra ? 1 : 0);
+
+  const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
+  const diaAjustado = Math.min(Number(diaVencimento) || 1, ultimoDiaDoMes);
+  const dataVencimento = new Date(ano, mes, diaAjustado);
+  dataVencimento.setHours(0, 0, 0, 0);
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.round((dataVencimento - hoje) / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Considera "pendente este mês" todo parcelamento que ainda
  * está em andamento (parcelaAtual <= numeroParcelas) e que
  * ainda não tem pagamento registrado no mês atual.
@@ -84,6 +110,11 @@ export function calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamen
     .filter(p => !idsPagos.includes(String(p.id)))
     .map(p => {
       const valorParcela = Number(p.valorTotal) / Number(p.numeroParcelas);
+      const ehPrimeiraParcela = Number(p.parcelaAtual) === 1;
+      const diasRestantes =
+        ehPrimeiraParcela && p.criadoEm
+          ? diasAteVencimentoDaCompra(p.diaVencimento || 1, p.criadoEm)
+          : diasAteVencimento(p.diaVencimento || 1);
       return {
         tipo: 'parcelamento',
         id: p.id,
@@ -93,7 +124,7 @@ export function calcularAlertasParcelamentos(parcelamentos, pagamentosParcelamen
         cartao: p.cartao || '',
         mesAno: mesAnoAtual,
         parcelaAtual: Number(p.parcelaAtual),
-        diasRestantes: diasAteVencimento(p.diaVencimento || 1)
+        diasRestantes
       };
     });
 }
