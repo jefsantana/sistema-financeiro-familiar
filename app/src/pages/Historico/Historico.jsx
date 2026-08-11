@@ -6,13 +6,14 @@ import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadore
 import { obterMesAno } from '../../utils/financeiro.js';
 import { exportarExcel, exportarCsv, exportarPdf } from '../../utils/exportarRelatorio.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
-import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 import styles from './Historico.module.css';
 
 export default function Historico() {
   const { pessoas } = useAuth();
+  const { categoriasGasto, categoriasEntrada } = useCategorias();
   const toast = useToast();
   const { registros: entradas, carregando: c1 } = useCrudMock('Entradas');
   const { registros: gastos, carregando: c2 } = useCrudMock('Gastos');
@@ -123,12 +124,12 @@ export default function Historico() {
         </Select>
         <Select className={styles.filtroSelect} value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
           <option value="todas">Todas as categorias</option>
-          {CATEGORIAS_ENTRADA_FIXAS.map((nome) => (
+          {categoriasEntrada.map((nome) => (
             <option key={nome} value={nome}>
               {nome}
             </option>
           ))}
-          {CATEGORIAS_GASTO_FIXAS.map((nome) => (
+          {categoriasGasto.map((nome) => (
             <option key={nome} value={nome}>
               {nome}
             </option>

@@ -3,14 +3,14 @@ import { Wallet } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
 import { ProgressBar } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { formatarMoeda } from '../../utils/formatadores.js';
 import { mesAnoDe, obterMesAno } from '../../utils/financeiro.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 
 export default function Orcamentos() {
   const { registros: gastos } = useCrudMock('Gastos');
+  const { categoriasGasto, iconesGasto } = useCategorias();
   const mesAtual = mesAnoDe(new Date());
 
   const gastoPorCategoria = useMemo(() => {
@@ -35,8 +35,8 @@ export default function Orcamentos() {
         rotulo: 'Categoria',
         tipo: 'select',
         obrigatorio: true,
-        opcoes: CATEGORIAS_GASTO_FIXAS,
-        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+        opcoes: categoriasGasto,
+        iconePorValor: (valor) => iconesGasto[valor],
       },
       { nome: 'limiteMensal', rotulo: 'Limite mensal (R$)', tipo: 'moeda', obrigatorio: true },
     ],

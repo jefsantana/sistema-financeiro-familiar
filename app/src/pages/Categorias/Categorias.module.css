@@ -25,6 +25,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
 }
 
 .itemFixo {
@@ -39,7 +40,110 @@
   font-weight: 500;
 }
 
+.itemCustom {
+  border-color: rgba(123, 97, 255, 0.3);
+  background-color: rgba(123, 97, 255, 0.05);
+}
+
 .iconeItem {
   flex-shrink: 0;
   color: var(--cor-primaria);
+}
+
+.nomeItem {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconeCadeado {
+  flex-shrink: 0;
+  color: var(--cor-texto-secundario);
+  opacity: 0.6;
+}
+
+.botaoRemover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-secundario);
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.botaoRemover:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--cor-perigo);
+}
+
+.botaoRemover:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.formAdicionar {
+  padding-top: var(--espaco-md);
+  border-top: 1px dashed var(--cor-borda);
+}
+
+.tituloAdicionar {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cor-texto-secundario);
+  margin-bottom: var(--espaco-sm);
+}
+
+.linhaAdicionar {
+  display: flex;
+  gap: var(--espaco-sm);
+  align-items: flex-end;
+  margin-bottom: var(--espaco-sm);
+}
+
+.campoNome {
+  flex: 1;
+  min-width: 160px;
+}
+
+.seletorIcone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.opcaoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto-secundario);
+  background-color: var(--cor-fundo);
+  transition: border-color var(--transicao), color var(--transicao), background-color var(--transicao);
+}
+
+.opcaoIconeAtiva {
+  border-color: var(--cor-primaria);
+  color: #FFFFFF;
+  background-color: var(--cor-primaria);
+}
+
+@media (max-width: 640px) {
+  .linhaAdicionar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campoNome {
+    min-width: 0;
+  }
 }

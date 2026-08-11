@@ -7,10 +7,9 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { criar } from '../../services/dados.js';
 import { criarCompraNoCartao } from '../../utils/comprasCartao.js';
 import { parseValorMonetario, mascaraMoeda, nomeExibicao, dataLocalDeHoje } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 import styles from './NovoLancamentoModal.module.css';
 
 function estadoInicial(pessoas) {
@@ -33,6 +32,7 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
   const [numeroParcelas, setNumeroParcelas] = useState('2');
   const [salvando, setSalvando] = useState(false);
   const { registros: cartoes } = useCrudMock('Cartoes');
+  const { categoriasGasto, categoriasEntrada, iconesGasto, iconesEntrada } = useCategorias();
   const toast = useToast();
   const temSegundaPessoa = pessoas.length > 1;
 
@@ -254,14 +254,12 @@ export function NovoLancamentoModal({ aberto, aoFechar }) {
             <Select
               rotulo="Categoria"
               required
-              icone={
-                tipo === 'entrada' ? ICONES_CATEGORIA_ENTRADA[campos.categoria] : ICONES_CATEGORIA_GASTO[campos.categoria]
-              }
+              icone={tipo === 'entrada' ? iconesEntrada[campos.categoria] : iconesGasto[campos.categoria]}
               value={campos.categoria}
               onChange={(e) => atualizarCampo('categoria', e.target.value)}
             >
               <option value="">Selecione</option>
-              {(tipo === 'entrada' ? CATEGORIAS_ENTRADA_FIXAS : CATEGORIAS_GASTO_FIXAS).map((nome) => (
+              {(tipo === 'entrada' ? categoriasEntrada : categoriasGasto).map((nome) => (
                 <option key={nome} value={nome}>
                   {nome}
                 </option>

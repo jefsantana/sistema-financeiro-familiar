@@ -96,3 +96,37 @@ export const ICONES_CATEGORIA_ENTRADA = {
   Salário: Wallet,
   'Venda de Produtos/Bens': ShoppingBag,
 };
+
+// Ícones que a pessoa pode escolher ao criar uma categoria própria —
+// reaproveita os mesmos ícones já usados nas categorias fixas (sem
+// precisar importar nada novo), com "Tag" como opção genérica.
+export const ICONES_DISPONIVEIS = {
+  Tag,
+  ShoppingCart,
+  Repeat,
+  CreditCard,
+  ShoppingBag,
+  Lightbulb,
+  Sparkles,
+  GraduationCap,
+  Users,
+  Receipt,
+  TrendingUp,
+  Gamepad2,
+  Wrench,
+  Home,
+  PawPrint,
+  Gift,
+  HeartPulse,
+  Landmark,
+  Car,
+  Plane,
+  Building2,
+  Award,
+  RefreshCcw,
+  Briefcase,
+  HelpCircle,
+  RotateCcw,
+  PlusCircle,
+  Wallet,
+};

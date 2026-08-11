@@ -78,17 +78,6 @@ begin
   insert into public.perfis (id, familia_id, nome)
   values (new.id, nova_familia_id, nome_pessoa);
 
-  insert into public.categorias (familia_id, nome, tipo)
-  values
-    (nova_familia_id, 'Salário', 'entrada'),
-    (nova_familia_id, 'Freelance', 'entrada'),
-    (nova_familia_id, 'Alimentação', 'gasto'),
-    (nova_familia_id, 'Moradia', 'gasto'),
-    (nova_familia_id, 'Transporte', 'gasto'),
-    (nova_familia_id, 'Saúde', 'gasto'),
-    (nova_familia_id, 'Lazer', 'gasto'),
-    (nova_familia_id, 'Educação', 'gasto');
-
   return new;
 end;
 $$;
@@ -134,11 +123,15 @@ grant execute on function public.excluir_minha_conta() to authenticated;
 -- excluido_em/excluido_por (exclusão suave, para a Lixeira).
 -- ------------------------------------------------------------
 
+-- Categorias extras que a família adiciona além das fixas do código
+-- (utils/constantes.js). A lista fixa cobre o uso comum e nunca
+-- aparece aqui; esta tabela só guarda os acréscimos de cada família.
 create table categorias (
   id uuid primary key default gen_random_uuid(),
   familia_id uuid not null references familias(id),
   nome text not null,
   tipo text not null check (tipo in ('entrada', 'gasto')),
+  icone text not null default 'Tag',
   criado_em timestamptz not null default now(),
   excluido_em timestamptz,
   excluido_por text
@@ -188,6 +181,10 @@ create table parcelamentos (
   familia_id uuid not null references familias(id),
   descricao text not null,
   valor_total numeric(12,2) not null,
+  -- Preço à vista da compra, sem os juros do parcelamento. Quando
+  -- nulo, tratamos como se fosse igual ao valor_total (nenhum juros
+  -- sendo rastreado) — assim registros antigos continuam funcionando.
+  valor_original numeric(12,2),
   numero_parcelas int not null,
   parcela_atual int not null default 1,
   dia_vencimento int check (dia_vencimento between 1 and 31),

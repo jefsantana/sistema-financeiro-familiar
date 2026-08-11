@@ -7,14 +7,14 @@ import { useToast } from '../../contexts/ToastContext.jsx';
 import { criar } from '../../services/dados.js';
 import { inferirCategoriaPorDescricao } from '../../utils/classificarTransacao.js';
 import { formatarData, formatarMoeda, nomeExibicao } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS, CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO, ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 import formStyles from '../_shared/CrudPage.module.css';
 import styles from './ImportarExtrato.module.css';
 
 export default function ImportarExtrato() {
   const { registros: entradas } = useCrudMock('Entradas');
   const { registros: gastos } = useCrudMock('Gastos');
+  const { categoriasGasto, categoriasEntrada, iconesGasto, iconesEntrada } = useCategorias();
   const { perfil, usuario } = useAuth();
   const toast = useToast();
   const inputArquivoRef = useRef(null);
@@ -246,8 +246,8 @@ export default function ImportarExtrato() {
             </thead>
             <tbody>
               {transacoes.map((transacao) => {
-                const opcoes = transacao.tipo === 'entrada' ? CATEGORIAS_ENTRADA_FIXAS : CATEGORIAS_GASTO_FIXAS;
-                const icones = transacao.tipo === 'entrada' ? ICONES_CATEGORIA_ENTRADA : ICONES_CATEGORIA_GASTO;
+                const opcoes = transacao.tipo === 'entrada' ? categoriasEntrada : categoriasGasto;
+                const icones = transacao.tipo === 'entrada' ? iconesEntrada : iconesGasto;
                 return (
                   <tr key={transacao.id} className={!transacao.selecionada ? styles.linhaDesmarcada : ''}>
                     <td data-rotulo="Importar">

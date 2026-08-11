@@ -1,11 +1,12 @@
 import { FileText } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
 import { formatarMoeda } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 
 export default function ContasFixas() {
+  const { categoriasGasto, iconesGasto } = useCategorias();
+
   const config = {
     tabela: 'ContasFixas',
     icone: FileText,
@@ -22,8 +23,8 @@ export default function ContasFixas() {
         rotulo: 'Categoria',
         tipo: 'select',
         obrigatorio: true,
-        opcoes: CATEGORIAS_GASTO_FIXAS,
-        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+        opcoes: categoriasGasto,
+        iconePorValor: (valor) => iconesGasto[valor],
       },
     ],
     colunas: [

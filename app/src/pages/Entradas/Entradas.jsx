@@ -2,11 +2,12 @@ import { TrendingUp } from 'lucide-react';
 import CrudPage from '../_shared/CrudPage.jsx';
 import { Avatar } from '../../components/ui/index.js';
 import { formatarData, formatarMoeda } from '../../utils/formatadores.js';
-import { CATEGORIAS_ENTRADA_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_ENTRADA } from '../../utils/icones.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 
 export default function Entradas() {
+  const { categoriasEntrada, iconesEntrada } = useCategorias();
+
   const config = {
     tabela: 'Entradas',
     icone: TrendingUp,
@@ -22,8 +23,8 @@ export default function Entradas() {
         rotulo: 'Categoria',
         tipo: 'select',
         obrigatorio: true,
-        opcoes: CATEGORIAS_ENTRADA_FIXAS,
-        iconePorValor: (valor) => ICONES_CATEGORIA_ENTRADA[valor],
+        opcoes: categoriasEntrada,
+        iconePorValor: (valor) => iconesEntrada[valor],
       },
     ],
     colunas: [

@@ -4,14 +4,14 @@ import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { Avatar } from '../../components/ui/index.js';
 import { formatarData, formatarMoeda } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
 import { criarCompraNoCartao } from '../../utils/comprasCartao.js';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 
 export default function Gastos() {
   const { registros: cartoes } = useCrudMock('Cartoes');
   const nomesCartoes = cartoes.map((c) => c.nome);
+  const { categoriasGasto, iconesGasto } = useCategorias();
   const toast = useToast();
 
   const config = {
@@ -50,8 +50,8 @@ export default function Gastos() {
         rotulo: 'Categoria',
         tipo: 'select',
         obrigatorio: true,
-        opcoes: CATEGORIAS_GASTO_FIXAS,
-        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+        opcoes: categoriasGasto,
+        iconePorValor: (valor) => iconesGasto[valor],
       },
       { nome: 'cartao', rotulo: 'Cartão (opcional)', tipo: 'select', opcoes: nomesCartoes },
     ],

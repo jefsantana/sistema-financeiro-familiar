@@ -3,13 +3,13 @@ import CrudPage from '../_shared/CrudPage.jsx';
 import { ProgressBar } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { formatarMoeda } from '../../utils/formatadores.js';
-import { CATEGORIAS_GASTO_FIXAS } from '../../utils/constantes.js';
-import { ICONES_CATEGORIA_GASTO } from '../../utils/icones.js';
 import { CategoriaComIcone } from '../../components/lancamentos/CategoriaComIcone.jsx';
+import { useCategorias } from '../../contexts/CategoriasContext.jsx';
 
 export default function Parcelamentos() {
   const { registros: cartoes } = useCrudMock('Cartoes');
   const nomesCartoes = cartoes.map((c) => c.nome);
+  const { categoriasGasto, iconesGasto } = useCategorias();
 
   const config = {
     tabela: 'Parcelamentos',
@@ -17,16 +17,25 @@ export default function Parcelamentos() {
     tituloForm: 'Novo Parcelamento',
     tituloLista: 'Parcelamentos cadastrados',
     textoVazioLista: 'Cadastre o primeiro parcelamento usando o formulário acima.',
-    dica: 'Use para uma compra dividida em várias vezes, geralmente no cartão de crédito (ex: um notebook em 10x). Uma conta que se repete todo mês com o mesmo valor, como aluguel ou internet, vai em "Contas Fixas".',
+    dica: 'Use para uma compra dividida em várias vezes, geralmente no cartão de crédito (ex: um notebook em 10x). Uma conta que se repete todo mês com o mesmo valor, como aluguel ou internet, vai em "Contas Fixas". Se a máquina cobrou juros pra parcelar, preencha "Valor original" com o preço à vista — assim o sistema mostra separado quanto foi de juros.',
     validar: (dados) => {
       if (Number(dados.parcelaAtual) > Number(dados.numeroParcelas)) {
         return 'A "Parcela atual" não pode ser maior que o "Nº de parcelas".';
+      }
+      if (dados.valorOriginal > 0 && dados.valorOriginal > dados.valorTotal) {
+        return 'O "Valor original" não pode ser maior que o "Valor total" (o total já inclui os juros).';
       }
       return null;
     },
     campos: [
       { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: Notebook' },
-      { nome: 'valorTotal', rotulo: 'Valor total (R$)', tipo: 'moeda', obrigatorio: true },
+      {
+        nome: 'valorOriginal',
+        rotulo: 'Valor original (à vista, opcional)',
+        tipo: 'moeda',
+        placeholder: 'Deixe em branco se não teve juros',
+      },
+      { nome: 'valorTotal', rotulo: 'Valor total parcelado (R$)', tipo: 'moeda', obrigatorio: true },
       { nome: 'numeroParcelas', rotulo: 'Nº de parcelas', tipo: 'numero', obrigatorio: true, min: 1 },
       { nome: 'parcelaAtual', rotulo: 'Parcela atual', tipo: 'numero', obrigatorio: true, min: 1 },
       { nome: 'diaVencimento', rotulo: 'Dia do vencimento', tipo: 'numero', obrigatorio: true, min: 1, max: 31 },
@@ -36,8 +45,8 @@ export default function Parcelamentos() {
         rotulo: 'Categoria',
         tipo: 'select',
         obrigatorio: true,
-        opcoes: CATEGORIAS_GASTO_FIXAS,
-        iconePorValor: (valor) => ICONES_CATEGORIA_GASTO[valor],
+        opcoes: categoriasGasto,
+        iconePorValor: (valor) => iconesGasto[valor],
       },
     ],
     colunas: [
@@ -45,6 +54,16 @@ export default function Parcelamentos() {
       { chave: 'categoria', rotulo: 'Categoria', render: (r) => <CategoriaComIcone nome={r.categoria} /> },
       { chave: 'cartao', rotulo: 'Cartão', render: (r) => r.cartao || '-' },
       { chave: 'valorTotal', rotulo: 'Valor Total', numerica: true, render: (r) => formatarMoeda(r.valorTotal) },
+      {
+        chave: 'juros',
+        rotulo: 'Juros',
+        numerica: true,
+        render: (r) => {
+          const juros = Number(r.valorOriginal) > 0 ? Number(r.valorTotal) - Number(r.valorOriginal) : 0;
+          if (juros <= 0) return <span style={{ color: 'var(--cor-texto-secundario)' }}>—</span>;
+          return <span className="valor-negativo">{formatarMoeda(juros)}</span>;
+        },
+      },
       { chave: 'diaVencimento', rotulo: 'Vencimento', render: (r) => `Dia ${r.diaVencimento || '-'}` },
       {
         chave: 'progresso',
