@@ -60,10 +60,14 @@ export default function Configuracoes() {
 
   const [historicoAcessos, setHistoricoAcessos] = useState([]);
   useEffect(() => {
-    listarHistoricoAcessos(5)
+    // Pede os 2 mais recentes: o [0] é sempre a sessão atual (você,
+    // agora), o [1] é o acesso anterior — que é o que vale mostrar
+    // como "Último acesso" (mesma lógica do Gmail e afins).
+    listarHistoricoAcessos(2)
       .then(setHistoricoAcessos)
       .catch(() => {});
   }, []);
+  const acessoAnterior = historicoAcessos[1];
 
   function aoSelecionarFoto(evento) {
     const arquivo = evento.target.files?.[0];
@@ -266,29 +270,29 @@ export default function Configuracoes() {
           <p className={styles.rotuloLinha}>Histórico de Acessos</p>
         </div>
 
-        {historicoAcessos.length === 0 ? (
-          <p className={styles.descricaoLinha}>Ainda não temos registro de acessos.</p>
+        {!acessoAnterior ? (
+          <p className={styles.descricaoLinha}>
+            Este é o seu primeiro acesso registrado — ainda não há um acesso anterior pra mostrar aqui.
+          </p>
         ) : (
           <ul className={styles.listaAcessos}>
-            {historicoAcessos.map((acesso, indice) => {
-              const IconeDispositivo = acesso.dispositivo === 'mobile' ? Smartphone : Monitor;
+            {(() => {
+              const IconeDispositivo = acessoAnterior.dispositivo === 'mobile' ? Smartphone : Monitor;
               return (
-                <li key={acesso.id} className={styles.itemAcesso}>
+                <li className={styles.itemAcesso}>
                   <div className={styles.iconeAcesso}>
                     <IconeDispositivo size={16} />
                   </div>
                   <div>
-                    {indice === 0 && <p className={styles.rotuloAcesso}>Último acesso</p>}
-                    <p className={indice === 0 ? styles.dataAcesso : styles.rotuloAcesso}>
-                      {formatarDataAcesso(acesso.criadoEm)}
-                    </p>
+                    <p className={styles.rotuloAcesso}>Último acesso</p>
+                    <p className={styles.dataAcesso}>{formatarDataAcesso(acessoAnterior.criadoEm)}</p>
                     <p className={styles.descricaoAcesso}>
-                      {acesso.navegador} • {acesso.sistema}
+                      {acessoAnterior.navegador} • {acessoAnterior.sistema}
                     </p>
                   </div>
                 </li>
               );
-            })}
+            })()}
           </ul>
         )}
       </Card>
