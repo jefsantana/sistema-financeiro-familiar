@@ -184,6 +184,19 @@
   margin-top: 1px;
 }
 
+.tituloAreaPerigo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--espaco-xl);
+  margin-bottom: var(--espaco-sm);
+  color: var(--cor-perigo);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .zonaPerigo {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
@@ -201,6 +214,18 @@
   .linha > button,
   .linha > :is(a) {
     align-self: flex-start;
+  }
+
+  /* A linha do perfil (nome/e-mail + "Sair") é curta o bastante pra
+     continuar lado a lado mesmo no celular — só as linhas de texto
+     longo (zona de perigo) precisam empilhar. */
+  .linhaPerfil {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .linhaPerfil > button {
+    align-self: center;
   }
 
   .opcoesTema,

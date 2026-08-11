@@ -63,7 +63,7 @@
 
 .linhaEsvaziar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   padding-top: var(--espaco-md);
   border-top: 1px solid var(--cor-borda);
 }

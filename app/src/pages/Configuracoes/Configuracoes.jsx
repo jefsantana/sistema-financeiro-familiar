@@ -13,6 +13,7 @@ import {
   History,
   Monitor,
   Smartphone,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card, Button, Avatar, Input, ConfirmDialog } from '../../components/ui/index.js';
 import { AjustarFotoPerfilModal } from '../../components/configuracoes/AjustarFotoPerfilModal.jsx';
@@ -148,7 +149,7 @@ export default function Configuracoes() {
       </h1>
 
       <Card className={styles.secao}>
-        <div className={styles.linha}>
+        <div className={`${styles.linha} ${styles.linhaPerfil}`}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--espaco-sm)' }}>
             {posicaoPropria >= 0 ? (
               <button
@@ -297,6 +298,11 @@ export default function Configuracoes() {
         )}
       </Card>
 
+      <div className={styles.tituloAreaPerigo}>
+        <AlertTriangle size={16} />
+        Área de Perigo
+      </div>
+
       <Card className={`${styles.secao} ${styles.zonaPerigo}`}>
         <div className={styles.linha}>
           <div>
@@ -310,9 +316,7 @@ export default function Configuracoes() {
             Apagar tudo
           </Button>
         </div>
-      </Card>
 
-      <Card className={`${styles.secao} ${styles.zonaPerigo}`}>
         <div className={styles.linha}>
           <div>
             <p className={styles.rotuloLinha}>Excluir minha conta</p>
