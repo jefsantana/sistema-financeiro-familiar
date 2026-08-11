@@ -187,3 +187,24 @@
 .zonaPerigo {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
+/* ---------- CELULAR: nome/e-mail longos e os botões de ação não
+   cabem lado a lado com o texto — empilha pra não espremer nem
+   cortar nada ---------- */
+@media (max-width: 640px) {
+  .linha {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--espaco-sm);
+  }
+
+  .linha > button,
+  .linha > :is(a) {
+    align-self: flex-start;
+  }
+
+  .opcoesTema,
+  .opcoesAcento {
+    justify-content: flex-start;
+  }
+}

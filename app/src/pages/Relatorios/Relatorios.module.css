@@ -106,7 +106,8 @@
 
 .comparativo {
   display: flex;
-  gap: var(--espaco-xl);
+  flex-wrap: wrap;
+  gap: var(--espaco-md) var(--espaco-xl);
 }
 
 .itemComparativo {
