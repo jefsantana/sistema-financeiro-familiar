@@ -75,6 +75,7 @@ export const ICONES_CATEGORIA_GASTO = {
   Lazer: Gamepad2,
   Manutenção: Wrench,
   Moradia: Home,
+  Outros: HelpCircle,
   Pets: PawPrint,
   Presentes: Gift,
   Saúde: HeartPulse,

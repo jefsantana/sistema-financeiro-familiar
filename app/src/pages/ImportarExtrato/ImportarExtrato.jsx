@@ -49,8 +49,15 @@ export default function ImportarExtrato() {
       const existentes = [...entradas, ...gastos];
       const comMetadados = brutas.map((t) => {
         const duplicado = existentes.some((e) => e.data === t.data && Math.abs(Number(e.valor) - t.valor) < 0.01);
-        const categoriaSugerida = inferirCategoriaPorDescricao(t.descricao, t.tipo) || '';
-        return { ...t, categoria: categoriaSugerida, categoriaSugerida: Boolean(categoriaSugerida), selecionada: !duplicado, duplicado };
+        const categoriaInferida = inferirCategoriaPorDescricao(t.descricao, t.tipo);
+        const categoriaPadrao = t.tipo === 'entrada' ? 'Outras Entradas' : 'Outros';
+        return {
+          ...t,
+          categoria: categoriaInferida || categoriaPadrao,
+          categoriaSugerida: Boolean(categoriaInferida),
+          selecionada: !duplicado,
+          duplicado,
+        };
       });
 
       setTransacoes(comMetadados);
@@ -75,8 +82,9 @@ export default function ImportarExtrato() {
   }
 
   function definirTipo(id, tipo) {
+    const categoriaPadrao = tipo === 'entrada' ? 'Outras Entradas' : 'Outros';
     setTransacoes((atual) =>
-      atual.map((t) => (t.id === id ? { ...t, tipo, categoria: '', categoriaSugerida: false, tipoIncerto: false } : t))
+      atual.map((t) => (t.id === id ? { ...t, tipo, categoria: categoriaPadrao, categoriaSugerida: false, tipoIncerto: false } : t))
     );
   }
 

@@ -49,6 +49,7 @@ export const CATEGORIAS_GASTO_FIXAS = [
   'Lazer',
   'Manutenção',
   'Moradia',
+  'Outros',
   'Pets',
   'Presentes',
   'Saúde',
