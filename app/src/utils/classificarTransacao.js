@@ -45,6 +45,11 @@ const PALAVRAS_ENTRADA = [
  */
 export function inferirTipoPorDescricao(descricao) {
   const texto = (descricao || '').toLowerCase();
+  // "Estorno" decide sozinho, antes das outras palavras: é sempre
+  // dinheiro voltando, mesmo quando a descrição também menciona a
+  // compra original (ex: "Estorno - Compra no débito X", que bateria
+  // com a palavra "compra" da lista de gasto se checada primeiro).
+  if (texto.includes('estorno')) return 'entrada';
   if (PALAVRAS_GASTO.some((palavra) => texto.includes(palavra))) return 'gasto';
   if (PALAVRAS_ENTRADA.some((palavra) => texto.includes(palavra))) return 'entrada';
   return null;

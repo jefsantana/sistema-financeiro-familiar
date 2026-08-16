@@ -12,6 +12,23 @@ import { inferirTipoPorDescricao } from './classificarTransacao.js';
 
 const REGEX_LINHA = /(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(.+?)\s+(-?R?\$?\s?[\d.,]+)\s*([CD])?\s*$/;
 
+// Alguns bancos (ex: Nubank) não repetem a data em cada linha de
+// lançamento — em vez disso, agrupam os lançamentos do dia embaixo
+// de um cabeçalho tipo "02 AGO 2026", e cada linha abaixo dele traz
+// só a descrição e o valor. Essas expressões cobrem esse formato:
+// uma reconhece o cabeçalho do dia, a outra reconhece a linha de
+// lançamento sem data (usada junto da última data vista), e a
+// terceira identifica linhas de resumo ("Total de entradas/saídas",
+// "Saldo ...") pra não importar como se fossem lançamentos.
+const REGEX_CABECALHO_DIA = /^(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\.?\s+(?:DE\s+)?(\d{4})\b/i;
+const REGEX_LINHA_SEM_DATA = /^(.+?)\s+(-?R?\$?\s?[\d.,]+)\s*([CD])?\s*$/;
+const REGEX_LINHA_RESUMO = /^(total|saldo)\b/i;
+
+const MESES_ABREVIADOS = {
+  JAN: '01', FEV: '02', MAR: '03', ABR: '04', MAI: '05', JUN: '06',
+  JUL: '07', AGO: '08', SET: '09', OUT: '10', NOV: '11', DEZ: '12',
+};
+
 function normalizarDataBr(dataBruta) {
   const partes = dataBruta.split('/');
   if (partes.length < 2) return '';
@@ -19,6 +36,12 @@ function normalizarDataBr(dataBruta) {
   if (!ano) ano = String(new Date().getFullYear());
   if (ano.length === 2) ano = `20${ano}`;
   return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+}
+
+function normalizarDataCabecalho(dia, mesAbreviado, ano) {
+  const mes = MESES_ABREVIADOS[mesAbreviado.toUpperCase()];
+  if (!mes) return '';
+  return `${ano}-${mes}-${dia.padStart(2, '0')}`;
 }
 
 async function extrairLinhas(arquivo) {
@@ -83,13 +106,28 @@ async function extrairLinhas(arquivo) {
 export async function analisarPdf(arquivo) {
   const linhas = await extrairLinhas(arquivo);
   const transacoes = [];
+  let dataDoGrupoAtual = '';
 
   linhas.forEach((linha, indice) => {
-    const encontrado = linha.trim().match(REGEX_LINHA);
+    const linhaTrim = linha.trim();
+
+    const cabecalhoDia = linhaTrim.match(REGEX_CABECALHO_DIA);
+    if (cabecalhoDia) {
+      const [, dia, mesAbreviado, ano] = cabecalhoDia;
+      dataDoGrupoAtual = normalizarDataCabecalho(dia, mesAbreviado, ano);
+      return;
+    }
+
+    if (REGEX_LINHA_RESUMO.test(linhaTrim)) return;
+
+    const comDataPropria = linhaTrim.match(REGEX_LINHA);
+    const encontrado = comDataPropria || (dataDoGrupoAtual && linhaTrim.match(REGEX_LINHA_SEM_DATA));
     if (!encontrado) return;
 
-    const [, dataBruta, descricaoBruta, valorBruto, marcador] = encontrado;
-    const data = normalizarDataBr(dataBruta);
+    const descricaoBruta = comDataPropria ? encontrado[2] : encontrado[1];
+    const valorBruto = comDataPropria ? encontrado[3] : encontrado[2];
+    const marcador = comDataPropria ? encontrado[4] : encontrado[3];
+    const data = comDataPropria ? normalizarDataBr(encontrado[1]) : dataDoGrupoAtual;
     const valorNumerico = parseValorMonetario(valorBruto);
     if (!data || !valorNumerico) return;
 

@@ -148,7 +148,7 @@ export default function ImportarExtrato() {
           <input
             ref={inputArquivoRef}
             type="file"
-            accept=".pdf"
+            accept="application/pdf,.pdf"
             onChange={aoSelecionarArquivo}
             className={styles.inputArquivo}
           />
