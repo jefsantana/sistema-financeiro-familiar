@@ -1,0 +1,98 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+}
+
+.cartoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  background-color: var(--cor-fundo-sutil);
+  min-width: 140px;
+}
+
+.nomeCartao {
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+}
+
+.saldo {
+  font-family: var(--fonte-numeros);
+  font-weight: 700;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.saldoNegativo {
+  color: var(--cor-perigo);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 6px 0;
+}
+
+.icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icone svg {
+  width: 16px;
+  height: 16px;
+}
+
+.recarga { background-color: rgba(16, 185, 129, 0.12); color: var(--cor-sucesso); }
+.gasto { background-color: rgba(239, 68, 68, 0.12); color: var(--cor-perigo); }
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.descricao {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data {
+  font-size: 0.75rem;
+  color: var(--cor-texto-secundario);
+}
+
+.valor {
+  font-family: var(--fonte-numeros);
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.valorRecarga { color: var(--cor-sucesso); }
+.valorGasto { color: var(--cor-perigo); }

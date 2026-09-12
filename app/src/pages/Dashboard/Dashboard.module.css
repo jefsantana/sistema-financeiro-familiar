@@ -248,5 +248,6 @@
   .itemUltimos { order: 5; }
   .itemPessoa { order: 6; }
   .itemInsights { order: 7; }
-  .itemOrcamento { order: 8; }
+  .itemAlimentacao { order: 8; }
+  .itemOrcamento { order: 9; }
 }

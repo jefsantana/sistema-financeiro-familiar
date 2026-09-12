@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   PieChart,
   Receipt,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   TrendingUp,
   TrendingDown,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Loading, EmptyState, Button, Avatar } from '../../components/ui/index.js';
 import { Panel } from '../../components/dashboard/Panel.jsx';
@@ -22,6 +24,7 @@ import { RecentTransactions } from '../../components/dashboard/RecentTransaction
 import { SpendingByPerson } from '../../components/dashboard/SpendingByPerson.jsx';
 import { GoalsWidget } from '../../components/dashboard/GoalsWidget.jsx';
 import { BudgetsWidget } from '../../components/dashboard/BudgetsWidget.jsx';
+import { MealCardWidget } from '../../components/dashboard/MealCardWidget.jsx';
 import { FinancialInsights } from '../../components/dashboard/FinancialInsights.jsx';
 import { CalendarioIntervalo } from '../../components/dashboard/CalendarioIntervalo.jsx';
 import { GraficoLinha } from '../../components/charts/GraficoLinha.jsx';
@@ -338,6 +341,23 @@ export default function Dashboard() {
         <div className={styles.itemInsights}>
           <Panel icone={Sparkles} titulo="Insights Financeiros">
             <FinancialInsights insights={insights} />
+          </Panel>
+        </div>
+
+        <div className={styles.itemAlimentacao}>
+          <Panel
+            icone={UtensilsCrossed}
+            titulo="Cartão Alimentação"
+            subtitulo="conta separada, à parte do saldo geral"
+            acao={
+              <Link to="/cartao-alimentacao">
+                <Button tamanho="pequeno" variante="secundario">
+                  Ver tudo
+                </Button>
+              </Link>
+            }
+          >
+            <MealCardWidget />
           </Panel>
         </div>
 

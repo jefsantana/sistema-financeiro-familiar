@@ -54,6 +54,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 7. "orcamento" — um limite de gasto mensal para uma categoria (ex: "quero limitar 800 por mês em alimentação"). Campos: categoria, limite_mensal.
 8. "gasto_alimentacao" — um gasto pago com cartão alimentação/refeição (ex: Ticket, VR, Alelo, Sodexo). Desconta do saldo desse cartão em vez de ser um gasto comum. Campos: descricao, valor, categoria (normalmente "Alimentação"), pessoa.
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
+10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -63,12 +64,12 @@ Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO A
 Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
 
-Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 9 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 10 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -79,7 +80,8 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "valor_total": numero, valor cheio da compra parcelada (parcelamento obrigatório) ou null,
   "valor_alvo": numero (meta obrigatório) ou null,
   "limite_mensal": numero (orcamento obrigatório) ou null,
-  "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo",
+  "escopo": "geral" ou "alimentacao" (só para consulta_saldo) ou null,
+  "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
   "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
   "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada)
 }
@@ -142,7 +144,7 @@ async function chamarAnthropic(contentBlocks) {
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
-      max_tokens: 500,
+      max_tokens: 1500,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: contentBlocks }],
     }),
@@ -581,27 +583,50 @@ async function enviarNoGrupo(texto) {
 
 // ===================== Tarefas agendadas =====================
 
+// ===================== Resumos (usados no agendado e sob demanda) =====================
+async function gerarResumoGeral() {
+  const [{ data: entradas, error: e1 }, { data: gastos, error: e2 }] = await Promise.all([
+    supabase.from('entradas').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('gastos').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+  ]);
+  if (e1 || e2) throw new Error((e1 || e2).message);
+
+  const somaEntradas = entradas.reduce((acc, i) => acc + Number(i.valor), 0);
+  const somaGastos = gastos.reduce((acc, i) => acc + Number(i.valor), 0);
+  const saldo = somaEntradas - somaGastos;
+
+  return (
+    `📊 *Saldo do dia*\n` +
+    `💚 Entradas: R$ ${formatarReais(somaEntradas)}\n` +
+    `💸 Gastos: R$ ${formatarReais(somaGastos)}\n` +
+    `${saldo >= 0 ? '✅' : '⚠️'} Saldo atual: R$ ${formatarReais(saldo)}`
+  );
+}
+
+async function gerarResumoCartaoAlimentacao() {
+  const { data: cartoes, error } = await supabase
+    .from('cartoes_alimentacao')
+    .select('nome, saldo_atual')
+    .eq('familia_id', FAMILIA_ID)
+    .is('excluido_em', null);
+  if (error) throw new Error(error.message);
+
+  if (!cartoes || cartoes.length === 0) {
+    return '📋 Você ainda não tem nenhum cartão alimentação cadastrado.';
+  }
+
+  const linhas = cartoes
+    .map((c) => `${Number(c.saldo_atual) < 0 ? '⚠️' : '💳'} ${c.nome}: R$ ${formatarReais(c.saldo_atual)}`)
+    .join('\n');
+  return `📋 *Saldo do Cartão Alimentação*\n${linhas}`;
+}
+
 // Todo dia às 20h: saldo do dia (entradas - gastos)
 cron.schedule(
   '0 20 * * *',
   async () => {
     try {
-      const [{ data: entradas, error: e1 }, { data: gastos, error: e2 }] = await Promise.all([
-        supabase.from('entradas').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
-        supabase.from('gastos').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
-      ]);
-      if (e1 || e2) throw new Error((e1 || e2).message);
-
-      const somaEntradas = entradas.reduce((acc, i) => acc + Number(i.valor), 0);
-      const somaGastos = gastos.reduce((acc, i) => acc + Number(i.valor), 0);
-      const saldo = somaEntradas - somaGastos;
-
-      const texto =
-        `📊 *Saldo do dia*\n` +
-        `💚 Entradas: R$ ${formatarReais(somaEntradas)}\n` +
-        `💸 Gastos: R$ ${formatarReais(somaGastos)}\n` +
-        `${saldo >= 0 ? '✅' : '⚠️'} Saldo atual: R$ ${formatarReais(saldo)}`;
-
+      const texto = await gerarResumoGeral();
       await enviarNoGrupo(texto);
       console.log('📊 Saldo diário enviado.');
     } catch (err) {
@@ -810,6 +835,19 @@ async function iniciar() {
 
     if (!dados.ehTransacao) {
       console.log('ℹ️  Mensagem não é uma transação financeira, ignorando.');
+      return;
+    }
+
+    // "Pergunta" sobre saldo/resumo: responde na hora, sem gravar nada no banco.
+    if (dados.tipo === 'consulta_saldo') {
+      try {
+        const texto =
+          dados.escopo === 'alimentacao' ? await gerarResumoCartaoAlimentacao() : await gerarResumoGeral();
+        await enviarNoGrupo(texto);
+        console.log('📊 Resumo enviado sob demanda.');
+      } catch (err) {
+        console.error('Erro ao gerar resumo sob demanda:', err.message);
+      }
       return;
     }
 
