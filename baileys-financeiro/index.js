@@ -134,7 +134,7 @@ function contextoCartoes(cartoes, cartoesAlimentacao) {
   return partes.join(' ');
 }
 
-async function chamarAnthropic(contentBlocks) {
+async function chamarAnthropic(contentBlocks, tentativa = 1) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -144,6 +144,10 @@ async function chamarAnthropic(contentBlocks) {
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
+      // 1500 dá espaço de sobra pro "thinking" do modelo + o JSON completo —
+      // com 500 (valor antigo) a resposta era cortada no meio (stop_reason:
+      // "max_tokens") e o JSON.parse abaixo quebrava com "Unexpected end of
+      // JSON input". Não reduzir sem testar a chamada real de novo.
       max_tokens: 1500,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: contentBlocks }],
@@ -158,7 +162,27 @@ async function chamarAnthropic(contentBlocks) {
   const data = await resp.json();
   const textoResposta = data.content?.find((b) => b.type === 'text')?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
-  return JSON.parse(jsonLimpo);
+
+  try {
+    return JSON.parse(jsonLimpo);
+  } catch (err) {
+    // A IA às vezes escreve algo antes/depois do JSON, apesar da instrução.
+    // Antes de desistir, tenta 1x pedindo pra ela se corrigir.
+    if (tentativa === 1) {
+      console.warn('⚠️  Resposta da IA não veio em JSON válido, tentando de novo...');
+      return chamarAnthropic(
+        [
+          ...contentBlocks,
+          {
+            type: 'text',
+            text: `Sua resposta anterior não era um JSON válido:\n"${textoResposta}"\n\nResponda de novo, agora APENAS com o JSON no formato pedido, sem nenhum texto antes ou depois.`,
+          },
+        ],
+        2
+      );
+    }
+    throw new Error(`Resposta da IA não é um JSON válido mesmo após nova tentativa: ${textoResposta.slice(0, 200)}`);
+  }
 }
 
 async function interpretarMensagem(texto, remetente) {
@@ -911,12 +935,13 @@ async function iniciar() {
           return;
         }
         console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
-        await apagarPendencia(chaveRemetente);
         try {
           dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente);
+          await apagarPendencia(chaveRemetente);
         } catch (err) {
           console.error('Erro ao continuar lançamento pendente:', err.message);
-          return;
+          await enviarNoGrupo('🤔 Não entendi sua resposta. Pode tentar de novo, com outras palavras?');
+          return; // mantém a pendência ativa pra pessoa poder tentar de novo
         }
       }
     } else if (ehTexto) {
@@ -928,6 +953,7 @@ async function iniciar() {
         dados = await interpretarMensagem(texto, nomeRemetente);
       } catch (err) {
         console.error('Erro ao chamar a IA (texto):', err.message);
+        await enviarNoGrupo('🤔 Não consegui entender essa mensagem. Pode tentar reformular, tipo "gastei 50 no mercado"?');
         return;
       }
     } else if (tipoMsg === 'imageMessage') {
@@ -941,6 +967,7 @@ async function iniciar() {
         dados = await interpretarImagem(base64, mimetype, legenda, nomeRemetente);
       } catch (err) {
         console.error('Erro ao processar imagem:', err.message);
+        await enviarNoGrupo('🤔 Não consegui ler essa imagem direito. Pode mandar de novo, ou digitar o gasto por texto?');
         return;
       }
     } else if (tipoMsg === 'audioMessage') {
@@ -956,12 +983,14 @@ async function iniciar() {
         const textoTranscrito = await transcreverAudio(buffer, mimetype);
         if (!textoTranscrito.trim()) {
           console.log('ℹ️  Transcrição veio vazia, ignorando.');
+          await enviarNoGrupo('🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
           return;
         }
         console.log(`📝 Transcrito: "${textoTranscrito}"`);
         dados = await interpretarMensagem(textoTranscrito, nomeRemetente);
       } catch (err) {
         console.error('Erro ao processar áudio:', err.message);
+        await enviarNoGrupo('🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
         return;
       }
     } else {
@@ -1059,6 +1088,11 @@ async function iniciar() {
       console.log('✅ Lançamento registrado e confirmado no grupo.');
     } catch (err) {
       console.error('Erro ao salvar/confirmar lançamento:', err.message);
+      try {
+        await enviarNoGrupo('⚠️ Entendi o lançamento, mas tive um problema ao salvar no sistema. Pode tentar de novo em instantes?');
+      } catch (e2) {
+        console.error('Erro ao avisar sobre falha ao salvar:', e2.message);
+      }
     }
   }
 }
