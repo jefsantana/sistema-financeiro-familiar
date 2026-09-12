@@ -46,7 +46,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 if (!ANTHROPIC_API_KEY) console.warn('⚠️  ANTHROPIC_API_KEY não configurada.');
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) console.warn('⚠️  SUPABASE_URL / SUPABASE_SERVICE_KEY não configuradas.');
-if (!OPENAI_API_KEY) console.warn('⚠️  OPENAI_API_KEY não configurada — mensagens de áudio serão ignoradas.');
+if (!OPENAI_API_KEY) console.warn('⚠️  OPENAI_API_KEY não configurada.');
 if (!GEMINI_API_KEY) console.warn('⚠️  GEMINI_API_KEY não configurada.');
 if (!GROQ_API_KEY) console.warn('⚠️  GROQ_API_KEY não configurada.');
 if (!MISTRAL_API_KEY) console.warn('⚠️  MISTRAL_API_KEY não configurada.');
@@ -418,26 +418,53 @@ async function continuarComResposta(dadosParciais, resposta, remetente) {
 }
 
 // ===================== Transcrição de áudio (Whisper) =====================
-async function transcreverAudio(buffer, mimetype) {
+// Tenta o Groq primeiro (gratuito, mesma API do Whisper), depois a OpenAI (paga).
+async function transcreverComWhisper({ url, apiKey, model, buffer, mimetype }) {
   const extensao = mimetype.includes('ogg') ? 'ogg' : mimetype.includes('mp4') ? 'm4a' : 'oga';
   const form = new FormData();
   form.append('file', new Blob([buffer], { type: mimetype }), `audio.${extensao}`);
-  form.append('model', 'whisper-1');
+  form.append('model', model);
   form.append('language', 'pt');
 
-  const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const resp = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    headers: { Authorization: `Bearer ${apiKey}` },
     body: form,
   });
 
   if (!resp.ok) {
     const erro = await resp.text();
-    throw new Error(`OpenAI Whisper ${resp.status}: ${erro}`);
+    throw new Error(`${url} ${resp.status}: ${erro}`);
   }
 
   const data = await resp.json();
   return data.text || '';
+}
+
+async function transcreverAudio(buffer, mimetype) {
+  if (GROQ_API_KEY) {
+    try {
+      return await transcreverComWhisper({
+        url: 'https://api.groq.com/openai/v1/audio/transcriptions',
+        apiKey: GROQ_API_KEY,
+        model: 'whisper-large-v3-turbo',
+        buffer,
+        mimetype,
+      });
+    } catch (err) {
+      console.warn('⚠️  Transcrição no Groq falhou, tentando OpenAI:', err.message);
+    }
+  }
+  if (OPENAI_API_KEY) {
+    return transcreverComWhisper({
+      url: 'https://api.openai.com/v1/audio/transcriptions',
+      apiKey: OPENAI_API_KEY,
+      model: 'whisper-1',
+      buffer,
+      mimetype,
+    });
+  }
+  throw new Error('Nenhum provedor de transcrição configurado (GROQ_API_KEY ou OPENAI_API_KEY).');
 }
 
 // ===================== Supabase: gravar transação =====================
@@ -1178,8 +1205,8 @@ async function iniciar() {
         return;
       }
     } else if (tipoMsg === 'audioMessage') {
-      if (!OPENAI_API_KEY) {
-        console.log('ℹ️  Áudio recebido, mas OPENAI_API_KEY não configurada — ignorando.');
+      if (!GROQ_API_KEY && !OPENAI_API_KEY) {
+        console.log('ℹ️  Áudio recebido, mas nenhum provedor de transcrição configurado — ignorando.');
         return;
       }
       const mimetype = msg.message.audioMessage.mimetype || 'audio/ogg';

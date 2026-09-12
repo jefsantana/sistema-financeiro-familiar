@@ -28,6 +28,9 @@ fly secrets set \
   ANTHROPIC_API_KEY="sk-ant-..." \
   SUPABASE_URL="https://smptdvscrudvclawdmla.supabase.co" \
   SUPABASE_SERVICE_KEY="sua-service-role-key" \
+  GEMINI_API_KEY="..." \
+  GROQ_API_KEY="gsk_..." \
+  MISTRAL_API_KEY="..." \
   OPENAI_API_KEY="sk-..." \
   SEND_TOKEN="escolha-um-token-secreto" \
   -a sistema-financeiro-baileys
@@ -35,10 +38,13 @@ fly secrets set \
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Sim | Sua API key da Anthropic (console.anthropic.com) |
+| `ANTHROPIC_API_KEY` | Sim | Última da cadeia de fallback de interpretação (a única paga) |
 | `SUPABASE_URL` | Sim | URL do projeto Supabase |
 | `SUPABASE_SERVICE_KEY` | Sim | Service role key (Project Settings > API) — bypassa RLS |
-| `OPENAI_API_KEY` | Não (mas sem ela, áudio é ignorado) | Usada só para transcrever mensagens de áudio (Whisper) |
+| `GEMINI_API_KEY` | Não | 1º provedor de interpretação tentado (gratuito, lê imagem) |
+| `GROQ_API_KEY` | Não | 2º provedor tentado (gratuito, só texto) + transcreve áudio (Whisper) gratuitamente |
+| `MISTRAL_API_KEY` | Não | 3º provedor tentado (gratuito, só texto) |
+| `OPENAI_API_KEY` | Não | 4º provedor tentado (pago, lê imagem) + transcrição de áudio como último recurso |
 | `SEND_TOKEN` | Não (tem padrão) | Token do endpoint manual `/enviar` |
 | `NOME_GRUPO_ALVO` | Não (padrão "CONTROLE FINANCEIRO") | Nome exato do grupo monitorado |
 | `FAMILIA_ID` | Não (já tem padrão) | UUID da família no Supabase |
