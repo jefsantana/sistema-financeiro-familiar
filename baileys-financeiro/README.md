@@ -1,91 +1,62 @@
-# Baileys → n8n (Financeiro Jeferson e Raquel)
+# Controle Financeiro via WhatsApp — versão sem n8n
 
-Bot que conecta ao seu WhatsApp pessoal (via Baileys, biblioteca não-oficial),
-escuta as mensagens do grupo do casal e encaminha cada mensagem de texto para
-o webhook do workflow **"Financeiro - WhatsApp para Supabase (IA)"** no n8n,
-que usa Claude para extrair a transação e grava direto no Supabase.
+Essa versão faz tudo sozinha, num único processo Node.js rodando no Fly.io:
 
-Não testei a instalação (`npm install`) neste ambiente porque o registro do
-npm está bloqueado aqui — mas o código foi checado (sintaxe válida) e segue o
-padrão oficial da biblioteca Baileys. Vai instalar normalmente no Railway.
+1. Conecta ao WhatsApp (grupo "CONTROLE FINANCEIRO")
+2. Interpreta cada mensagem chamando a API da Anthropic diretamente
+3. Grava a transação no Supabase (`entradas` ou `gastos`)
+4. Manda de volta o comentário + o cartão de confirmação no grupo
+5. Roda dois lembretes automáticos:
+   - Todo dia às 20h: saldo do dia
+   - Todo dia às 8h: contas fixas vencendo em 5 dias e ainda não pagas
 
-## 1. Subir o código para o GitHub
+O n8n não é mais necessário para nada disso — os dois workflows antigos
+("Financeiro - WhatsApp para Supabase (IA)", "Financeiro - Saldo Diário",
+"Financeiro - Aviso de Contas a Vencer") podem ser desativados.
 
-O Railway faz deploy a partir de um repositório GitHub.
-
-```bash
-cd baileys-financeiro
-git init
-git add .
-git commit -m "Baileys -> n8n financeiro"
-```
-
-Crie um repositório novo (pode ser privado) em github.com/new, depois:
+## Variáveis de ambiente (Fly secrets)
 
 ```bash
-git remote add origin https://github.com/SEU_USUARIO/baileys-financeiro.git
-git branch -M main
-git push -u origin main
+fly secrets set \
+  ANTHROPIC_API_KEY="sk-ant-..." \
+  SUPABASE_URL="https://smptdvscrudvclawdmla.supabase.co" \
+  SUPABASE_SERVICE_KEY="sua-service-role-key" \
+  SEND_TOKEN="escolha-um-token-secreto" \
+  -a sistema-financeiro-baileys
 ```
 
-## 2. Criar o projeto no Railway
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Sim | Sua API key da Anthropic (console.anthropic.com) |
+| `SUPABASE_URL` | Sim | URL do projeto Supabase |
+| `SUPABASE_SERVICE_KEY` | Sim | Service role key (Project Settings > API) — bypassa RLS |
+| `SEND_TOKEN` | Não (tem padrão) | Token do endpoint manual `/enviar` |
+| `NOME_GRUPO_ALVO` | Não (padrão "CONTROLE FINANCEIRO") | Nome exato do grupo monitorado |
+| `FAMILIA_ID` | Não (já tem padrão) | UUID da família no Supabase |
+| `FUSO_HORARIO` | Não (padrão America/Sao_Paulo) | Fuso usado nos agendamentos |
+| `ANTHROPIC_MODEL` | Não (padrão claude-sonnet-5) | Modelo usado para interpretar as mensagens |
 
-1. Entre em [railway.app](https://railway.app) e faça login (dá pra usar a conta do GitHub).
-2. **New Project → Deploy from GitHub repo** → selecione o repositório `baileys-financeiro`.
-3. O Railway detecta que é um projeto Node.js automaticamente (via `package.json`).
+## Deploy
 
-## 3. Adicionar um Volume (para não perder a sessão do WhatsApp)
-
-Sem isso, a cada novo deploy o bot perderia a conexão e você teria que
-escanear o QR code de novo.
-
-1. No serviço criado, vá em **Settings → Volumes → New Volume**.
-2. Mount path: `/data`
-3. Salve.
-
-## 4. Configurar as variáveis de ambiente
-
-Em **Variables**, adicione:
-
-| Nome | Valor |
-|---|---|
-| `N8N_WEBHOOK_URL` | `https://jefsantana.app.n8n.cloud/webhook/financeiro-whatsapp` |
-| `AUTH_DIR` | `/data/auth_info` |
-| `WHATSAPP_GROUP_NAME` | (deixe em branco por enquanto — veja o Passo 6) |
-
-## 5. Deploy e escanear o QR code
-
-1. O Railway já inicia o deploy automaticamente. Abra a aba **Deployments → View Logs**.
-2. Vai aparecer um QR code desenhado em ASCII nos logs.
-3. No seu celular: WhatsApp → **Configurações → Aparelhos conectados → Conectar um aparelho** → escaneie o QR code que apareceu nos logs.
-4. Quando conectar, o log mostra `[baileys] Conectado ao WhatsApp com sucesso.`
-
-## 6. Descobrir e configurar o nome do grupo
-
-Como `WHATSAPP_GROUP_NAME` está em branco, o bot ainda não encaminha nada — só
-**detecta e loga** os grupos que virem mensagem. Mande uma mensagem de teste
-no grupo do casal e observe o log: vai aparecer algo como
-
-```
-[grupo detectado] nome="Financeiro Jeferson e Raquel" id="1203630...@g.us" (configure WHATSAPP_GROUP_NAME ou WHATSAPP_GROUP_ID para encaminhar)
+```bash
+fly deploy
 ```
 
-Copie o nome exato (ou o id) e volte em **Variables**, preencha
-`WHATSAPP_GROUP_NAME` com esse nome (ou `WHATSAPP_GROUP_ID` com o id — tem
-prioridade se os dois estiverem preenchidos). O Railway reinicia o serviço
-sozinho após salvar a variável.
+Se a sessão do WhatsApp precisar reconectar, o próprio código já limpa
+a sessão antiga automaticamente e gera um novo QR Code nos logs —
+não é mais necessário entrar via SSH para apagar a pasta manualmente.
 
-## 7. Workflow no n8n
+## Testando
 
-Já deixei o workflow **publicado/ativo** no n8n, então o webhook já está
-escutando em produção. Se em algum momento parar de funcionar, confira se ele
-ainda está "Active" no canto superior direito do editor.
+```bash
+curl -X POST https://sistema-financeiro-baileys.fly.dev/enviar \
+  -H "Content-Type: application/json" \
+  -H "x-send-token: SEU_TOKEN" \
+  -d '{"texto":"teste manual"}'
+```
 
-## Limitações atuais
+## Pendências conhecidas
 
-- Só mensagens de **texto** são processadas (áudio, imagem e comprovante ficam
-  de fora por enquanto — dá pra adicionar depois).
-- Mensagens enviadas por você mesmo pelo número conectado ao bot são
-  ignoradas (`fromMe`), para não criar loop.
-- Se a sessão cair (logout no celular, por exemplo), apague a pasta
-  `AUTH_DIR` (o volume `/data`) e escaneie o QR code de novo.
+- Comprovante em foto e mensagem de áudio ainda não são interpretados
+  nessa versão (só texto). Dá para adicionar depois usando a API de
+  visão da Anthropic para imagens e um serviço de transcrição para áudio.

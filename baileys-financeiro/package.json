@@ -1,19 +1,21 @@
 {
   "name": "baileys-financeiro",
-  "version": "1.0.0",
-  "description": "Conecta ao WhatsApp via Baileys, escuta um grupo específico e encaminha as mensagens para um webhook do n8n para registro financeiro automático.",
+  "version": "2.0.0",
+  "description": "Controle financeiro via WhatsApp — Baileys + Anthropic + Supabase, sem n8n",
   "main": "index.js",
-  "type": "commonjs",
   "scripts": {
     "start": "node index.js"
-  },
-  "engines": {
-    "node": ">=20"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
     "@hapi/boom": "^10.0.1",
-    "pino": "^9.4.0",
-    "qrcode-terminal": "^0.12.0"
+    "@supabase/supabase-js": "^2.45.4",
+    "express": "^4.19.2",
+    "qrcode-terminal": "^0.12.0",
+    "luxon": "^3.5.0",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
