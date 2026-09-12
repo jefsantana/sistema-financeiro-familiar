@@ -192,7 +192,10 @@ const PRECOS_IA = {
 // dar pra consultar depois via "consulta_uso_ia" no grupo.
 async function registrarUsoIA(provedor, modelo, tokensEntrada, tokensSaida, tokensCache = 0) {
   try {
-    const precos = PRECOS_IA[provedor];
+    // "Gemini 1", "Gemini 2"... usam o mesmo preço de "Gemini" — só o nome
+    // muda pra dar pra ver o uso de cada chave separadamente no relatório.
+    const chavePrecos = provedor.replace(/\s+\d+$/, '');
+    const precos = PRECOS_IA[chavePrecos];
     let custo = 0;
     if (precos) {
       const entradaNormal = Math.max(tokensEntrada - tokensCache, 0);
@@ -276,7 +279,7 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
   }
 }
 
-async function chamarGeminiComChave(contentBlocks, apiKey) {
+async function chamarGeminiComChave(contentBlocks, apiKey, indice) {
   const parts = contentBlocks
     .map((b) => {
       if (b.type === 'text') return { text: b.text };
@@ -305,7 +308,15 @@ async function chamarGeminiComChave(contentBlocks, apiKey) {
 
   const data = await resp.json();
   if (data.usageMetadata) {
-    await registrarUsoIA('Gemini', GEMINI_MODEL, data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount);
+    // Rotula por chave ("Gemini 1", "Gemini 2"...) pra dar pra ver no "quanto
+    // gastei de IA" quanto cada projeto Google Cloud está sendo usado —
+    // registrarUsoIA sabe achar o preço certo tirando o número do nome.
+    await registrarUsoIA(
+      `Gemini ${indice + 1}`,
+      GEMINI_MODEL,
+      data.usageMetadata.promptTokenCount,
+      data.usageMetadata.candidatesTokenCount
+    );
   }
   const textoResposta = data.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -318,7 +329,7 @@ async function chamarGemini(contentBlocks) {
   let ultimoErro;
   for (let i = 0; i < GEMINI_API_KEYS.length; i++) {
     try {
-      return await chamarGeminiComChave(contentBlocks, GEMINI_API_KEYS[i]);
+      return await chamarGeminiComChave(contentBlocks, GEMINI_API_KEYS[i], i);
     } catch (err) {
       ultimoErro = err;
       if (i < GEMINI_API_KEYS.length - 1) {
@@ -1175,17 +1186,18 @@ function barraPorcentagem(percentual, tamanho = 10) {
   return '█'.repeat(preenchido) + '░'.repeat(tamanho - preenchido);
 }
 
-const EMOJI_PROVEDOR = {
-  Gemini: '🟢',
-  Groq: '🟡',
-  Mistral: '🔵',
-  OpenAI: '⚪',
-  Anthropic: '🟣',
-};
+// "Gemini 1", "Gemini 2"... usam o mesmo emoji de "Gemini" (o número no fim
+// é só o rótulo da chave, não muda a empresa).
+function emojiDoProvedor(provedor) {
+  const base = provedor.replace(/\s+\d+$/, '');
+  const emojis = { Gemini: '🟢', Groq: '🟡', Mistral: '🔵', OpenAI: '⚪', Anthropic: '🟣' };
+  return emojis[base] || '⚙️';
+}
 
-// Ordem fixa de exibição — todos os 5 aparecem sempre, mesmo com 0% quando
-// ainda não tiverem uso registrado, pra dar a visão completa da cadeia.
-const PROVEDORES_ORDEM = ['Gemini', 'Groq', 'Mistral', 'OpenAI', 'Anthropic'];
+// Ordem fixa de exibição — todos os provedores/chaves aparecem sempre, mesmo
+// com 0% quando ainda não tiverem uso registrado, pra dar a visão completa
+// da cadeia. Cada chave do Gemini vira uma linha própria (Gemini 1, 2, 3...).
+const PROVEDORES_ORDEM = [...GEMINI_API_KEYS.map((_, i) => `Gemini ${i + 1}`), 'Groq', 'Mistral', 'OpenAI', 'Anthropic'];
 
 async function gerarResumoUsoIA() {
   const inicioMes = DateTime.now().setZone(FUSO_HORARIO).startOf('month').toISO();
@@ -1212,7 +1224,7 @@ async function gerarResumoUsoIA() {
     .sort((a, b) => b[1] - a[1])
     .map(([provedor, custo]) => {
       const percentual = total > 0 ? (custo / total) * 100 : 0;
-      const emoji = EMOJI_PROVEDOR[provedor] || '⚙️';
+      const emoji = emojiDoProvedor(provedor);
       const nome = provedor.padEnd(9, ' ');
       return `${emoji} ${nome} ${barraPorcentagem(percentual)} ${percentual.toFixed(0)}%`;
     })
