@@ -1423,10 +1423,11 @@ async function gerarResumoUsoIA() {
   );
 }
 
-// Limite diário gratuito de requisições (RPD) por modelo Gemini — valores do
-// nível gratuito do Google AI Studio em setembro/2026 (aistudio.google.com/rate-limit).
-// O Google muda esses números de vez em quando; se o valor real divergir muito
-// do que aparecer aqui, confira lá e atualize este mapa.
+// Limite diário gratuito de requisições (RPD) e de tokens por minuto (TPM)
+// por modelo Gemini — valores do nível gratuito do Google AI Studio em
+// setembro/2026 (aistudio.google.com/rate-limit). O Google muda esses
+// números de vez em quando; se o valor real divergir muito do que aparecer
+// aqui, confira lá e atualize os mapas.
 const LIMITE_RPD_GEMINI = {
   'gemini-3.5-flash-lite': 500,
   'gemini-3.6-flash': 20,
@@ -1435,49 +1436,91 @@ const LIMITE_RPD_GEMINI = {
 };
 const LIMITE_RPD_GEMINI_PADRAO = 100; // fallback se o modelo não estiver no mapa acima
 
+const LIMITE_TPM_GEMINI = {
+  'gemini-3.5-flash-lite': 250000,
+  'gemini-3.6-flash': 250000,
+  'gemini-2.5-flash-lite': 250000,
+  'gemini-2.5-flash': 250000,
+};
+const LIMITE_TPM_GEMINI_PADRAO = 250000; // fallback se o modelo não estiver no mapa acima
+
+// Formata um número inteiro com ponto de milhar (3.520), sem depender de
+// locale/ICU do Node (que nem sempre vem completo no ambiente do Fly.io).
+function formatarInteiro(n) {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 async function gerarResumoLimiteGemini() {
   if (GEMINI_API_KEYS.length === 0) {
     return '📋 Nenhuma chave do Gemini configurada.';
   }
 
-  const inicioDoDia = DateTime.now().setZone(FUSO_HORARIO).startOf('day').toISO();
-  const { data: usos, error } = await supabase
-    .from('uso_ia')
-    .select('provedor')
-    .eq('familia_id', FAMILIA_ID)
-    .ilike('provedor', 'Gemini%')
-    .gte('criado_em', inicioDoDia);
-  if (error) throw new Error(error.message);
+  const agora = DateTime.now().setZone(FUSO_HORARIO);
+  const inicioDoDia = agora.startOf('day').toISO();
+  const umMinutoAtras = agora.minus({ seconds: 60 }).toISO();
 
-  const limite = LIMITE_RPD_GEMINI[GEMINI_MODEL] || LIMITE_RPD_GEMINI_PADRAO;
-  const contagemPorChave = {};
-  for (let i = 0; i < GEMINI_API_KEYS.length; i++) contagemPorChave[`Gemini ${i + 1}`] = 0;
-  for (const u of usos || []) {
-    contagemPorChave[u.provedor] = (contagemPorChave[u.provedor] || 0) + 1;
+  const [{ data: usosHoje, error: e1 }, { data: usosUltimoMinuto, error: e2 }] = await Promise.all([
+    supabase.from('uso_ia').select('provedor').eq('familia_id', FAMILIA_ID).ilike('provedor', 'Gemini%').gte('criado_em', inicioDoDia),
+    supabase
+      .from('uso_ia')
+      .select('provedor, tokens_entrada, tokens_saida')
+      .eq('familia_id', FAMILIA_ID)
+      .ilike('provedor', 'Gemini%')
+      .gte('criado_em', umMinutoAtras),
+  ]);
+  if (e1 || e2) throw new Error((e1 || e2).message);
+
+  const limiteRPD = LIMITE_RPD_GEMINI[GEMINI_MODEL] || LIMITE_RPD_GEMINI_PADRAO;
+  const limiteTPM = LIMITE_TPM_GEMINI[GEMINI_MODEL] || LIMITE_TPM_GEMINI_PADRAO;
+  const chaves = GEMINI_API_KEYS.map((_, i) => `Gemini ${i + 1}`);
+
+  // Requisições de hoje (pro total diário no rodapé).
+  const requisicoesHojePorChave = {};
+  for (const chave of chaves) requisicoesHojePorChave[chave] = 0;
+  for (const u of usosHoje || []) {
+    requisicoesHojePorChave[u.provedor] = (requisicoesHojePorChave[u.provedor] || 0) + 1;
   }
 
-  let totalUsado = 0;
-  const linhas = Object.entries(contagemPorChave).map(([chave, usado]) => {
-    totalUsado += usado;
-    const percentual = Math.min((usado / limite) * 100, 100);
+  // Tokens consumidos no último minuto (pro status de cada chave).
+  const tokensUltimoMinutoPorChave = {};
+  for (const chave of chaves) tokensUltimoMinutoPorChave[chave] = 0;
+  for (const u of usosUltimoMinuto || []) {
+    tokensUltimoMinutoPorChave[u.provedor] =
+      (tokensUltimoMinutoPorChave[u.provedor] || 0) + Number(u.tokens_entrada || 0) + Number(u.tokens_saida || 0);
+  }
+
+  // Mesmo formato pra chave em uso e pra chave zerada — só os números mudam.
+  const blocos = chaves.map((chave) => {
+    const tokensUsados = tokensUltimoMinutoPorChave[chave] || 0;
+    const percentual = Math.min((tokensUsados / limiteTPM) * 100, 100);
+    const disponivel = Math.max(limiteTPM - tokensUsados, 0);
+    const status = statusEmojiPercentual(percentual);
     return (
-      `${statusEmojiPercentual(percentual)} *${chave}*\n` +
-      `${barraEmoji(percentual)} ${usado}/${limite} (${percentual.toFixed(0)}%)`
+      `*${chave}*\n` +
+      `${status} Usados: ${formatarInteiro(tokensUsados)} tokens\n` +
+      `⏱️ Limite: ${formatarInteiro(limiteTPM)} tokens/minuto\n` +
+      `📊 Uso naquele intervalo: ${percentual.toFixed(1)}%\n` +
+      `${status} Disponível naquele momento: aproximadamente ${formatarInteiro(disponivel)} tokens`
     );
   });
 
-  const totalDisponivel = limite * GEMINI_API_KEYS.length;
-  const restam = Math.max(totalDisponivel - totalUsado, 0);
-  const percentualGeral = totalDisponivel > 0 ? (totalUsado / totalDisponivel) * 100 : 0;
-  const alerta = percentualGeral >= 100 ? '\n⚠️ Limite gratuito do dia batido — o bot vai cair pro próximo da fila (Groq/Mistral/OpenAI/Anthropic) até virar o dia.' : '';
+  let totalRequisicoesHoje = 0;
+  for (const chave of chaves) totalRequisicoesHoje += requisicoesHojePorChave[chave];
+  const totalDisponivelRPD = limiteRPD * chaves.length;
+  const restamRPD = Math.max(totalDisponivelRPD - totalRequisicoesHoje, 0);
+  const percentualRPD = totalDisponivelRPD > 0 ? (totalRequisicoesHoje / totalDisponivelRPD) * 100 : 0;
+  const alerta =
+    percentualRPD >= 100
+      ? '\n⚠️ Limite gratuito do dia (requisições) batido — o bot vai cair pro próximo da fila (Groq/Mistral/OpenAI/Anthropic) até virar o dia.'
+      : '';
 
   return (
-    `🔎 *Limite diário do Gemini*\n_(modelo: ${GEMINI_MODEL})_\n\n${linhas.join('\n\n')}\n` +
+    `🔎 *Status do Gemini agora*\n_(modelo: ${GEMINI_MODEL})_\n\n${blocos.join('\n\n')}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `${statusEmojiPercentual(percentualGeral)} *Total geral*\n${barraEmoji(percentualGeral)} ${totalUsado}/${totalDisponivel} (${percentualGeral.toFixed(0)}%)\n\n` +
-    `✅ Restam ${restam} requisições até meia-noite.` +
+    `📅 Hoje (todas as chaves): ${totalRequisicoesHoje}/${totalDisponivelRPD} requisições (${percentualRPD.toFixed(0)}%)\n` +
+    `✅ Restam ${restamRPD} requisições até meia-noite.` +
     alerta +
-    `\n_(baseado nas chamadas registradas pelo próprio bot — confere com o painel do Google se quiser o número oficial)_`
+    `\n_(tokens/minuto reflete só o último minuto; requisições/dia é o total acumulado desde meia-noite — ambos baseados no que o próprio bot registrou)_`
   );
 }
 
