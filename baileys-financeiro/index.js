@@ -20,7 +20,10 @@ const FAMILIA_ID = process.env.FAMILIA_ID || '11111111-1111-1111-1111-1111111111
 const FUSO_HORARIO = process.env.FUSO_HORARIO || 'America/Sao_Paulo';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
+// Haiku 4.5 é bem mais barato que Sonnet 5 e, testado nos tipos de lançamento
+// de hoje, interpreta com a mesma qualidade — sem gastar tokens de "thinking"
+// como o Sonnet gastava (que foi o que causou o bug do max_tokens antes).
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 
 // Usada apenas para transcrever mensagens de áudio (Whisper). Se não configurada,
 // mensagens de áudio são ignoradas (texto e foto continuam funcionando normalmente).
@@ -39,6 +42,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 let jidGrupoAlvo = null;
 let servidorHttpIniciado = false;
 let socketAtual = null;
+
+// Evita processar a mesma mensagem duas vezes (o WhatsApp reenvia mensagens
+// automaticamente às vezes, e cada reconexão também poderia reprocessar as
+// últimas) — cada reprocessamento seria uma chamada paga à IA à toa.
+const mensagensJaProcessadas = new Set();
+function jaProcessada(id) {
+  if (!id) return false;
+  if (mensagensJaProcessadas.has(id)) return true;
+  mensagensJaProcessadas.add(id);
+  // Evita crescer pra sempre: limpa quando passar de 2000 ids guardados.
+  if (mensagensJaProcessadas.size > 2000) mensagensJaProcessadas.clear();
+  return false;
+}
 
 // ===================== IA: interpretar a mensagem =====================
 const SYSTEM_PROMPT = `Você é o assistente financeiro de um casal (Jeferson e Raquel) que controla as finanças da casa pelo WhatsApp. A mensagem pode ser um texto curto OU uma foto de comprovante de pagamento/compra (com ou sem legenda).
@@ -150,7 +166,10 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
       // "max_tokens") e o JSON.parse abaixo quebrava com "Unexpected end of
       // JSON input". Não reduzir sem testar a chamada real de novo.
       max_tokens: 1500,
-      system: SYSTEM_PROMPT,
+      // cache_control marca o system prompt (fixo em toda chamada) pra cache
+      // de 5 min da Anthropic — chamadas seguintes dentro da janela pagam bem
+      // menos por ele em vez de reprocessar o texto inteiro toda vez.
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: contentBlocks }],
     }),
   });
@@ -161,6 +180,12 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
   }
 
   const data = await resp.json();
+  if (data.usage) {
+    const { input_tokens, output_tokens, cache_read_input_tokens, cache_creation_input_tokens } = data.usage;
+    console.log(
+      `💳 Tokens: entrada=${input_tokens || 0} saída=${output_tokens || 0} cache_lido=${cache_read_input_tokens || 0} cache_criado=${cache_creation_input_tokens || 0}`
+    );
+  }
   const textoResposta = data.content?.find((b) => b.type === 'text')?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
 
@@ -904,6 +929,10 @@ async function iniciar() {
 
   async function processarMensagem(sock, msg) {
     if (!msg.message) return;
+    if (jaProcessada(msg.key.id)) {
+      console.log('↩️  Mensagem repetida (retry do WhatsApp), ignorando.');
+      return;
+    }
     const remetenteJid = msg.key.remoteJid;
     if (!jidGrupoAlvo || remetenteJid !== jidGrupoAlvo) return;
 
