@@ -1183,6 +1183,10 @@ const EMOJI_PROVEDOR = {
   Anthropic: '🟣',
 };
 
+// Ordem fixa de exibição — todos os 5 aparecem sempre, mesmo com 0% quando
+// ainda não tiverem uso registrado, pra dar a visão completa da cadeia.
+const PROVEDORES_ORDEM = ['Gemini', 'Groq', 'Mistral', 'OpenAI', 'Anthropic'];
+
 async function gerarResumoUsoIA() {
   const inicioMes = DateTime.now().setZone(FUSO_HORARIO).startOf('month').toISO();
   const { data: usos, error } = await supabase
@@ -1197,6 +1201,7 @@ async function gerarResumoUsoIA() {
   }
 
   const porProvedor = {};
+  for (const nome of PROVEDORES_ORDEM) porProvedor[nome] = 0;
   let total = 0;
   for (const u of usos) {
     porProvedor[u.provedor] = (porProvedor[u.provedor] || 0) + Number(u.custo_usd);
