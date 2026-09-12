@@ -176,16 +176,38 @@ function contextoCartoes(cartoes, cartoesAlimentacao) {
   return partes.join(' ');
 }
 
-// Registra quantos tokens cada chamada de IA consumiu, pra dar pra consultar
-// depois via "consulta_uso_ia" no grupo. Isso é CONSUMO, não o saldo em R$/$
-// de cada conta — cada provedor só mostra o saldo real no próprio painel.
-async function registrarUsoIA(provedor, tokensEntrada, tokensSaida) {
+// Preço estimado (US$ por 1 milhão de tokens) do modelo padrão de cada
+// provedor configurado acima. Só dá uma ideia de gasto no "quanto gastei de
+// IA" — se você trocar o modelo via variável de ambiente, o valor real pode
+// não bater exatamente, mas serve como referência.
+const PRECOS_IA = {
+  Gemini: { entrada: 0.1, saida: 0.4 },
+  Groq: { entrada: 0.075, saida: 0.3 },
+  Mistral: { entrada: 0.02, saida: 0.03 },
+  OpenAI: { entrada: 0.05, saida: 0.4 },
+  Anthropic: { entrada: 1.0, saida: 5.0, entradaCache: 0.1 },
+};
+
+// Registra o uso de tokens (e o custo estimado) de cada chamada de IA, pra
+// dar pra consultar depois via "consulta_uso_ia" no grupo.
+async function registrarUsoIA(provedor, modelo, tokensEntrada, tokensSaida, tokensCache = 0) {
   try {
+    const precos = PRECOS_IA[provedor];
+    let custo = 0;
+    if (precos) {
+      const entradaNormal = Math.max(tokensEntrada - tokensCache, 0);
+      custo =
+        (entradaNormal / 1_000_000) * precos.entrada +
+        (tokensCache / 1_000_000) * (precos.entradaCache ?? precos.entrada) +
+        (tokensSaida / 1_000_000) * precos.saida;
+    }
     const { error } = await supabase.from('uso_ia').insert({
       familia_id: FAMILIA_ID,
       provedor,
+      modelo,
       tokens_entrada: tokensEntrada || 0,
       tokens_saida: tokensSaida || 0,
+      custo_usd: custo,
     });
     if (error) console.warn('Não foi possível registrar uso de IA:', error.message);
   } catch (err) {
@@ -227,7 +249,7 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
     console.log(
       `💳 Tokens: entrada=${input_tokens || 0} saída=${output_tokens || 0} cache_lido=${cache_read_input_tokens || 0} cache_criado=${cache_creation_input_tokens || 0}`
     );
-    await registrarUsoIA('Anthropic', input_tokens, output_tokens);
+    await registrarUsoIA('Anthropic', ANTHROPIC_MODEL, input_tokens, output_tokens, cache_read_input_tokens);
   }
   const textoResposta = data.content?.find((b) => b.type === 'text')?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -283,7 +305,7 @@ async function chamarGeminiComChave(contentBlocks, apiKey) {
 
   const data = await resp.json();
   if (data.usageMetadata) {
-    await registrarUsoIA('Gemini', data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount);
+    await registrarUsoIA('Gemini', GEMINI_MODEL, data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount);
   }
   const textoResposta = data.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -341,7 +363,7 @@ async function chamarOpenAI(contentBlocks) {
 
   const data = await resp.json();
   if (data.usage) {
-    await registrarUsoIA('OpenAI', data.usage.prompt_tokens, data.usage.completion_tokens);
+    await registrarUsoIA('OpenAI', OPENAI_MODEL, data.usage.prompt_tokens, data.usage.completion_tokens);
   }
   const textoResposta = data.choices?.[0]?.message?.content || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -379,7 +401,7 @@ async function chamarChatCompletions({ url, apiKey, model, contentBlocks, nomePr
 
   const data = await resp.json();
   if (data.usage) {
-    await registrarUsoIA(nomeProvedor, data.usage.prompt_tokens, data.usage.completion_tokens);
+    await registrarUsoIA(nomeProvedor, model, data.usage.prompt_tokens, data.usage.completion_tokens);
   }
   const textoResposta = data.choices?.[0]?.message?.content || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -1147,35 +1169,55 @@ async function gerarResumoCartaoAlimentacao() {
   return `📋 *Saldo do Cartão Alimentação*\n${linhas}`;
 }
 
+// Desenha uma barrinha tipo ██████░░░░ a partir de uma porcentagem (0 a 100).
+function barraPorcentagem(percentual, tamanho = 10) {
+  const preenchido = Math.round((percentual / 100) * tamanho);
+  return '█'.repeat(preenchido) + '░'.repeat(tamanho - preenchido);
+}
+
+const EMOJI_PROVEDOR = {
+  Gemini: '🟢',
+  Groq: '🟡',
+  Mistral: '🔵',
+  OpenAI: '⚪',
+  Anthropic: '🟣',
+};
+
 async function gerarResumoUsoIA() {
   const inicioMes = DateTime.now().setZone(FUSO_HORARIO).startOf('month').toISO();
-  const { data, error } = await supabase
+  const { data: usos, error } = await supabase
     .from('uso_ia')
-    .select('provedor, tokens_entrada, tokens_saida')
+    .select('provedor, custo_usd')
     .eq('familia_id', FAMILIA_ID)
     .gte('criado_em', inicioMes);
   if (error) throw new Error(error.message);
 
-  if (!data || data.length === 0) {
-    return '📊 Nenhum uso de IA registrado esse mês ainda.';
+  if (!usos || usos.length === 0) {
+    return '📋 Nenhum uso de IA registrado ainda este mês.';
   }
 
   const porProvedor = {};
-  for (const linha of data) {
-    if (!porProvedor[linha.provedor]) porProvedor[linha.provedor] = { chamadas: 0, entrada: 0, saida: 0 };
-    porProvedor[linha.provedor].chamadas += 1;
-    porProvedor[linha.provedor].entrada += Number(linha.tokens_entrada) || 0;
-    porProvedor[linha.provedor].saida += Number(linha.tokens_saida) || 0;
+  let total = 0;
+  for (const u of usos) {
+    porProvedor[u.provedor] = (porProvedor[u.provedor] || 0) + Number(u.custo_usd);
+    total += Number(u.custo_usd);
   }
 
-  const linhas = Object.entries(porProvedor).map(
-    ([nome, p]) =>
-      `🔹 *${nome}*: ${p.chamadas} chamada(s) — ${p.entrada.toLocaleString('pt-BR')} tokens entrada / ${p.saida.toLocaleString('pt-BR')} saída`
-  );
+  const linhas = Object.entries(porProvedor)
+    .sort((a, b) => b[1] - a[1])
+    .map(([provedor, custo]) => {
+      const percentual = total > 0 ? (custo / total) * 100 : 0;
+      const emoji = EMOJI_PROVEDOR[provedor] || '⚙️';
+      const nome = provedor.padEnd(9, ' ');
+      return `${emoji} ${nome} ${barraPorcentagem(percentual)} ${percentual.toFixed(0)}%`;
+    })
+    .join('\n');
 
   return (
-    `📊 *Uso de IA este mês*\n${linhas.join('\n')}\n\n` +
-    `ℹ️ Isso é consumo (tokens), não o saldo em R$/$ de cada conta. Pra ver o saldo real, confira o painel de cada provedor (console.anthropic.com, platform.openai.com, aistudio.google.com, console.groq.com, console.mistral.ai).`
+    `🤖 *Uso de IA este mês*\n${linhas}\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `💰 Total estimado: US$ ${total.toFixed(2)}\n` +
+    `_(valor aproximado, baseado no modelo padrão de cada empresa — não é o saldo real da conta, só confere isso no painel de cada provedor)_`
   );
 }
 

@@ -62,6 +62,26 @@ function ajusteSaldoAlimentacao(tipoMovimentoAntigo, valorAntigo, valorNovo) {
   return tipoMovimentoAntigo === 'gasto' ? -delta : delta;
 }
 
+function barraPorcentagem(percentual, tamanho = 10) {
+  const preenchido = Math.round((percentual / 100) * tamanho);
+  return '█'.repeat(preenchido) + '░'.repeat(tamanho - preenchido);
+}
+
+const PRECOS_IA = {
+  Gemini: { entrada: 0.10, saida: 0.40 },
+  Anthropic: { entrada: 1.0, saida: 5.0, entradaCache: 0.1 },
+};
+function calcularCustoIA(provedor, tokensEntrada, tokensSaida, tokensCache = 0) {
+  const precos = PRECOS_IA[provedor];
+  if (!precos) return 0;
+  const entradaNormal = Math.max(tokensEntrada - tokensCache, 0);
+  return (
+    (entradaNormal / 1_000_000) * precos.entrada +
+    (tokensCache / 1_000_000) * (precos.entradaCache ?? precos.entrada) +
+    (tokensSaida / 1_000_000) * precos.saida
+  );
+}
+
 // ===== Testes =====
 
 test('formatarReais formata no padrão brasileiro', () => {
@@ -145,4 +165,36 @@ test('ajusteSaldoAlimentacao: corrigir um GASTO pra baixo devolve saldo', () => 
 
 test('ajusteSaldoAlimentacao: corrigir uma RECARGA pra cima soma mais ao saldo', () => {
   assert.equal(ajusteSaldoAlimentacao('recarga', 500, 600), 100);
+});
+
+test('barraPorcentagem: 0% fica toda vazia', () => {
+  assert.equal(barraPorcentagem(0), '░░░░░░░░░░');
+});
+
+test('barraPorcentagem: 100% fica toda cheia', () => {
+  assert.equal(barraPorcentagem(100), '██████████');
+});
+
+test('barraPorcentagem: 50% fica metade', () => {
+  assert.equal(barraPorcentagem(50), '█████░░░░░');
+});
+
+test('barraPorcentagem: 62% arredonda pra 6 blocos cheios', () => {
+  assert.equal(barraPorcentagem(62), '██████░░░░');
+});
+
+test('calcularCustoIA: Gemini sem cache', () => {
+  // 1000 tokens entrada + 500 saída no Gemini (0.10/0.40 por milhão)
+  const custo = calcularCustoIA('Gemini', 1000, 500);
+  assert.ok(Math.abs(custo - (1000 / 1e6 * 0.10 + 500 / 1e6 * 0.40)) < 1e-9);
+});
+
+test('calcularCustoIA: Anthropic com cache lido fica bem mais barato', () => {
+  const semCache = calcularCustoIA('Anthropic', 1000, 200, 0);
+  const comCache = calcularCustoIA('Anthropic', 1000, 200, 900); // 900 dos 1000 vieram do cache
+  assert.ok(comCache < semCache, 'custo com cache deveria ser menor');
+});
+
+test('calcularCustoIA: provedor desconhecido não quebra, retorna 0', () => {
+  assert.equal(calcularCustoIA('Inexistente', 1000, 500), 0);
 });
