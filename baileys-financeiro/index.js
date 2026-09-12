@@ -86,6 +86,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
 10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
+12. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -95,12 +96,12 @@ Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO A
 Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, no caso do tipo 11), qual dos 11 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, no caso do tipo 11, ou uma correção, tipo 12), qual dos 12 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "correcao" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -118,7 +119,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo e consulta_uso_ia também devem ter ehTransacao: true (são pedidos de informação válidos pro bot, mesmo sem registrar nada novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
 
@@ -411,12 +412,12 @@ async function chamarIA(contentBlocks) {
   throw ultimoErro || new Error('Nenhum provedor de IA configurado.');
 }
 
-async function interpretarMensagem(texto, remetente) {
+async function interpretarMensagem(texto, remetente, contextoExtra = null) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
-  return chamarIA([
-    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
-    { type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
-  ]);
+  const blocos = [{ type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) }];
+  if (contextoExtra) blocos.push({ type: 'text', text: contextoExtra });
+  blocos.push({ type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` });
+  return chamarIA(blocos);
 }
 
 async function interpretarImagem(base64, mimetype, legenda, remetente) {
@@ -964,9 +965,128 @@ function montarResumoConfirmacao(dados) {
 async function enviarNoGrupo(texto) {
   if (!socketAtual || !jidGrupoAlvo) {
     console.warn('⚠️  Não foi possível enviar mensagem: socket ou grupo indisponível.');
-    return;
+    return null;
   }
-  await socketAtual.sendMessage(jidGrupoAlvo, { text: texto });
+  return socketAtual.sendMessage(jidGrupoAlvo, { text: texto });
+}
+
+// Mapeia o tipo de lançamento pra tabela do Supabase correspondente (usado
+// pra rastrear qual registro uma mensagem de confirmação representa).
+function tabelaDoTipo(tipo) {
+  switch (tipo) {
+    case 'entrada':
+      return 'entradas';
+    case 'gasto':
+      return 'gastos';
+    case 'conta_fixa':
+      return 'contas_fixas';
+    case 'compra_cartao':
+      return 'compras_cartao';
+    case 'parcelamento':
+      return 'parcelamentos';
+    case 'meta':
+      return 'metas';
+    case 'orcamento':
+      return 'orcamentos';
+    case 'gasto_alimentacao':
+    case 'recarga_alimentacao':
+      return 'movimentos_cartao_alimentacao';
+    default:
+      return null;
+  }
+}
+
+// Guarda o último lançamento salvo, tanto por quem mandou (pra "corrige, era
+// X") quanto pelo ID da mensagem de confirmação enviada (pra corrigir
+// respondendo/arrastando aquela mensagem específica no WhatsApp).
+const ultimoRegistroPorRemetente = new Map();
+const registrosPorMensagemId = new Map();
+function lembrarRegistro({ chaveRemetente, mensagemEnviada, tabela, registroId }) {
+  if (!tabela || !registroId) return;
+  const alvo = { tabela, registroId };
+  ultimoRegistroPorRemetente.set(chaveRemetente, alvo);
+  if (ultimoRegistroPorRemetente.size > 500) ultimoRegistroPorRemetente.clear();
+  const msgId = mensagemEnviada?.key?.id;
+  if (msgId) {
+    registrosPorMensagemId.set(msgId, alvo);
+    if (registrosPorMensagemId.size > 500) registrosPorMensagemId.clear();
+  }
+}
+
+const CAMPOS_CORRIGIVEIS = [
+  'descricao',
+  'valor',
+  'categoria',
+  'pessoa',
+  'dia_vencimento',
+  'cartao',
+  'numero_parcelas',
+  'valor_total',
+  'valor_alvo',
+  'limite_mensal',
+];
+
+function rotuloCampo(campo) {
+  const rotulos = {
+    descricao: '📝 Descrição',
+    valor: '💵 Valor',
+    categoria: '🏷️ Categoria',
+    pessoa: '👤 Pessoa',
+    dia_vencimento: '📅 Dia de vencimento',
+    cartao: '💳 Cartão',
+    numero_parcelas: '🔢 Número de parcelas',
+    valor_total: '💵 Valor total',
+    valor_alvo: '🎯 Valor alvo',
+    limite_mensal: '💵 Limite mensal',
+  };
+  return rotulos[campo] || campo;
+}
+
+function formatarValorCampo(campo, valor) {
+  const camposMonetarios = ['valor', 'valor_total', 'valor_alvo', 'limite_mensal'];
+  return camposMonetarios.includes(campo) ? `R$ ${formatarReais(valor)}` : valor;
+}
+
+// Aplica uma correção num lançamento já salvo. Se for um movimento de cartão
+// alimentação, também ajusta o saldo do cartão pela diferença.
+async function aplicarCorrecao(alvo, dados) {
+  const campo = CAMPOS_CORRIGIVEIS.find((c) => dados[c] !== undefined && dados[c] !== null);
+  if (!campo) throw new Error('Não identifiquei o que corrigir.');
+  const novoValor = dados[campo];
+
+  if (alvo.tabela === 'movimentos_cartao_alimentacao' && campo === 'valor') {
+    const { data: movimentoAntigo, error: errBusca } = await supabase
+      .from('movimentos_cartao_alimentacao')
+      .select('*')
+      .eq('id', alvo.registroId)
+      .single();
+    if (errBusca) throw new Error(errBusca.message);
+
+    const delta = Number(novoValor) - Number(movimentoAntigo.valor);
+    const ajusteSaldo = movimentoAntigo.tipo === 'gasto' ? -delta : delta;
+    const { data: cartao, error: errCartao } = await supabase
+      .from('cartoes_alimentacao')
+      .select('*')
+      .eq('id', movimentoAntigo.cartao_alimentacao_id)
+      .single();
+    if (errCartao) throw new Error(errCartao.message);
+
+    const { error: errUpdateSaldo } = await supabase
+      .from('cartoes_alimentacao')
+      .update({ saldo_atual: Number(cartao.saldo_atual) + ajusteSaldo })
+      .eq('id', cartao.id);
+    if (errUpdateSaldo) throw new Error(errUpdateSaldo.message);
+  }
+
+  const { data, error } = await supabase
+    .from(alvo.tabela)
+    .update({ [campo]: novoValor })
+    .eq('id', alvo.registroId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  return { campo, novoValor, registro: data };
 }
 
 // ===================== Tarefas agendadas =====================
@@ -1200,6 +1320,16 @@ async function iniciar() {
     const tipoMsg = Object.keys(msg.message)[0];
     const ehTexto = tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage';
 
+    // Se a mensagem é uma resposta (reply/arrastar) a uma confirmação nossa,
+    // isso vira o alvo preferencial de uma eventual correção.
+    const stanzaId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+    const alvoCorrecao =
+      (stanzaId && registrosPorMensagemId.get(stanzaId)) || ultimoRegistroPorRemetente.get(chaveRemetente) || null;
+    const ehReplyRastreado = !!(stanzaId && registrosPorMensagemId.get(stanzaId));
+    const contextoCorrecao = ehReplyRastreado
+      ? 'Esta mensagem é uma resposta direta (reply) a uma confirmação de lançamento anterior — é bem provável que seja uma correção daquele lançamento específico.'
+      : null;
+
     let dados;
     let vindoDeConfirmacao = false;
 
@@ -1248,7 +1378,7 @@ async function iniciar() {
 
       console.log(`➡️  Interpretando texto de ${nomeRemetente}: "${texto}"`);
       try {
-        dados = await interpretarMensagem(texto, nomeRemetente);
+        dados = await interpretarMensagem(texto, nomeRemetente, contextoCorrecao);
       } catch (err) {
         console.error('Erro ao chamar a IA (texto):', err.message);
         await enviarNoGrupo('🤔 Não consegui entender essa mensagem. Pode tentar reformular, tipo "gastei 50 no mercado"?');
@@ -1326,6 +1456,25 @@ async function iniciar() {
       return;
     }
 
+    // Correção de um lançamento já salvo (por reply ou "corrige, era X").
+    if (dados.tipo === 'correcao') {
+      if (!alvoCorrecao) {
+        await enviarNoGrupo('🤔 Não encontrei nenhum lançamento recente seu pra corrigir. Pode mandar os dados completos de novo?');
+        return;
+      }
+      try {
+        const resultado = await aplicarCorrecao(alvoCorrecao, dados);
+        await enviarNoGrupo(
+          `✏️ *Lançamento corrigido!*\n${rotuloCampo(resultado.campo)}: ${formatarValorCampo(resultado.campo, resultado.novoValor)}`
+        );
+        console.log(`✏️  Correção aplicada: ${resultado.campo} → ${resultado.novoValor}`);
+      } catch (err) {
+        console.error('Erro ao aplicar correção:', err.message);
+        await enviarNoGrupo('⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
+      }
+      return;
+    }
+
     // Ainda falta alguma informação: pergunta e guarda o estado pra continuar depois.
     if (dados.faltando && dados.faltando.length > 0) {
       console.log(`❓ Faltando [${dados.faltando.join(', ')}], perguntando: "${dados.pergunta}"`);
@@ -1394,7 +1543,13 @@ async function iniciar() {
       }
 
       if (dados.comentario) await enviarNoGrupo(dados.comentario);
-      await enviarNoGrupo(cartaoMsg);
+      const mensagemEnviada = await enviarNoGrupo(cartaoMsg);
+      lembrarRegistro({
+        chaveRemetente,
+        mensagemEnviada,
+        tabela: tabelaDoTipo(dados.tipo),
+        registroId: registro?.id,
+      });
       console.log('✅ Lançamento registrado e confirmado no grupo.');
     } catch (err) {
       console.error('Erro ao salvar/confirmar lançamento:', err.message);
