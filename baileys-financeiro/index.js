@@ -33,7 +33,14 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 // Plano B de interpretação: se a Anthropic falhar (créditos esgotados, fora do
 // ar, etc.), tenta outros provedores automaticamente — gratuitos primeiro, pra
 // economizar crédito pago. Cada um só entra na fila se tiver chave configurada.
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Aceita mais de uma chave do Gemini separadas por vírgula (projetos Google
+// Cloud diferentes têm cota gratuita própria) — o bot roda cada uma na ordem
+// antes de desistir do Gemini e cair pro próximo provedor da cadeia.
+const GEMINI_API_KEYS = (process.env.GEMINI_API_KEY || '')
+  .split(',')
+  .map((k) => k.trim())
+  .filter(Boolean);
+const GEMINI_API_KEY = GEMINI_API_KEYS[0]; // mantido só pro aviso de "não configurada" abaixo
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
@@ -247,7 +254,7 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
   }
 }
 
-async function chamarGemini(contentBlocks) {
+async function chamarGeminiComChave(contentBlocks, apiKey) {
   const parts = contentBlocks
     .map((b) => {
       if (b.type === 'text') return { text: b.text };
@@ -257,7 +264,7 @@ async function chamarGemini(contentBlocks) {
     .filter(Boolean);
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -281,6 +288,23 @@ async function chamarGemini(contentBlocks) {
   const textoResposta = data.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
   return JSON.parse(jsonLimpo);
+}
+
+// Roda cada chave do Gemini na ordem (projetos diferentes = cota gratuita
+// própria) antes de desistir do Gemini e deixar a cadeia cair pro Groq/etc.
+async function chamarGemini(contentBlocks) {
+  let ultimoErro;
+  for (let i = 0; i < GEMINI_API_KEYS.length; i++) {
+    try {
+      return await chamarGeminiComChave(contentBlocks, GEMINI_API_KEYS[i]);
+    } catch (err) {
+      ultimoErro = err;
+      if (i < GEMINI_API_KEYS.length - 1) {
+        console.warn(`⚠️  Gemini (chave ${i + 1}/${GEMINI_API_KEYS.length}) falhou, tentando próxima chave: ${err.message}`);
+      }
+    }
+  }
+  throw ultimoErro || new Error('Nenhuma chave do Gemini configurada.');
 }
 
 async function chamarOpenAI(contentBlocks) {
