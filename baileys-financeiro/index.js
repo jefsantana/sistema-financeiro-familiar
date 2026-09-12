@@ -1213,10 +1213,14 @@ async function gerarResumoUsoIA() {
     })
     .join('\n');
 
+  // Com muito uso gratuito, o total pode ficar bem abaixo de 1 centavo — com
+  // só 2 casas decimais isso vira "US$ 0.00" e parece que não registrou nada.
+  const totalFormatado = total > 0 && total < 0.01 ? total.toFixed(4) : total.toFixed(2);
+
   return (
     `🤖 *Uso de IA este mês*\n${linhas}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `💰 Total estimado: US$ ${total.toFixed(2)}\n` +
+    `💰 Total estimado: US$ ${totalFormatado}\n` +
     `_(valor aproximado, baseado no modelo padrão de cada empresa — não é o saldo real da conta, só confere isso no painel de cada provedor)_`
   );
 }
