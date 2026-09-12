@@ -4,7 +4,8 @@
   "description": "Controle financeiro via WhatsApp — Baileys + Anthropic + Supabase, sem n8n",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test logica.test.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
