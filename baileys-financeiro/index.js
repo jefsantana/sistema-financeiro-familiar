@@ -41,26 +41,69 @@ let servidorHttpIniciado = false;
 let socketAtual = null;
 
 // ===================== IA: interpretar a mensagem =====================
-const SYSTEM_PROMPT = `Você lê mensagens de um grupo de WhatsApp de um casal (Jeferson e Raquel) que registra as finanças da casa. A mensagem pode ser um texto curto OU uma foto de um comprovante de pagamento/compra (com ou sem legenda). Sua tarefa é identificar se ela descreve uma transação financeira (um gasto ou uma entrada de dinheiro) e extrair os dados estruturados.
+const SYSTEM_PROMPT = `Você é o assistente financeiro de um casal (Jeferson e Raquel) que controla as finanças da casa pelo WhatsApp. A mensagem pode ser um texto curto OU uma foto de comprovante de pagamento/compra (com ou sem legenda).
 
-Se for uma imagem de comprovante, leia o valor total, o nome do estabelecimento/origem e infira a categoria a partir disso.
+O sistema deles tem estes tipos de lançamento possíveis:
+
+1. "gasto" — despesa pontual à vista (ex: mercado, gasolina, farmácia). Campos: descricao, valor, categoria, pessoa.
+2. "entrada" — dinheiro recebido pontualmente (ex: salário, freelance). Campos: descricao, valor, categoria, pessoa.
+3. "conta_fixa" — conta que se repete todo mês num mesmo dia (ex: aluguel, internet, streaming). NÃO lança um gasto agora, só cadastra a recorrência. Campos: descricao, valor, dia_vencimento (1-31), categoria.
+4. "compra_cartao" — uma compra feita no cartão de crédito (à vista, mas que só é debitada na fatura, não na hora). Campos: descricao, valor, cartao (nome do cartão, ex: "Nubank", "Inter"), categoria, pessoa.
+5. "parcelamento" — uma compra dividida em várias parcelas (ex: "comprei uma TV em 10x de 150"). Campos: descricao, valor_total (o valor cheio da compra — se o usuário disser só o valor da parcela, multiplique pelo número de parcelas), numero_parcelas, categoria, cartao (opcional), dia_vencimento (opcional).
+6. "meta" — uma meta de economia que o casal quer atingir (ex: "quero juntar 5000 pra viagem"). Campos: descricao, valor_alvo.
+7. "orcamento" — um limite de gasto mensal para uma categoria (ex: "quero limitar 800 por mês em alimentação"). Campos: categoria, limite_mensal.
+
+Você também pode receber, antes da mensagem, um bloco de contexto informando quais cartões já estão cadastrados no sistema — use isso pra reconhecer o cartão certo mesmo com pequenas variações de escrita, ou pra perguntar entre as opções reais quando não for citado.
+
+A data de gasto/entrada/compra_cartao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
+
+Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO: Alimentação, Apartamento, Educação, Internet, Lazer, Moradia, Outros, Saúde, Transporte.
+Categorias de ENTRADA: Café, Freelance, Netflix, Salário.
+
+Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 7 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" ou "entrada",
-  "descricao": "resumo curto",
-  "valor": numero (ponto decimal, sem R$ ou vírgula),
-  "categoria": "categoria mais adequada",
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | null,
+  "descricao": "resumo curto" ou null,
+  "valor": numero (gasto/entrada/compra_cartao) ou null,
+  "categoria": "categoria mais adequada" ou null,
   "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber),
-  "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis), adaptada à categoria. Ex: 'Tá abastecido e pronto para novas aventuras! 🚗⛽', 'Hummm, parece que o lanche estava gostoso! 🍔😋'"
+  "dia_vencimento": numero de 1 a 31 (conta_fixa obrigatório; parcelamento opcional) ou null,
+  "cartao": "nome do cartão" (compra_cartao obrigatório; parcelamento opcional) ou null,
+  "numero_parcelas": numero inteiro (parcelamento obrigatório) ou null,
+  "valor_total": numero, valor cheio da compra parcelada (parcelamento obrigatório) ou null,
+  "valor_alvo": numero (meta obrigatório) ou null,
+  "limite_mensal": numero (orcamento obrigatório) ou null,
+  "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo",
+  "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
+  "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada)
 }
 
-Categorias de GASTO: Alimentação, Apartamento, Educação, Internet, Lazer, Moradia, Outros, Saúde, Transporte.
-Categorias de ENTRADA: Café, Freelance, Netflix, Salário.
-Se nenhuma categoria de gasto fizer sentido, use "Outros".
+Se a mensagem não for sobre finanças (conversa comum, pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [] e pergunta: null.`;
 
-Se a mensagem não for uma transação financeira, retorne ehTransacao: false e os demais campos vazios/zero.`;
+// Busca os cartões de crédito já cadastrados pela família, pra IA saber
+// quais opções reais existem (em vez de aceitar qualquer nome digitado).
+async function buscarCartoesAtivos() {
+  const { data, error } = await supabase
+    .from('cartoes')
+    .select('nome, limite, dia_fechamento')
+    .eq('familia_id', FAMILIA_ID)
+    .is('excluido_em', null);
+  if (error) {
+    console.warn('Não foi possível buscar os cartões cadastrados:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+function contextoCartoes(cartoes) {
+  if (!cartoes.length) {
+    return 'Nenhum cartão cadastrado ainda no sistema — se a mensagem for sobre compra no cartão ou parcelamento, aceite o nome que a pessoa disser.';
+  }
+  return `Cartões cadastrados no sistema: ${cartoes.map((c) => c.nome).join(', ')}. Se a mensagem mencionar um cartão, tente casar com um desses nomes (aceite pequenas variações de grafia/maiúsculas). Se não citar nenhum cartão, pergunte qual desses cartões cadastrados foi usado, listando os nomes exatos.`;
+}
 
 async function chamarAnthropic(contentBlocks) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -90,13 +133,17 @@ async function chamarAnthropic(contentBlocks) {
 }
 
 async function interpretarMensagem(texto, remetente) {
+  const cartoes = await buscarCartoesAtivos();
   return chamarAnthropic([
+    { type: 'text', text: contextoCartoes(cartoes) },
     { type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
   ]);
 }
 
 async function interpretarImagem(base64, mimetype, legenda, remetente) {
+  const cartoes = await buscarCartoesAtivos();
   return chamarAnthropic([
+    { type: 'text', text: contextoCartoes(cartoes) },
     {
       type: 'image',
       source: { type: 'base64', media_type: mimetype, data: base64 },
@@ -105,6 +152,21 @@ async function interpretarImagem(base64, mimetype, legenda, remetente) {
       type: 'text',
       text: `Imagem enviada no WhatsApp (remetente: ${remetente}). Legenda: "${legenda || '(sem legenda)'}". Essa imagem é um comprovante de pagamento/compra — leia o valor total e o estabelecimento.`,
     },
+  ]);
+}
+
+// Continua um lançamento que ficou faltando informação: junta o que já tinha
+// com a resposta nova do usuário e pede pra IA completar (ou perguntar de novo).
+async function continuarComResposta(dadosParciais, resposta, remetente) {
+  const cartoes = await buscarCartoesAtivos();
+  const contexto =
+    `Você estava preenchendo um lançamento financeiro e ainda faltava informação. Estado atual em JSON:\n${JSON.stringify(dadosParciais)}\n\n` +
+    `Você perguntou: "${dadosParciais.pergunta}"\n` +
+    `O usuário (${remetente}) respondeu: "${resposta}"\n\n` +
+    `Atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.`;
+  return chamarAnthropic([
+    { type: 'text', text: contextoCartoes(cartoes) },
+    { type: 'text', text: contexto },
   ]);
 }
 
@@ -154,6 +216,145 @@ async function salvarTransacao(dados) {
   return data;
 }
 
+async function salvarContaFixa(dados) {
+  const { data, error } = await supabase
+    .from('contas_fixas')
+    .insert({
+      familia_id: FAMILIA_ID,
+      descricao: dados.descricao,
+      valor: dados.valor,
+      dia_vencimento: dados.dia_vencimento,
+      categoria: dados.categoria || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (contas_fixas): ${error.message}`);
+  return data;
+}
+
+async function salvarCompraCartao(dados) {
+  const hoje = DateTime.now().setZone(FUSO_HORARIO);
+  const dataDeHoje = hoje.toFormat('yyyy-MM-dd');
+
+  // Descobre o dia de fechamento e o limite do cartão (se ele já estiver
+  // cadastrado) pra saber a fatura certa e se essa compra estourou o limite.
+  let mesFatura = hoje.toFormat('yyyy-MM');
+  let limiteCartao = null;
+  try {
+    const { data: cartaoInfo } = await supabase
+      .from('cartoes')
+      .select('dia_fechamento, limite')
+      .eq('familia_id', FAMILIA_ID)
+      .ilike('nome', dados.cartao)
+      .is('excluido_em', null)
+      .maybeSingle();
+    if (cartaoInfo?.dia_fechamento && hoje.day > cartaoInfo.dia_fechamento) {
+      mesFatura = hoje.plus({ months: 1 }).toFormat('yyyy-MM');
+    }
+    limiteCartao = cartaoInfo?.limite || null;
+  } catch (e) {
+    console.warn('Não foi possível checar o cartão:', e.message);
+  }
+
+  const { data, error } = await supabase
+    .from('compras_cartao')
+    .insert({
+      familia_id: FAMILIA_ID,
+      descricao: dados.descricao,
+      valor: dados.valor,
+      categoria: dados.categoria || null,
+      cartao: dados.cartao,
+      pessoa: dados.pessoa || null,
+      data_compra: dataDeHoje,
+      mes_fatura: mesFatura,
+      paga: false,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (compras_cartao): ${error.message}`);
+
+  // Soma quanto já foi gasto nessa fatura (incluindo a compra que acabou de entrar)
+  // pra avisar se passou do limite do cartão.
+  if (limiteCartao) {
+    try {
+      const { data: comprasDoMes } = await supabase
+        .from('compras_cartao')
+        .select('valor')
+        .eq('familia_id', FAMILIA_ID)
+        .ilike('cartao', dados.cartao)
+        .eq('mes_fatura', mesFatura)
+        .is('excluido_em', null);
+      const totalFatura = (comprasDoMes || []).reduce((acc, c) => acc + Number(c.valor), 0);
+      data.totalFaturaAtual = totalFatura;
+      data.limiteCartao = limiteCartao;
+      data.estourouLimite = totalFatura > limiteCartao;
+    } catch (e) {
+      console.warn('Não foi possível somar a fatura do cartão:', e.message);
+    }
+  }
+
+  return data;
+}
+
+async function salvarParcelamento(dados) {
+  const { data, error } = await supabase
+    .from('parcelamentos')
+    .insert({
+      familia_id: FAMILIA_ID,
+      descricao: dados.descricao,
+      valor_total: dados.valor_total,
+      valor_original: dados.valor_total,
+      numero_parcelas: dados.numero_parcelas,
+      parcela_atual: 1,
+      dia_vencimento: dados.dia_vencimento || null,
+      cartao: dados.cartao || null,
+      categoria: dados.categoria || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (parcelamentos): ${error.message}`);
+  return data;
+}
+
+async function salvarMeta(dados) {
+  const { data, error } = await supabase
+    .from('metas')
+    .insert({
+      familia_id: FAMILIA_ID,
+      descricao: dados.descricao,
+      valor_alvo: dados.valor_alvo,
+      valor_atual: 0,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (metas): ${error.message}`);
+  return data;
+}
+
+async function salvarOrcamento(dados) {
+  const { data, error } = await supabase
+    .from('orcamentos')
+    .insert({
+      familia_id: FAMILIA_ID,
+      categoria: dados.categoria,
+      limite_mensal: dados.limite_mensal,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (orcamentos): ${error.message}`);
+  return data;
+}
+
+// Lançamentos que ficaram faltando informação, aguardando resposta do usuário.
+// Chave: JID de quem mandou a mensagem (participant). Expira sozinho após 15 min.
+const pendentes = new Map();
+const VALIDADE_PENDENCIA_MS = 15 * 60 * 1000;
+
 // ===================== Mensagens de confirmação =====================
 function formatarReais(valor) {
   return Number(valor).toFixed(2).replace('.', ',');
@@ -174,6 +375,66 @@ function montarCartao(registro, tipo) {
     `👤 Pessoa: ${registro.pessoa || '-'}\n` +
     `📅 Data: ${formatarDataBR(registro.data)}\n` +
     linhaStatus
+  );
+}
+
+function montarCartaoContaFixa(registro) {
+  return (
+    `📋 *Conta Fixa Cadastrada*\n` +
+    `📝 Descrição: ${registro.descricao}\n` +
+    `💵 Valor: R$ ${formatarReais(registro.valor)}\n` +
+    `📅 Vence todo dia: ${registro.dia_vencimento}\n` +
+    `🏷️ Categoria: ${registro.categoria || '-'}\n` +
+    `🔁 Recorrência: Mensal`
+  );
+}
+
+function montarCartaoCompraCartao(registro) {
+  let mensagem =
+    `📋 *Compra no Cartão Registrada*\n` +
+    `📝 Descrição: ${registro.descricao}\n` +
+    `💳 Cartão: ${registro.cartao}\n` +
+    `💵 Valor: R$ ${formatarReais(registro.valor)}\n` +
+    `🏷️ Categoria: ${registro.categoria || '-'}\n` +
+    `👤 Pessoa: ${registro.pessoa || '-'}\n` +
+    `🧾 Fatura de: ${registro.mes_fatura}`;
+
+  if (registro.limiteCartao) {
+    mensagem += `\n💰 Total da fatura: R$ ${formatarReais(registro.totalFaturaAtual)} de R$ ${formatarReais(registro.limiteCartao)}`;
+    if (registro.estourouLimite) {
+      mensagem += `\n⚠️ *Atenção: essa fatura já ultrapassou o limite do cartão!*`;
+    }
+  }
+
+  return mensagem;
+}
+
+function montarCartaoParcelamento(registro) {
+  const valorParcela = registro.numero_parcelas ? registro.valor_total / registro.numero_parcelas : registro.valor_total;
+  return (
+    `📋 *Parcelamento Cadastrado*\n` +
+    `📝 Descrição: ${registro.descricao}\n` +
+    `💵 Valor total: R$ ${formatarReais(registro.valor_total)}\n` +
+    `🔢 Parcelas: ${registro.numero_parcelas}x de R$ ${formatarReais(valorParcela)}\n` +
+    `💳 Cartão: ${registro.cartao || '-'}\n` +
+    `🏷️ Categoria: ${registro.categoria || '-'}`
+  );
+}
+
+function montarCartaoMeta(registro) {
+  return (
+    `📋 *Meta Cadastrada*\n` +
+    `🎯 ${registro.descricao}\n` +
+    `💵 Valor alvo: R$ ${formatarReais(registro.valor_alvo)}\n` +
+    `📈 Progresso atual: R$ 0,00`
+  );
+}
+
+function montarCartaoOrcamento(registro) {
+  return (
+    `📋 *Orçamento Definido*\n` +
+    `🏷️ Categoria: ${registro.categoria}\n` +
+    `💵 Limite mensal: R$ ${formatarReais(registro.limite_mensal)}`
   );
 }
 
@@ -344,11 +605,27 @@ async function iniciar() {
     if (!jidGrupoAlvo || remetenteJid !== jidGrupoAlvo) return;
 
     const nomeRemetente = msg.pushName || 'Desconhecido';
+    const chaveRemetente = msg.key.participant || remetenteJid;
     const tipoMsg = Object.keys(msg.message)[0];
 
     let dados;
 
-    if (tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage') {
+    // Se essa pessoa tinha uma pergunta pendente e mandou texto agora, trata como resposta.
+    const pendente = pendentes.get(chaveRemetente);
+    const ehTexto = tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage';
+    if (pendente && ehTexto && Date.now() - pendente.criadoEm < VALIDADE_PENDENCIA_MS) {
+      const resposta = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      if (!resposta.trim()) return;
+
+      console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
+      pendentes.delete(chaveRemetente);
+      try {
+        dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente);
+      } catch (err) {
+        console.error('Erro ao continuar lançamento pendente:', err.message);
+        return;
+      }
+    } else if (ehTexto) {
       const texto = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
       if (!texto.trim()) return;
 
@@ -403,22 +680,51 @@ async function iniciar() {
       return;
     }
 
-    let registro;
-    try {
-      registro = await salvarTransacao(dados);
-    } catch (err) {
-      console.error('Erro ao salvar no Supabase:', err.message);
+    // Ainda falta alguma informação: pergunta e guarda o estado pra continuar depois.
+    if (dados.faltando && dados.faltando.length > 0) {
+      console.log(`❓ Faltando [${dados.faltando.join(', ')}], perguntando: "${dados.pergunta}"`);
+      pendentes.set(chaveRemetente, { dados, criadoEm: Date.now() });
+      if (dados.pergunta) {
+        await enviarNoGrupo(dados.pergunta);
+      }
       return;
     }
 
     try {
-      if (dados.comentario) {
-        await enviarNoGrupo(dados.comentario);
+      let registro;
+      let cartaoMsg;
+
+      switch (dados.tipo) {
+        case 'conta_fixa':
+          registro = await salvarContaFixa(dados);
+          cartaoMsg = montarCartaoContaFixa(registro);
+          break;
+        case 'compra_cartao':
+          registro = await salvarCompraCartao(dados);
+          cartaoMsg = montarCartaoCompraCartao(registro);
+          break;
+        case 'parcelamento':
+          registro = await salvarParcelamento(dados);
+          cartaoMsg = montarCartaoParcelamento(registro);
+          break;
+        case 'meta':
+          registro = await salvarMeta(dados);
+          cartaoMsg = montarCartaoMeta(registro);
+          break;
+        case 'orcamento':
+          registro = await salvarOrcamento(dados);
+          cartaoMsg = montarCartaoOrcamento(registro);
+          break;
+        default: // 'gasto' ou 'entrada'
+          registro = await salvarTransacao(dados);
+          cartaoMsg = montarCartao(registro, dados.tipo);
       }
-      await enviarNoGrupo(montarCartao(registro, dados.tipo));
-      console.log('✅ Transação registrada e confirmada no grupo.');
+
+      if (dados.comentario) await enviarNoGrupo(dados.comentario);
+      await enviarNoGrupo(cartaoMsg);
+      console.log('✅ Lançamento registrado e confirmado no grupo.');
     } catch (err) {
-      console.error('Erro ao enviar confirmação:', err.message);
+      console.error('Erro ao salvar/confirmar lançamento:', err.message);
     }
   }
 }

@@ -3,9 +3,16 @@
 Essa versão faz tudo sozinha, num único processo Node.js rodando no Fly.io:
 
 1. Conecta ao WhatsApp (grupo "CONTROLE FINANCEIRO")
-2. Interpreta cada mensagem chamando a API da Anthropic diretamente
-3. Grava a transação no Supabase (`entradas` ou `gastos`)
-4. Manda de volta o comentário + o cartão de confirmação no grupo
+2. Interpreta cada mensagem (texto, foto de comprovante, ou áudio se configurado)
+   chamando a API da Anthropic diretamente — entende os 7 tipos de lançamento do
+   sistema: **gasto**, **entrada**, **conta fixa**, **compra no cartão**,
+   **parcelamento**, **meta** e **orçamento**
+3. Se faltar alguma informação (ex: categoria, cartão, número de parcelas, ou
+   qual dos 7 tipos é), pergunta de volta no grupo e espera a resposta da
+   pessoa antes de gravar
+4. Grava o lançamento na tabela certa do Supabase (`entradas`, `gastos`,
+   `contas_fixas`, `compras_cartao`, `parcelamentos`, `metas` ou `orcamentos`)
+5. Manda de volta o comentário + o cartão de confirmação no grupo
 5. Roda dois lembretes automáticos:
    - Todo dia às 20h: saldo do dia
    - Todo dia às 8h: contas fixas vencendo em 5 dias e ainda não pagas
