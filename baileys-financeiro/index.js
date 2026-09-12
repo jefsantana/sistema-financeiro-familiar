@@ -25,9 +25,20 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // como o Sonnet gastava (que foi o que causou o bug do max_tokens antes).
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 
-// Usada apenas para transcrever mensagens de áudio (Whisper). Se não configurada,
-// mensagens de áudio são ignoradas (texto e foto continuam funcionando normalmente).
+// Usada pra transcrever mensagens de áudio (Whisper) e também reaproveitada
+// como um dos provedores de texto/imagem na cadeia de fallback abaixo.
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+// Plano B de interpretação: se a Anthropic falhar (créditos esgotados, fora do
+// ar, etc.), tenta outros provedores automaticamente — gratuitos primeiro, pra
+// economizar crédito pago. Cada um só entra na fila se tiver chave configurada.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL || 'mistral-small-latest';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -36,6 +47,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 if (!ANTHROPIC_API_KEY) console.warn('⚠️  ANTHROPIC_API_KEY não configurada.');
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) console.warn('⚠️  SUPABASE_URL / SUPABASE_SERVICE_KEY não configuradas.');
 if (!OPENAI_API_KEY) console.warn('⚠️  OPENAI_API_KEY não configurada — mensagens de áudio serão ignoradas.');
+if (!GEMINI_API_KEY) console.warn('⚠️  GEMINI_API_KEY não configurada.');
+if (!GROQ_API_KEY) console.warn('⚠️  GROQ_API_KEY não configurada.');
+if (!MISTRAL_API_KEY) console.warn('⚠️  MISTRAL_API_KEY não configurada.');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -211,9 +225,163 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
   }
 }
 
+async function chamarGemini(contentBlocks) {
+  const parts = contentBlocks
+    .map((b) => {
+      if (b.type === 'text') return { text: b.text };
+      if (b.type === 'image') return { inline_data: { mime_type: b.source.media_type, data: b.source.data } };
+      return null;
+    })
+    .filter(Boolean);
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts }],
+        generationConfig: { temperature: 0, responseMimeType: 'application/json' },
+      }),
+    }
+  );
+
+  if (!resp.ok) {
+    const erro = await resp.text();
+    throw new Error(`Gemini API ${resp.status}: ${erro}`);
+  }
+
+  const data = await resp.json();
+  const textoResposta = data.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || '';
+  const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
+  return JSON.parse(jsonLimpo);
+}
+
+async function chamarOpenAI(contentBlocks) {
+  const content = contentBlocks
+    .map((b) => {
+      if (b.type === 'text') return { type: 'text', text: b.text };
+      if (b.type === 'image') {
+        return { type: 'image_url', image_url: { url: `data:${b.source.media_type};base64,${b.source.data}` } };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const erro = await resp.text();
+    throw new Error(`OpenAI API ${resp.status}: ${erro}`);
+  }
+
+  const data = await resp.json();
+  const textoResposta = data.choices?.[0]?.message?.content || '';
+  const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
+  return JSON.parse(jsonLimpo);
+}
+
+// Groq e Mistral usam formato "chat completions" (estilo OpenAI), só texto
+// (sem leitura de imagem nos modelos usados aqui).
+async function chamarChatCompletions({ url, apiKey, model, contentBlocks }) {
+  const textoUnico = contentBlocks
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n\n');
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: textoUnico },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const erro = await resp.text();
+    throw new Error(`${url} ${resp.status}: ${erro}`);
+  }
+
+  const data = await resp.json();
+  const textoResposta = data.choices?.[0]?.message?.content || '';
+  const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
+  return JSON.parse(jsonLimpo);
+}
+
+async function chamarGroq(contentBlocks) {
+  return chamarChatCompletions({
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    apiKey: GROQ_API_KEY,
+    model: GROQ_MODEL,
+    contentBlocks,
+  });
+}
+
+async function chamarMistral(contentBlocks) {
+  return chamarChatCompletions({
+    url: 'https://api.mistral.ai/v1/chat/completions',
+    apiKey: MISTRAL_API_KEY,
+    model: MISTRAL_MODEL,
+    contentBlocks,
+  });
+}
+
+// Cadeia de provedores: tenta cada um na ordem até um funcionar. Cada empresa
+// só entra na fila se a respectiva chave estiver configurada. Ordem escolhida
+// pra economizar: gratuitas primeiro, Anthropic (pago) só como último recurso.
+// Groq e Mistral não leem imagem, então são pulados quando a mensagem é uma foto.
+async function chamarIA(contentBlocks) {
+  const temImagem = contentBlocks.some((b) => b.type === 'image');
+  const todosProvedores = [
+    { nome: 'Gemini', chave: GEMINI_API_KEY, fn: chamarGemini, suportaImagem: true },
+    { nome: 'Groq', chave: GROQ_API_KEY, fn: chamarGroq, suportaImagem: false },
+    { nome: 'Mistral', chave: MISTRAL_API_KEY, fn: chamarMistral, suportaImagem: false },
+    { nome: 'OpenAI', chave: OPENAI_API_KEY, fn: chamarOpenAI, suportaImagem: true },
+    { nome: 'Anthropic', chave: ANTHROPIC_API_KEY, fn: chamarAnthropic, suportaImagem: true },
+  ];
+  const provedores = todosProvedores.filter((p) => p.chave && (!temImagem || p.suportaImagem));
+
+  let ultimoErro;
+  for (let i = 0; i < provedores.length; i++) {
+    const provedor = provedores[i];
+    try {
+      const resultado = await provedor.fn(contentBlocks);
+      console.log(`✅ Interpretado com ${provedor.nome}${i > 0 ? ' (fallback)' : ''}.`);
+      return resultado;
+    } catch (err) {
+      console.warn(`⚠️  ${provedor.nome} falhou: ${err.message}`);
+      ultimoErro = err;
+    }
+  }
+  throw ultimoErro || new Error('Nenhum provedor de IA configurado.');
+}
+
 async function interpretarMensagem(texto, remetente) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
-  return chamarAnthropic([
+  return chamarIA([
     { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     { type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
   ]);
@@ -221,7 +389,7 @@ async function interpretarMensagem(texto, remetente) {
 
 async function interpretarImagem(base64, mimetype, legenda, remetente) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
-  return chamarAnthropic([
+  return chamarIA([
     { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     {
       type: 'image',
@@ -243,7 +411,7 @@ async function continuarComResposta(dadosParciais, resposta, remetente) {
     `Você perguntou: "${dadosParciais.pergunta}"\n` +
     `O usuário (${remetente}) respondeu: "${resposta}"\n\n` +
     `Atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.`;
-  return chamarAnthropic([
+  return chamarIA([
     { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     { type: 'text', text: contexto },
   ]);
