@@ -37,6 +37,7 @@ import {
   PlusCircle,
   Award,
   Upload,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 export const ICONES_NAV = {
@@ -55,6 +56,7 @@ export const ICONES_NAV = {
   Wallet,
   Receipt,
   Upload,
+  UtensilsCrossed,
 };
 
 // Ícone de cada categoria fixa (gasto e entrada) — usado no lugar do

@@ -1,0 +1,29 @@
+.listaCartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-xl);
+}
+
+.cardSaldo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nomeCartao {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario);
+}
+
+.saldo {
+  font-family: var(--fonte-numeros);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+.saldoNegativo {
+  color: var(--cor-perigo);
+}

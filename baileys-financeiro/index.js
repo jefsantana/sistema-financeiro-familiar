@@ -52,26 +52,29 @@ O sistema deles tem estes tipos de lançamento possíveis:
 5. "parcelamento" — uma compra dividida em várias parcelas (ex: "comprei uma TV em 10x de 150"). Campos: descricao, valor_total (o valor cheio da compra — se o usuário disser só o valor da parcela, multiplique pelo número de parcelas), numero_parcelas, categoria, cartao (opcional), dia_vencimento (opcional).
 6. "meta" — uma meta de economia que o casal quer atingir (ex: "quero juntar 5000 pra viagem"). Campos: descricao, valor_alvo.
 7. "orcamento" — um limite de gasto mensal para uma categoria (ex: "quero limitar 800 por mês em alimentação"). Campos: categoria, limite_mensal.
+8. "gasto_alimentacao" — um gasto pago com cartão alimentação/refeição (ex: Ticket, VR, Alelo, Sodexo). Desconta do saldo desse cartão em vez de ser um gasto comum. Campos: descricao, valor, categoria (normalmente "Alimentação"), pessoa.
+9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
 
-Você também pode receber, antes da mensagem, um bloco de contexto informando quais cartões já estão cadastrados no sistema — use isso pra reconhecer o cartão certo mesmo com pequenas variações de escrita, ou pra perguntar entre as opções reais quando não for citado.
+A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
-A data de gasto/entrada/compra_cartao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
+Você também pode receber, antes da mensagem, um bloco de contexto informando quais cartões (de crédito e alimentação) já estão cadastrados no sistema — use isso pra reconhecer o cartão certo mesmo com pequenas variações de escrita, ou pra perguntar entre as opções reais quando não for citado.
 
-Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO: Alimentação, Apartamento, Educação, Internet, Lazer, Moradia, Outros, Saúde, Transporte.
-Categorias de ENTRADA: Café, Freelance, Netflix, Salário.
+Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO ALIMENTAÇÃO: Alimentação, Assinaturas, Cartão de Crédito, Compras, Contas da Casa, Cuidados Pessoais, Educação, Família, Impostos e Taxas, Investimentos, Lazer, Manutenção, Moradia, Outros, Pets, Presentes, Saúde, Tarifas Bancárias, Transporte, Viagens.
+Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
+Gasto no cartão alimentação normalmente é categoria "Alimentação".
 
-Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 7 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 9 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | null,
   "descricao": "resumo curto" ou null,
-  "valor": numero (gasto/entrada/compra_cartao) ou null,
+  "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
   "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber),
   "dia_vencimento": numero de 1 a 31 (conta_fixa obrigatório; parcelamento opcional) ou null,
-  "cartao": "nome do cartão" (compra_cartao obrigatório; parcelamento opcional) ou null,
+  "cartao": "nome do cartão" (compra_cartao obrigatório; parcelamento opcional; gasto_alimentacao/recarga_alimentacao use o nome do cartão alimentação citado, ex: "Ticket") ou null,
   "numero_parcelas": numero inteiro (parcelamento obrigatório) ou null,
   "valor_total": numero, valor cheio da compra parcelada (parcelamento obrigatório) ou null,
   "valor_alvo": numero (meta obrigatório) ou null,
@@ -98,11 +101,35 @@ async function buscarCartoesAtivos() {
   return data || [];
 }
 
-function contextoCartoes(cartoes) {
-  if (!cartoes.length) {
-    return 'Nenhum cartão cadastrado ainda no sistema — se a mensagem for sobre compra no cartão ou parcelamento, aceite o nome que a pessoa disser.';
+async function buscarCartoesAlimentacaoAtivos() {
+  const { data, error } = await supabase
+    .from('cartoes_alimentacao')
+    .select('nome, saldo_atual')
+    .eq('familia_id', FAMILIA_ID)
+    .is('excluido_em', null);
+  if (error) {
+    console.warn('Não foi possível buscar os cartões alimentação:', error.message);
+    return [];
   }
-  return `Cartões cadastrados no sistema: ${cartoes.map((c) => c.nome).join(', ')}. Se a mensagem mencionar um cartão, tente casar com um desses nomes (aceite pequenas variações de grafia/maiúsculas). Se não citar nenhum cartão, pergunte qual desses cartões cadastrados foi usado, listando os nomes exatos.`;
+  return data || [];
+}
+
+function contextoCartoes(cartoes, cartoesAlimentacao) {
+  const partes = [];
+  partes.push(
+    cartoes.length
+      ? `Cartões de crédito cadastrados: ${cartoes.map((c) => c.nome).join(', ')}.`
+      : 'Nenhum cartão de crédito cadastrado ainda.'
+  );
+  partes.push(
+    cartoesAlimentacao.length
+      ? `Cartões alimentação/refeição cadastrados: ${cartoesAlimentacao.map((c) => c.nome).join(', ')}.`
+      : 'Nenhum cartão alimentação cadastrado ainda (se a pessoa mencionar um, ex: "Ticket", aceite o nome dela).'
+  );
+  partes.push(
+    'Se a mensagem mencionar um cartão, tente casar com um dos nomes acima (aceite pequenas variações de grafia/maiúsculas). Se não citar nenhum cartão em compra_cartao/parcelamento/gasto_alimentacao/recarga_alimentacao, pergunte qual desses cartões cadastrados foi usado, listando os nomes exatos.'
+  );
+  return partes.join(' ');
 }
 
 async function chamarAnthropic(contentBlocks) {
@@ -133,17 +160,17 @@ async function chamarAnthropic(contentBlocks) {
 }
 
 async function interpretarMensagem(texto, remetente) {
-  const cartoes = await buscarCartoesAtivos();
+  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   return chamarAnthropic([
-    { type: 'text', text: contextoCartoes(cartoes) },
+    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     { type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
   ]);
 }
 
 async function interpretarImagem(base64, mimetype, legenda, remetente) {
-  const cartoes = await buscarCartoesAtivos();
+  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   return chamarAnthropic([
-    { type: 'text', text: contextoCartoes(cartoes) },
+    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     {
       type: 'image',
       source: { type: 'base64', media_type: mimetype, data: base64 },
@@ -158,14 +185,14 @@ async function interpretarImagem(base64, mimetype, legenda, remetente) {
 // Continua um lançamento que ficou faltando informação: junta o que já tinha
 // com a resposta nova do usuário e pede pra IA completar (ou perguntar de novo).
 async function continuarComResposta(dadosParciais, resposta, remetente) {
-  const cartoes = await buscarCartoesAtivos();
+  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   const contexto =
     `Você estava preenchendo um lançamento financeiro e ainda faltava informação. Estado atual em JSON:\n${JSON.stringify(dadosParciais)}\n\n` +
     `Você perguntou: "${dadosParciais.pergunta}"\n` +
     `O usuário (${remetente}) respondeu: "${resposta}"\n\n` +
     `Atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.`;
   return chamarAnthropic([
-    { type: 'text', text: contextoCartoes(cartoes) },
+    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     { type: 'text', text: contexto },
   ]);
 }
@@ -350,6 +377,90 @@ async function salvarOrcamento(dados) {
   return data;
 }
 
+// Busca (ou cria) o cartão alimentação pelo nome, pra saber o saldo atual.
+async function buscarOuCriarCartaoAlimentacao(nome) {
+  const { data: existente } = await supabase
+    .from('cartoes_alimentacao')
+    .select('*')
+    .eq('familia_id', FAMILIA_ID)
+    .ilike('nome', nome)
+    .is('excluido_em', null)
+    .maybeSingle();
+  if (existente) return existente;
+
+  const { data: novo, error } = await supabase
+    .from('cartoes_alimentacao')
+    .insert({ familia_id: FAMILIA_ID, nome, saldo_atual: 0 })
+    .select()
+    .single();
+  if (error) throw new Error(`Supabase insert (cartoes_alimentacao): ${error.message}`);
+  return novo;
+}
+
+async function salvarGastoAlimentacao(dados) {
+  const nomeCartao = dados.cartao || 'Ticket';
+  const cartao = await buscarOuCriarCartaoAlimentacao(nomeCartao);
+  const dataDeHoje = DateTime.now().setZone(FUSO_HORARIO).toFormat('yyyy-MM-dd');
+  const novoSaldo = Number(cartao.saldo_atual) - Number(dados.valor);
+
+  const { error: errUpdate } = await supabase
+    .from('cartoes_alimentacao')
+    .update({ saldo_atual: novoSaldo })
+    .eq('id', cartao.id);
+  if (errUpdate) throw new Error(`Supabase update (cartoes_alimentacao): ${errUpdate.message}`);
+
+  const { data, error } = await supabase
+    .from('movimentos_cartao_alimentacao')
+    .insert({
+      familia_id: FAMILIA_ID,
+      cartao_alimentacao_id: cartao.id,
+      tipo: 'gasto',
+      descricao: dados.descricao,
+      valor: dados.valor,
+      pessoa: dados.pessoa || null,
+      data: dataDeHoje,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`Supabase insert (movimentos_cartao_alimentacao): ${error.message}`);
+
+  data.cartaoNome = cartao.nome;
+  data.saldoRestante = novoSaldo;
+  return data;
+}
+
+async function salvarRecargaAlimentacao(dados) {
+  const nomeCartao = dados.cartao || 'Ticket';
+  const cartao = await buscarOuCriarCartaoAlimentacao(nomeCartao);
+  const dataDeHoje = DateTime.now().setZone(FUSO_HORARIO).toFormat('yyyy-MM-dd');
+  const novoSaldo = Number(cartao.saldo_atual) + Number(dados.valor);
+
+  const { error: errUpdate } = await supabase
+    .from('cartoes_alimentacao')
+    .update({ saldo_atual: novoSaldo })
+    .eq('id', cartao.id);
+  if (errUpdate) throw new Error(`Supabase update (cartoes_alimentacao): ${errUpdate.message}`);
+
+  const { data, error } = await supabase
+    .from('movimentos_cartao_alimentacao')
+    .insert({
+      familia_id: FAMILIA_ID,
+      cartao_alimentacao_id: cartao.id,
+      tipo: 'recarga',
+      descricao: 'Recarga do cartão alimentação',
+      valor: dados.valor,
+      pessoa: dados.pessoa || null,
+      data: dataDeHoje,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`Supabase insert (movimentos_cartao_alimentacao): ${error.message}`);
+
+  data.cartaoNome = cartao.nome;
+  data.saldoRestante = novoSaldo;
+  return data;
+}
+
 // Lançamentos que ficaram faltando informação, aguardando resposta do usuário.
 // Chave: JID de quem mandou a mensagem (participant). Expira sozinho após 15 min.
 const pendentes = new Map();
@@ -435,6 +546,28 @@ function montarCartaoOrcamento(registro) {
     `📋 *Orçamento Definido*\n` +
     `🏷️ Categoria: ${registro.categoria}\n` +
     `💵 Limite mensal: R$ ${formatarReais(registro.limite_mensal)}`
+  );
+}
+
+function montarCartaoGastoAlimentacao(registro) {
+  const saldoBaixo = registro.saldoRestante < 0;
+  return (
+    `📋 *Gasto no Cartão Alimentação*\n` +
+    `📝 Descrição: ${registro.descricao}\n` +
+    `💳 Cartão: ${registro.cartaoNome}\n` +
+    `💵 Valor: R$ ${formatarReais(registro.valor)}\n` +
+    `👤 Pessoa: ${registro.pessoa || '-'}\n` +
+    `${saldoBaixo ? '⚠️' : '💰'} Saldo restante: R$ ${formatarReais(registro.saldoRestante)}` +
+    (saldoBaixo ? `\n⚠️ *Saldo negativo, cuidado!*` : '')
+  );
+}
+
+function montarCartaoRecargaAlimentacao(registro) {
+  return (
+    `📋 *Recarga no Cartão Alimentação*\n` +
+    `💳 Cartão: ${registro.cartaoNome}\n` +
+    `➕ Valor recarregado: R$ ${formatarReais(registro.valor)}\n` +
+    `💰 Novo saldo: R$ ${formatarReais(registro.saldoRestante)}`
   );
 }
 
@@ -714,6 +847,14 @@ async function iniciar() {
         case 'orcamento':
           registro = await salvarOrcamento(dados);
           cartaoMsg = montarCartaoOrcamento(registro);
+          break;
+        case 'gasto_alimentacao':
+          registro = await salvarGastoAlimentacao(dados);
+          cartaoMsg = montarCartaoGastoAlimentacao(registro);
+          break;
+        case 'recarga_alimentacao':
+          registro = await salvarRecargaAlimentacao(dados);
+          cartaoMsg = montarCartaoRecargaAlimentacao(registro);
           break;
         default: // 'gasto' ou 'entrada'
           registro = await salvarTransacao(dados);
