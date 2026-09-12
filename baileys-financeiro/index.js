@@ -93,7 +93,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
 10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
-12. "consulta_limite_gemini" — quando a pessoa pergunta especificamente sobre o LIMITE DIÁRIO GRATUITO do Gemini (ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "quantas requisições sobraram", "chegou a 100% do Gemini?"). É sobre a cota diária da própria API do Google, diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
+12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
 13. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
@@ -108,7 +108,7 @@ REGRA DE CATEGORIA: use SEMPRE uma destas categorias, escrita exatamente como es
 DESAMBIGUAÇÃO entre os tipos de consulta (10, 11 e 12) — são os que mais se confundem:
 - consulta_saldo (10): é sobre DINHEIRO da família (entradas, gastos, saldo, cartão alimentação). Palavras-chave: "saldo", "quanto tenho", "resumo financeiro", "quanto gastei" (sem mencionar IA).
 - consulta_uso_ia (11): é sobre CUSTO/CONSUMO acumulado das IAs que rodam o bot, tipicamente "no mês" ou "total". Palavras-chave: "gastei de IA", "custo de IA", "quanto custou", "consumo de tokens" (sem "hoje"/"agora"/"limite"/"Gemini").
-- consulta_limite_gemini (12): é sobre a COTA GRATUITA do Gemini especificamente, geralmente "hoje"/"agora"/"nesse minuto". Palavras-chave: "Gemini", "limite", "cota", "bateu 100%", "quanto ainda posso usar", "requisições", "tokens por minuto", "está saturado".
+- consulta_limite_provedores (12): é sobre a COTA GRATUITA do Gemini especificamente, geralmente "hoje"/"agora"/"nesse minuto". Palavras-chave: "Gemini", "limite", "cota", "bateu 100%", "quanto ainda posso usar", "requisições", "tokens por minuto", "está saturado".
 Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica).
 
 Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 13), qual dos 13 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
@@ -116,7 +116,7 @@ Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnic
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_gemini" | "correcao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "correcao" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -134,7 +134,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_gemini e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
 
@@ -143,8 +143,8 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "uber pro trabalho, 23 reais" → tipo "gasto", categoria "Transporte" (Uber não é categoria própria).
 - "quanto gastei esse mês" → tipo "consulta_saldo", escopo "geral" (é sobre dinheiro da família, não sobre IA).
 - "quanto gastei de IA esse mês" → tipo "consulta_uso_ia" (menciona IA + "mês" = custo acumulado, não cota diária).
-- "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_gemini" (menciona Gemini + "hoje"/limite).
-- "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_gemini" (na dúvida entre 11 e 12, prefira 12).
+- "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_provedores" (menciona Gemini + "hoje"/limite).
+- "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_provedores" (na dúvida entre 11 e 12, prefira 12).
 - "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
 - "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
@@ -1467,77 +1467,119 @@ function formatarInteiro(n) {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-async function gerarResumoLimiteGemini() {
-  if (GEMINI_API_KEYS.length === 0) {
-    return '📋 Nenhuma chave do Gemini configurada.';
-  }
+// Groq: limite é da CONTA inteira (não por chave/projeto como o Gemini) —
+// valores documentados do free tier em setembro/2026 (console.groq.com/docs/rate-limits).
+const LIMITE_GROQ = { rpm: 30, tpm: 6000, rpd: 14400 };
 
+async function gerarResumoLimitesGratuitos() {
   const agora = DateTime.now().setZone(FUSO_HORARIO);
   const inicioDoDia = agora.startOf('day').toISO();
   const umMinutoAtras = agora.minus({ seconds: 60 }).toISO();
 
   const [{ data: usosHoje, error: e1 }, { data: usosUltimoMinuto, error: e2 }] = await Promise.all([
-    supabase.from('uso_ia').select('provedor').eq('familia_id', FAMILIA_ID).ilike('provedor', 'Gemini%').gte('criado_em', inicioDoDia),
+    supabase.from('uso_ia').select('provedor').eq('familia_id', FAMILIA_ID).gte('criado_em', inicioDoDia),
     supabase
       .from('uso_ia')
       .select('provedor, tokens_entrada, tokens_saida')
       .eq('familia_id', FAMILIA_ID)
-      .ilike('provedor', 'Gemini%')
       .gte('criado_em', umMinutoAtras),
   ]);
   if (e1 || e2) throw new Error((e1 || e2).message);
 
-  const limiteRPD = LIMITE_RPD_GEMINI[GEMINI_MODEL] || LIMITE_RPD_GEMINI_PADRAO;
-  const limiteTPM = LIMITE_TPM_GEMINI[GEMINI_MODEL] || LIMITE_TPM_GEMINI_PADRAO;
-  const chaves = GEMINI_API_KEYS.map((_, i) => `Gemini ${i + 1}`);
+  const blocosPorSecao = [];
 
-  // Requisições de hoje (pro total diário no rodapé).
-  const requisicoesHojePorChave = {};
-  for (const chave of chaves) requisicoesHojePorChave[chave] = 0;
-  for (const u of usosHoje || []) {
-    requisicoesHojePorChave[u.provedor] = (requisicoesHojePorChave[u.provedor] || 0) + 1;
-  }
+  // ===== Gemini (uma chave = um projeto Google Cloud, cada um com cota própria) =====
+  if (GEMINI_API_KEYS.length > 0) {
+    const limiteRPD = LIMITE_RPD_GEMINI[GEMINI_MODEL] || LIMITE_RPD_GEMINI_PADRAO;
+    const limiteTPM = LIMITE_TPM_GEMINI[GEMINI_MODEL] || LIMITE_TPM_GEMINI_PADRAO;
+    const chaves = GEMINI_API_KEYS.map((_, i) => `Gemini ${i + 1}`);
 
-  // Tokens consumidos no último minuto (pro status de cada chave).
-  const tokensUltimoMinutoPorChave = {};
-  for (const chave of chaves) tokensUltimoMinutoPorChave[chave] = 0;
-  for (const u of usosUltimoMinuto || []) {
-    tokensUltimoMinutoPorChave[u.provedor] =
-      (tokensUltimoMinutoPorChave[u.provedor] || 0) + Number(u.tokens_entrada || 0) + Number(u.tokens_saida || 0);
-  }
+    const requisicoesHojePorChave = {};
+    for (const chave of chaves) requisicoesHojePorChave[chave] = 0;
+    for (const u of usosHoje || []) {
+      if (u.provedor?.startsWith('Gemini')) requisicoesHojePorChave[u.provedor] = (requisicoesHojePorChave[u.provedor] || 0) + 1;
+    }
 
-  // Mesmo formato pra chave em uso e pra chave zerada — só os números mudam.
-  const blocos = chaves.map((chave) => {
-    const tokensUsados = tokensUltimoMinutoPorChave[chave] || 0;
-    const percentual = Math.min((tokensUsados / limiteTPM) * 100, 100);
-    const disponivel = Math.max(limiteTPM - tokensUsados, 0);
-    const status = statusEmojiPercentual(percentual);
-    return (
-      `*${chave}*\n` +
-      `${status} Usados: ${formatarInteiro(tokensUsados)} tokens\n` +
-      `⏱️ Limite: ${formatarInteiro(limiteTPM)} tokens/minuto\n` +
-      `📊 Uso naquele intervalo: ${percentual.toFixed(1)}%\n` +
-      `${status} Disponível naquele momento: aproximadamente ${formatarInteiro(disponivel)} tokens`
+    const tokensUltimoMinutoPorChave = {};
+    for (const chave of chaves) tokensUltimoMinutoPorChave[chave] = 0;
+    for (const u of usosUltimoMinuto || []) {
+      if (u.provedor?.startsWith('Gemini')) {
+        tokensUltimoMinutoPorChave[u.provedor] =
+          (tokensUltimoMinutoPorChave[u.provedor] || 0) + Number(u.tokens_entrada || 0) + Number(u.tokens_saida || 0);
+      }
+    }
+
+    const blocosGemini = chaves.map((chave) => {
+      const tokensUsados = tokensUltimoMinutoPorChave[chave] || 0;
+      const percentual = Math.min((tokensUsados / limiteTPM) * 100, 100);
+      const disponivel = Math.max(limiteTPM - tokensUsados, 0);
+      const status = statusEmojiPercentual(percentual);
+      return (
+        `*${chave}*\n` +
+        `${status} Usados: ${formatarInteiro(tokensUsados)} tokens\n` +
+        `⏱️ Limite: ${formatarInteiro(limiteTPM)} tokens/minuto\n` +
+        `📊 Uso naquele intervalo: ${percentual.toFixed(1)}%\n` +
+        `${status} Disponível naquele momento: aproximadamente ${formatarInteiro(disponivel)} tokens`
+      );
+    });
+
+    let totalRequisicoesHoje = 0;
+    for (const chave of chaves) totalRequisicoesHoje += requisicoesHojePorChave[chave];
+    const totalDisponivelRPD = limiteRPD * chaves.length;
+    const restamRPD = Math.max(totalDisponivelRPD - totalRequisicoesHoje, 0);
+    const percentualRPD = totalDisponivelRPD > 0 ? (totalRequisicoesHoje / totalDisponivelRPD) * 100 : 0;
+    const alertaGemini =
+      percentualRPD >= 100
+        ? '\n⚠️ Limite gratuito do dia (requisições) batido — o bot vai cair pro próximo da fila até virar o dia.'
+        : '';
+
+    blocosPorSecao.push(
+      `🟢 *Gemini* _(modelo: ${GEMINI_MODEL})_\n\n${blocosGemini.join('\n\n')}\n\n` +
+        `📅 Hoje (todas as chaves): ${totalRequisicoesHoje}/${totalDisponivelRPD} requisições (${percentualRPD.toFixed(0)}%)\n` +
+        `✅ Restam ${restamRPD} requisições até meia-noite.${alertaGemini}`
     );
-  });
+  }
 
-  let totalRequisicoesHoje = 0;
-  for (const chave of chaves) totalRequisicoesHoje += requisicoesHojePorChave[chave];
-  const totalDisponivelRPD = limiteRPD * chaves.length;
-  const restamRPD = Math.max(totalDisponivelRPD - totalRequisicoesHoje, 0);
-  const percentualRPD = totalDisponivelRPD > 0 ? (totalRequisicoesHoje / totalDisponivelRPD) * 100 : 0;
-  const alerta =
-    percentualRPD >= 100
-      ? '\n⚠️ Limite gratuito do dia (requisições) batido — o bot vai cair pro próximo da fila (Groq/Mistral/OpenAI/Anthropic) até virar o dia.'
-      : '';
+  // ===== Groq (conta inteira, sem separação por chave) =====
+  if (GROQ_API_KEY) {
+    const usosGroqHoje = (usosHoje || []).filter((u) => u.provedor === 'Groq');
+    const usosGroqMinuto = (usosUltimoMinuto || []).filter((u) => u.provedor === 'Groq');
+    const requisicoesMinuto = usosGroqMinuto.length;
+    const tokensMinuto = usosGroqMinuto.reduce((acc, u) => acc + Number(u.tokens_entrada || 0) + Number(u.tokens_saida || 0), 0);
+    const requisicoesHoje = usosGroqHoje.length;
+
+    const percRpm = Math.min((requisicoesMinuto / LIMITE_GROQ.rpm) * 100, 100);
+    const percTpm = Math.min((tokensMinuto / LIMITE_GROQ.tpm) * 100, 100);
+    const percRpd = Math.min((requisicoesHoje / LIMITE_GROQ.rpd) * 100, 100);
+    const status = statusEmojiPercentual(Math.max(percRpm, percTpm, percRpd));
+
+    blocosPorSecao.push(
+      `🟡 *Groq*\n\n` +
+        `${status} Requisições/min: ${requisicoesMinuto}/${LIMITE_GROQ.rpm} (${percRpm.toFixed(0)}%)\n` +
+        `${status} Tokens/min: ${formatarInteiro(tokensMinuto)}/${formatarInteiro(LIMITE_GROQ.tpm)} (${percTpm.toFixed(0)}%)\n` +
+        `📅 Requisições hoje: ${requisicoesHoje}/${LIMITE_GROQ.rpd} (${percRpd.toFixed(0)}%)\n` +
+        `_(limite é da conta inteira, a Groq não separa por chave/projeto como o Gemini)_`
+    );
+  }
+
+  // ===== Mistral (a empresa parou de publicar os números exatos do free tier —
+  // não dá pra mostrar um percentual confiável sem arriscar informar errado) =====
+  if (MISTRAL_API_KEY) {
+    const requisicoesHoje = (usosHoje || []).filter((u) => u.provedor === 'Mistral').length;
+    blocosPorSecao.push(
+      `🔵 *Mistral*\n\n` +
+        `📅 Requisições hoje: ${requisicoesHoje}\n` +
+        `⚠️ A Mistral não publica mais os limites exatos do free tier (mudam por conta) — confira o valor real em console.mistral.ai → Limits.`
+    );
+  }
+
+  if (blocosPorSecao.length === 0) {
+    return '📋 Nenhum provedor gratuito (Gemini/Groq/Mistral) configurado.';
+  }
 
   return (
-    `🔎 *Status do Gemini agora*\n_(modelo: ${GEMINI_MODEL})_\n\n${blocos.join('\n\n')}\n` +
-    `━━━━━━━━━━━━━━━━━━\n` +
-    `📅 Hoje (todas as chaves): ${totalRequisicoesHoje}/${totalDisponivelRPD} requisições (${percentualRPD.toFixed(0)}%)\n` +
-    `✅ Restam ${restamRPD} requisições até meia-noite.` +
-    alerta +
-    `\n_(tokens/minuto reflete só o último minuto; requisições/dia é o total acumulado desde meia-noite — ambos baseados no que o próprio bot registrou)_`
+    `🔎 *Status dos provedores gratuitos*\n\n${blocosPorSecao.join('\n\n━━━━━━━━━━━━━━━━━━\n\n')}\n\n` +
+    `_(baseado só no que o próprio bot registrou — pra número oficial, confira o painel de cada provedor)_`
   );
 }
 
@@ -1817,9 +1859,9 @@ async function iniciar() {
     }
 
     // "Pergunta" sobre o limite diário gratuito do Gemini (cota da API, não custo).
-    if (dados.tipo === 'consulta_limite_gemini') {
+    if (dados.tipo === 'consulta_limite_provedores') {
       try {
-        await enviarNoGrupo(await gerarResumoLimiteGemini());
+        await enviarNoGrupo(await gerarResumoLimitesGratuitos());
         console.log('📊 Resumo de limite do Gemini enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo de limite do Gemini:', err.message);
