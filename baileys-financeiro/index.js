@@ -93,7 +93,8 @@ O sistema deles tem estes tipos de lançamento possíveis:
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
 10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
-12. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+12. "consulta_limite_gemini" — quando a pessoa pergunta especificamente sobre o LIMITE DIÁRIO GRATUITO do Gemini (ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "quantas requisições sobraram", "chegou a 100% do Gemini?"). É sobre a cota diária da própria API do Google, diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
+13. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -103,12 +104,12 @@ Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO A
 Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, no caso do tipo 11, ou uma correção, tipo 12), qual dos 12 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 13), qual dos 13 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "correcao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_gemini" | "correcao" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -126,7 +127,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_gemini e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
 
@@ -1242,6 +1243,61 @@ async function gerarResumoUsoIA() {
   );
 }
 
+// Limite diário gratuito de requisições (RPD) por modelo Gemini — valores do
+// nível gratuito do Google AI Studio em setembro/2026 (aistudio.google.com/rate-limit).
+// O Google muda esses números de vez em quando; se o valor real divergir muito
+// do que aparecer aqui, confira lá e atualize este mapa.
+const LIMITE_RPD_GEMINI = {
+  'gemini-3.5-flash-lite': 500,
+  'gemini-3.6-flash': 20,
+  'gemini-2.5-flash-lite': 500,
+  'gemini-2.5-flash': 20,
+};
+const LIMITE_RPD_GEMINI_PADRAO = 100; // fallback se o modelo não estiver no mapa acima
+
+async function gerarResumoLimiteGemini() {
+  if (GEMINI_API_KEYS.length === 0) {
+    return '📋 Nenhuma chave do Gemini configurada.';
+  }
+
+  const inicioDoDia = DateTime.now().setZone(FUSO_HORARIO).startOf('day').toISO();
+  const { data: usos, error } = await supabase
+    .from('uso_ia')
+    .select('provedor')
+    .eq('familia_id', FAMILIA_ID)
+    .ilike('provedor', 'Gemini%')
+    .gte('criado_em', inicioDoDia);
+  if (error) throw new Error(error.message);
+
+  const limite = LIMITE_RPD_GEMINI[GEMINI_MODEL] || LIMITE_RPD_GEMINI_PADRAO;
+  const contagemPorChave = {};
+  for (let i = 0; i < GEMINI_API_KEYS.length; i++) contagemPorChave[`Gemini ${i + 1}`] = 0;
+  for (const u of usos || []) {
+    contagemPorChave[u.provedor] = (contagemPorChave[u.provedor] || 0) + 1;
+  }
+
+  let totalUsado = 0;
+  const linhas = Object.entries(contagemPorChave).map(([chave, usado]) => {
+    totalUsado += usado;
+    const percentual = Math.min((usado / limite) * 100, 100);
+    return `🟢 ${chave.padEnd(9, ' ')} ${barraPorcentagem(percentual)} ${usado}/${limite} (${percentual.toFixed(0)}%)`;
+  });
+
+  const totalDisponivel = limite * GEMINI_API_KEYS.length;
+  const restam = Math.max(totalDisponivel - totalUsado, 0);
+  const percentualGeral = totalDisponivel > 0 ? (totalUsado / totalDisponivel) * 100 : 0;
+  const alerta = percentualGeral >= 100 ? '\n⚠️ Limite gratuito do dia batido — o bot vai cair pro próximo da fila (Groq/Mistral/OpenAI/Anthropic) até virar o dia.' : '';
+
+  return (
+    `🔎 *Limite diário do Gemini (${GEMINI_MODEL})*\n${linhas.join('\n')}\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `📊 Total: ${totalUsado}/${totalDisponivel} requisições hoje (${percentualGeral.toFixed(0)}%)\n` +
+    `✅ Restam ${restam} requisições até meia-noite.` +
+    alerta +
+    `\n_(baseado nas chamadas registradas pelo próprio bot — confere com o painel do Google se quiser o número oficial)_`
+  );
+}
+
 // Todo dia às 20h: saldo do dia (entradas - gastos)
 cron.schedule(
   '0 20 * * *',
@@ -1513,6 +1569,17 @@ async function iniciar() {
         console.log('📊 Resumo de uso de IA enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo de uso de IA:', err.message);
+      }
+      return;
+    }
+
+    // "Pergunta" sobre o limite diário gratuito do Gemini (cota da API, não custo).
+    if (dados.tipo === 'consulta_limite_gemini') {
+      try {
+        await enviarNoGrupo(await gerarResumoLimiteGemini());
+        console.log('📊 Resumo de limite do Gemini enviado sob demanda.');
+      } catch (err) {
+        console.error('Erro ao gerar resumo de limite do Gemini:', err.message);
       }
       return;
     }
