@@ -1340,9 +1340,31 @@ async function gerarResumoCartaoAlimentacao() {
 }
 
 // Desenha uma barrinha tipo ██████░░░░ a partir de uma porcentagem (0 a 100).
+// OBS: os caracteres █/░ ficam bons no terminal, mas em vários celulares
+// (WhatsApp iOS, algumas fontes Android) o "vazio" ░ aparece tão escuro
+// quanto o "cheio" █ — a barra parece sempre 100% preenchida. Por isso as
+// barras enviadas pro WhatsApp usam barraEmoji() abaixo, que usa quadrados
+// coloridos (🟩/⬜) — esses sim renderizam de forma consistente em qualquer
+// aparelho. Mantido aqui só por compatibilidade, caso algo ainda use.
 function barraPorcentagem(percentual, tamanho = 10) {
   const preenchido = Math.round((percentual / 100) * tamanho);
   return '█'.repeat(preenchido) + '░'.repeat(tamanho - preenchido);
+}
+
+// Versão com emoji da barra de progresso — essa é a que deve ser usada em
+// qualquer mensagem enviada pro WhatsApp (ver comentário acima).
+function barraEmoji(percentual, tamanho = 10) {
+  const p = Math.max(0, Math.min(100, percentual));
+  const preenchido = Math.max(0, Math.min(tamanho, Math.round((p / 100) * tamanho)));
+  return '🟩'.repeat(preenchido) + '⬜'.repeat(tamanho - preenchido);
+}
+
+// 🟢 tranquilo / 🟡 perto do limite / 🔴 estourou — mesmo critério usado no
+// bloco de orçamento do resumo diário, reaproveitado aqui pro status de uso.
+function statusEmojiPercentual(percentual) {
+  if (percentual >= 100) return '🔴';
+  if (percentual >= 80) return '🟡';
+  return '🟢';
 }
 
 // "Gemini 1", "Gemini 2"... usam o mesmo emoji de "Gemini" (o número no fim
@@ -1385,7 +1407,7 @@ async function gerarResumoUsoIA() {
       const percentual = total > 0 ? (custo / total) * 100 : 0;
       const emoji = emojiDoProvedor(provedor);
       const nome = provedor.padEnd(9, ' ');
-      return `${emoji} ${nome} ${barraPorcentagem(percentual)} ${percentual.toFixed(0)}%`;
+      return `${emoji} ${nome} ${barraEmoji(percentual)} ${percentual.toFixed(0)}%`;
     })
     .join('\n');
 
@@ -1438,7 +1460,10 @@ async function gerarResumoLimiteGemini() {
   const linhas = Object.entries(contagemPorChave).map(([chave, usado]) => {
     totalUsado += usado;
     const percentual = Math.min((usado / limite) * 100, 100);
-    return `🟢 ${chave.padEnd(9, ' ')} ${barraPorcentagem(percentual)} ${usado}/${limite} (${percentual.toFixed(0)}%)`;
+    return (
+      `${statusEmojiPercentual(percentual)} *${chave}*\n` +
+      `${barraEmoji(percentual)} ${usado}/${limite} (${percentual.toFixed(0)}%)`
+    );
   });
 
   const totalDisponivel = limite * GEMINI_API_KEYS.length;
@@ -1447,9 +1472,9 @@ async function gerarResumoLimiteGemini() {
   const alerta = percentualGeral >= 100 ? '\n⚠️ Limite gratuito do dia batido — o bot vai cair pro próximo da fila (Groq/Mistral/OpenAI/Anthropic) até virar o dia.' : '';
 
   return (
-    `🔎 *Limite diário do Gemini (${GEMINI_MODEL})*\n${linhas.join('\n')}\n` +
+    `🔎 *Limite diário do Gemini*\n_(modelo: ${GEMINI_MODEL})_\n\n${linhas.join('\n\n')}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `📊 Total: ${totalUsado}/${totalDisponivel} requisições hoje (${percentualGeral.toFixed(0)}%)\n` +
+    `${statusEmojiPercentual(percentualGeral)} *Total geral*\n${barraEmoji(percentualGeral)} ${totalUsado}/${totalDisponivel} (${percentualGeral.toFixed(0)}%)\n\n` +
     `✅ Restam ${restam} requisições até meia-noite.` +
     alerta +
     `\n_(baseado nas chamadas registradas pelo próprio bot — confere com o painel do Google se quiser o número oficial)_`
