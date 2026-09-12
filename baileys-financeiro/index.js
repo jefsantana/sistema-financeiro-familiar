@@ -463,10 +463,89 @@ async function salvarRecargaAlimentacao(dados) {
   return data;
 }
 
-// Lançamentos que ficaram faltando informação, aguardando resposta do usuário.
-// Chave: JID de quem mandou a mensagem (participant). Expira sozinho após 15 min.
-const pendentes = new Map();
+// ===================== Pendências (perguntas em aberto e confirmações) =====================
+// Guardadas no Supabase (tabela bot_pendencias), não em memória — assim o bot não
+// "se perde" no meio de uma pergunta se reiniciar/reconectar (o que acontece com
+// alguma frequência). Uma pendência por pessoa (familia_id + jid), expira em 15min.
 const VALIDADE_PENDENCIA_MS = 15 * 60 * 1000;
+
+async function buscarPendencia(jid) {
+  const { data, error } = await supabase
+    .from('bot_pendencias')
+    .select('*')
+    .eq('familia_id', FAMILIA_ID)
+    .eq('jid', jid)
+    .maybeSingle();
+  if (error) {
+    console.warn('Não foi possível buscar pendência:', error.message);
+    return null;
+  }
+  if (!data) return null;
+  if (Date.now() - new Date(data.criado_em).getTime() > VALIDADE_PENDENCIA_MS) {
+    await apagarPendencia(jid);
+    return null;
+  }
+  return data;
+}
+
+async function salvarPendencia(jid, estado, dados) {
+  const { error } = await supabase
+    .from('bot_pendencias')
+    .upsert(
+      { familia_id: FAMILIA_ID, jid, estado, dados, criado_em: new Date().toISOString() },
+      { onConflict: 'familia_id,jid' }
+    );
+  if (error) console.error('Erro ao salvar pendência:', error.message);
+}
+
+async function apagarPendencia(jid) {
+  const { error } = await supabase.from('bot_pendencias').delete().eq('familia_id', FAMILIA_ID).eq('jid', jid);
+  if (error) console.error('Erro ao apagar pendência:', error.message);
+}
+
+const REGEX_AFIRMATIVO = /^(sim|s|confirma(do)?|correto|certo|isso|isso mesmo|ok(ay)?|beleza|blz|pode|manda|manda ver)\b/i;
+const REGEX_NEGATIVO = /^(não|nao|n|cancela(r)?|errado|incorreto|espera|péra)\b/i;
+
+// Segunda camada de validação, independente da IA: garante que nada com campo
+// obrigatório vazio/inválido chegue a ser salvo no banco (a IA pode errar ou
+// "achar" que está completo quando não está).
+const CAMPOS_OBRIGATORIOS_POR_TIPO = {
+  gasto: ['descricao', 'valor', 'categoria'],
+  entrada: ['descricao', 'valor', 'categoria'],
+  conta_fixa: ['descricao', 'valor', 'dia_vencimento'],
+  compra_cartao: ['descricao', 'valor', 'cartao'],
+  parcelamento: ['descricao', 'valor_total', 'numero_parcelas'],
+  meta: ['descricao', 'valor_alvo'],
+  orcamento: ['categoria', 'limite_mensal'],
+  gasto_alimentacao: ['descricao', 'valor'],
+  recarga_alimentacao: ['valor'],
+};
+
+const PERGUNTAS_POR_CAMPO = {
+  descricao: 'Pode descrever melhor do que se trata?',
+  valor: 'Qual o valor?',
+  valor_total: 'Qual o valor total da compra?',
+  categoria: 'Qual categoria usar?',
+  cartao: 'Qual cartão foi usado?',
+  dia_vencimento: 'Todo dia do mês essa conta vence?',
+  numero_parcelas: 'Em quantas parcelas?',
+  valor_alvo: 'Qual o valor da meta?',
+  limite_mensal: 'Qual o limite mensal?',
+};
+
+function validarDados(dados) {
+  if (dados.tipo === 'consulta_saldo') return { valido: true, invalidos: [] };
+  const camposObrigatorios = CAMPOS_OBRIGATORIOS_POR_TIPO[dados.tipo] || [];
+  const invalidos = camposObrigatorios.filter((campo) => {
+    const valor = dados[campo];
+    if (valor === null || valor === undefined || valor === '') return true;
+    if (['valor', 'valor_total', 'valor_alvo', 'limite_mensal'].includes(campo)) return !(Number(valor) > 0);
+    if (campo === 'numero_parcelas') return !(Number.isInteger(Number(valor)) && Number(valor) >= 2);
+    if (campo === 'dia_vencimento') return !(Number.isInteger(Number(valor)) && Number(valor) >= 1 && Number(valor) <= 31);
+    return false;
+  });
+  return { valido: invalidos.length === 0, invalidos };
+}
 
 // ===================== Mensagens de confirmação =====================
 function formatarReais(valor) {
@@ -571,6 +650,38 @@ function montarCartaoRecargaAlimentacao(registro) {
     `➕ Valor recarregado: R$ ${formatarReais(registro.valor)}\n` +
     `💰 Novo saldo: R$ ${formatarReais(registro.saldoRestante)}`
   );
+}
+
+const ROTULO_TIPO = {
+  gasto: '💸 Gasto',
+  entrada: '💚 Entrada',
+  conta_fixa: '📅 Conta Fixa',
+  compra_cartao: '💳 Compra no Cartão',
+  parcelamento: '🔢 Parcelamento',
+  meta: '🎯 Meta',
+  orcamento: '🏷️ Orçamento',
+  gasto_alimentacao: '🍽️ Gasto no Cartão Alimentação',
+  recarga_alimentacao: '➕ Recarga no Cartão Alimentação',
+};
+
+// Resumo mostrado ANTES de gravar qualquer coisa no banco — só depois que a
+// pessoa confirmar (respondendo "sim") o lançamento é de fato salvo. Isso
+// evita registrar algo errado por causa de uma interpretação equivocada.
+function montarResumoConfirmacao(dados) {
+  const linhas = [`📝 *Confirma esse lançamento?*`, '', ROTULO_TIPO[dados.tipo] || 'Lançamento'];
+
+  if (dados.descricao) linhas.push(`Descrição: ${dados.descricao}`);
+  if (dados.valor) linhas.push(`Valor: R$ ${formatarReais(dados.valor)}`);
+  if (dados.valor_total) linhas.push(`Valor total: R$ ${formatarReais(dados.valor_total)} em ${dados.numero_parcelas}x`);
+  if (dados.valor_alvo) linhas.push(`Valor alvo: R$ ${formatarReais(dados.valor_alvo)}`);
+  if (dados.limite_mensal) linhas.push(`Limite mensal: R$ ${formatarReais(dados.limite_mensal)}`);
+  if (dados.categoria) linhas.push(`Categoria: ${dados.categoria}`);
+  if (dados.cartao) linhas.push(`Cartão: ${dados.cartao}`);
+  if (dados.dia_vencimento) linhas.push(`Vence todo dia: ${dados.dia_vencimento}`);
+  if (dados.pessoa) linhas.push(`Pessoa: ${dados.pessoa}`);
+
+  linhas.push('', 'Responda *sim* pra confirmar ou *não* pra cancelar.');
+  return linhas.join('\n');
 }
 
 async function enviarNoGrupo(texto) {
@@ -765,23 +876,48 @@ async function iniciar() {
     const nomeRemetente = msg.pushName || 'Desconhecido';
     const chaveRemetente = msg.key.participant || remetenteJid;
     const tipoMsg = Object.keys(msg.message)[0];
+    const ehTexto = tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage';
 
     let dados;
+    let vindoDeConfirmacao = false;
 
-    // Se essa pessoa tinha uma pergunta pendente e mandou texto agora, trata como resposta.
-    const pendente = pendentes.get(chaveRemetente);
-    const ehTexto = tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage';
-    if (pendente && ehTexto && Date.now() - pendente.criadoEm < VALIDADE_PENDENCIA_MS) {
-      const resposta = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-      if (!resposta.trim()) return;
+    // Se essa pessoa tinha uma pergunta pendente ou uma confirmação em aberto,
+    // trata a mensagem atual como resposta a isso (a pendência vive no Supabase,
+    // então sobrevive a reinícios do bot).
+    const pendente = await buscarPendencia(chaveRemetente);
+    if (pendente && ehTexto) {
+      const resposta = (msg.message.conversation || msg.message.extendedTextMessage?.text || '').trim();
+      if (!resposta) return;
 
-      console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
-      pendentes.delete(chaveRemetente);
-      try {
-        dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente);
-      } catch (err) {
-        console.error('Erro ao continuar lançamento pendente:', err.message);
-        return;
+      if (pendente.estado === 'aguardando_confirmacao') {
+        if (REGEX_AFIRMATIVO.test(resposta)) {
+          await apagarPendencia(chaveRemetente);
+          dados = pendente.dados;
+          vindoDeConfirmacao = true;
+        } else if (REGEX_NEGATIVO.test(resposta)) {
+          await apagarPendencia(chaveRemetente);
+          await enviarNoGrupo('Ok, cancelado. Se quiser, é só mandar de novo. 👍');
+          return;
+        } else {
+          await enviarNoGrupo(
+            `Não entendi. Responda *sim* pra confirmar ou *não* pra cancelar:\n\n${montarResumoConfirmacao(pendente.dados)}`
+          );
+          return;
+        }
+      } else {
+        if (/^cancela(r)?$/i.test(resposta)) {
+          await apagarPendencia(chaveRemetente);
+          await enviarNoGrupo('Ok, cancelado.');
+          return;
+        }
+        console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
+        await apagarPendencia(chaveRemetente);
+        try {
+          dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente);
+        } catch (err) {
+          console.error('Erro ao continuar lançamento pendente:', err.message);
+          return;
+        }
       }
     } else if (ehTexto) {
       const texto = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
@@ -854,10 +990,29 @@ async function iniciar() {
     // Ainda falta alguma informação: pergunta e guarda o estado pra continuar depois.
     if (dados.faltando && dados.faltando.length > 0) {
       console.log(`❓ Faltando [${dados.faltando.join(', ')}], perguntando: "${dados.pergunta}"`);
-      pendentes.set(chaveRemetente, { dados, criadoEm: Date.now() });
+      await salvarPendencia(chaveRemetente, 'aguardando_campos', dados);
       if (dados.pergunta) {
         await enviarNoGrupo(dados.pergunta);
       }
+      return;
+    }
+
+    // A IA disse que está completo — ainda assim revalida antes de confirmar ou
+    // salvar (ela pode errar). Se achar algo inválido, volta pro fluxo de pergunta.
+    if (!vindoDeConfirmacao) {
+      const { valido, invalidos } = validarDados(dados);
+      if (!valido) {
+        console.log(`⚠️  Validação encontrou campo(s) inválido(s): ${invalidos.join(', ')}`);
+        dados.faltando = invalidos;
+        dados.pergunta = PERGUNTAS_POR_CAMPO[invalidos[0]] || `Pode confirmar: ${invalidos.join(', ')}?`;
+        await salvarPendencia(chaveRemetente, 'aguardando_campos', dados);
+        await enviarNoGrupo(dados.pergunta);
+        return;
+      }
+
+      // Completo e válido: pede confirmação antes de gravar qualquer coisa.
+      await salvarPendencia(chaveRemetente, 'aguardando_confirmacao', dados);
+      await enviarNoGrupo(montarResumoConfirmacao(dados));
       return;
     }
 
