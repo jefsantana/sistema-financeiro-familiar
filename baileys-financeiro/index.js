@@ -1163,6 +1163,164 @@ async function gerarResumoGeral() {
   );
 }
 
+// Emoji por categoria pro resumo diário — a coluna "icone" das categorias no
+// banco ainda está toda com o valor padrão "Tag", então por enquanto o mapa
+// fica fixo aqui em vez de vir do banco. Se um dia os ícones reais forem
+// preenchidos lá, dá pra trocar essa função por uma consulta na tabela.
+const EMOJI_CATEGORIA = {
+  Alimentação: '🍔',
+  Compras: '🛒',
+  Transporte: '🚗',
+  Lazer: '🎮',
+  Saúde: '💊',
+  Moradia: '🏠',
+  Apartamento: '🏠',
+  'Contas da Casa': '🧾',
+  Assinaturas: '📺',
+  'Cartão de Crédito': '💳',
+  'Cuidados Pessoais': '🧴',
+  Educação: '📚',
+  Família: '👨‍👩‍👧',
+  'Impostos e Taxas': '🏛️',
+  Internet: '🌐',
+  Investimentos: '📈',
+  Manutenção: '🔧',
+  Outros: '📦',
+  Pets: '🐾',
+  Presentes: '🎁',
+  'Tarifas Bancárias': '🏦',
+  Viagens: '✈️',
+};
+function emojiDaCategoria(categoria) {
+  return EMOJI_CATEGORIA[categoria] || '🏷️';
+}
+
+// Resumo diário completo (usado no agendado das 20h) — total do dia por
+// pessoa, principais categorias do dia, totais do mês, orçamento e um alerta
+// simples quando o dia fica acima da média diária do mês.
+async function gerarResumoDiario() {
+  const agora = DateTime.now().setZone(FUSO_HORARIO);
+  const hojeISO = agora.toFormat('yyyy-MM-dd');
+  const inicioMesISO = agora.startOf('month').toFormat('yyyy-MM-dd');
+  const diasDecorridos = agora.day; // dia do mês = quantos dias já passaram, incluindo hoje
+
+  const [{ data: gastosDoMes, error: e1 }, { data: entradasDoMes, error: e2 }, { data: orcamentos, error: e3 }] =
+    await Promise.all([
+      supabase
+        .from('gastos')
+        .select('valor, categoria, pessoa, data')
+        .eq('familia_id', FAMILIA_ID)
+        .is('excluido_em', null)
+        .gte('data', inicioMesISO)
+        .lte('data', hojeISO),
+      supabase
+        .from('entradas')
+        .select('valor')
+        .eq('familia_id', FAMILIA_ID)
+        .is('excluido_em', null)
+        .gte('data', inicioMesISO)
+        .lte('data', hojeISO),
+      supabase.from('orcamentos').select('limite_mensal').is('excluido_em', null).eq('familia_id', FAMILIA_ID),
+    ]);
+  if (e1 || e2 || e3) throw new Error((e1 || e2 || e3).message);
+
+  const gastosDeHoje = gastosDoMes.filter((g) => g.data === hojeISO);
+  const totalHoje = gastosDeHoje.reduce((acc, g) => acc + Number(g.valor), 0);
+  const totalMes = gastosDoMes.reduce((acc, g) => acc + Number(g.valor), 0);
+  const totalEntradasMes = entradasDoMes.reduce((acc, e) => acc + Number(e.valor), 0);
+  const saldoMes = totalEntradasMes - totalMes;
+
+  if (gastosDeHoje.length === 0) {
+    return (
+      `📊 *RESUMO FINANCEIRO — ${agora.toFormat('dd/MM')}*\n\n` +
+      `Nenhum gasto registrado hoje. 🎉\n\n` +
+      `📅 *NO MÊS*\n💸 Gastos: R$ ${formatarReais(totalMes)}\n📥 Entradas: R$ ${formatarReais(totalEntradasMes)}\n` +
+      `${saldoMes >= 0 ? '💰' : '⚠️'} Saldo: R$ ${formatarReais(saldoMes)}`
+    );
+  }
+
+  // Total de hoje por pessoa
+  const porPessoa = {};
+  for (const g of gastosDeHoje) {
+    porPessoa[g.pessoa || 'Não informado'] = (porPessoa[g.pessoa || 'Não informado'] || 0) + Number(g.valor);
+  }
+  const linhasPessoa = Object.entries(porPessoa)
+    .sort((a, b) => b[1] - a[1])
+    .map(([pessoa, valor]) => `👤 ${pessoa}: R$ ${formatarReais(valor)}`)
+    .join('\n');
+
+  // Principais categorias de hoje (agrupado por categoria, não por descrição)
+  const porCategoriaHoje = {};
+  for (const g of gastosDeHoje) {
+    const cat = g.categoria || 'Outros';
+    porCategoriaHoje[cat] = (porCategoriaHoje[cat] || 0) + Number(g.valor);
+  }
+  const categoriasOrdenadas = Object.entries(porCategoriaHoje).sort((a, b) => b[1] - a[1]);
+  const linhasCategorias = categoriasOrdenadas
+    .slice(0, 5)
+    .map(([cat, valor]) => `${emojiDaCategoria(cat)} ${cat}: R$ ${formatarReais(valor)}`)
+    .join('\n');
+
+  // Orçamento: soma de todas as categorias com limite mensal cadastrado.
+  const orcamentoTotal = (orcamentos || []).reduce((acc, o) => acc + Number(o.limite_mensal), 0);
+  let blocoOrcamento = '';
+  if (orcamentoTotal > 0) {
+    const usadoPercent = (totalMes / orcamentoTotal) * 100;
+    const restante = orcamentoTotal - totalMes;
+    const statusEmoji = usadoPercent >= 100 ? '🔴' : usadoPercent >= 80 ? '🟡' : '🟢';
+    const statusTexto = usadoPercent >= 100 ? 'Orçamento estourado' : usadoPercent >= 80 ? 'Perto do limite' : 'Dentro do orçamento';
+    blocoOrcamento =
+      `\n\n🎯 *ORÇAMENTO*\n` +
+      `Usado: ${usadoPercent.toFixed(1)}%\n` +
+      `Restante: R$ ${formatarReais(restante)}\n` +
+      `${statusEmoji} ${statusTexto}`;
+  }
+
+  // Média diária do mês (sem contar hoje) — base pro alerta e pro resumo da IA.
+  const totalMesSemHoje = totalMes - totalHoje;
+  const diasAnteriores = diasDecorridos - 1;
+  const mediaDiaria = diasAnteriores > 0 ? totalMesSemHoje / diasAnteriores : null;
+  const categoriaTopoHoje = categoriasOrdenadas[0]?.[0];
+  const acimaDaMedia = mediaDiaria !== null && totalHoje > mediaDiaria;
+
+  const blocoAtencao = acimaDaMedia
+    ? `\n\n⚠️ *ATENÇÃO*\n${categoriaTopoHoje} está acima da média diária.`
+    : '';
+
+  // "Resumo da IA": frase montada por template (sem gastar chamada de IA de
+  // verdade) pra não consumir cota do Gemini/Anthropic só pra escrever isso.
+  const resumoIA =
+    mediaDiaria !== null
+      ? acimaDaMedia
+        ? `Hoje gastamos R$ ${formatarReais(totalHoje)}, acima da média diária de R$ ${formatarReais(mediaDiaria)}. O principal gasto foi ${categoriaTopoHoje?.toLowerCase()}.`
+        : `Hoje gastamos R$ ${formatarReais(totalHoje)}, dentro da média diária de R$ ${formatarReais(mediaDiaria)}. Bom controle!`
+      : `Hoje gastamos R$ ${formatarReais(totalHoje)}. Ainda não há dias suficientes este mês pra calcular uma média.`;
+
+  const rodapes = [
+    '📌 Amanhã é um novo dia. Vamos controlar os gastos! 💪',
+    '📌 Bora fechar o mês no azul! 💪',
+    '📌 Cada real economizado hoje é uma meta mais perto amanhã. 💪',
+  ];
+  const rodape = rodapes[agora.day % rodapes.length];
+
+  return (
+    `📊 *RESUMO FINANCEIRO — ${agora.toFormat('dd/MM')}*\n\n` +
+    `💰 *GASTOS DO DIA*\n` +
+    `Total: R$ ${formatarReais(totalHoje)}\n\n` +
+    `${linhasPessoa}\n\n` +
+    `🛒 *PRINCIPAIS GASTOS*\n${linhasCategorias}\n\n` +
+    `📅 *NO MÊS*\n` +
+    `💸 Gastos: R$ ${formatarReais(totalMes)}\n` +
+    `📥 Entradas: R$ ${formatarReais(totalEntradasMes)}\n` +
+    `${saldoMes >= 0 ? '💰' : '⚠️'} Saldo: R$ ${formatarReais(saldoMes)}` +
+    blocoOrcamento +
+    blocoAtencao +
+    `\n\n🤖 *RESUMO DA IA*\n${resumoIA}\n` +
+    `━━━━━━━━━━━━━━\n` +
+    rodape
+  );
+}
+
 async function gerarResumoCartaoAlimentacao() {
   const { data: cartoes, error } = await supabase
     .from('cartoes_alimentacao')
@@ -1298,16 +1456,16 @@ async function gerarResumoLimiteGemini() {
   );
 }
 
-// Todo dia às 20h: saldo do dia (entradas - gastos)
+// Todo dia às 20h: resumo financeiro completo do dia
 cron.schedule(
   '0 20 * * *',
   async () => {
     try {
-      const texto = await gerarResumoGeral();
+      const texto = await gerarResumoDiario();
       await enviarNoGrupo(texto);
-      console.log('📊 Saldo diário enviado.');
+      console.log('📊 Resumo diário enviado.');
     } catch (err) {
-      console.error('Erro ao calcular/enviar saldo diário:', err.message);
+      console.error('Erro ao calcular/enviar resumo diário:', err.message);
     }
   },
   { timezone: FUSO_HORARIO }
