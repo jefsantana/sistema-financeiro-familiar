@@ -103,6 +103,13 @@ Você também pode receber, antes da mensagem, um bloco de contexto informando q
 Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO ALIMENTAÇÃO: Alimentação, Assinaturas, Cartão de Crédito, Compras, Contas da Casa, Cuidados Pessoais, Educação, Família, Impostos e Taxas, Investimentos, Lazer, Manutenção, Moradia, Outros, Pets, Presentes, Saúde, Tarifas Bancárias, Transporte, Viagens.
 Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
+REGRA DE CATEGORIA: use SEMPRE uma destas categorias, escrita exatamente como está na lista (mesma acentuação/maiúsculas). NUNCA invente uma categoria nova nem crie uma variação (ex: "Mercado", "Supermercado" não existem — isso é "Alimentação"; "Uber", "99", "Combustível" não existem — isso é "Transporte"). Se a mensagem descrever algo que não se encaixa claramente em nenhuma categoria da lista, use "Outros" em vez de inventar.
+
+DESAMBIGUAÇÃO entre os tipos de consulta (10, 11 e 12) — são os que mais se confundem:
+- consulta_saldo (10): é sobre DINHEIRO da família (entradas, gastos, saldo, cartão alimentação). Palavras-chave: "saldo", "quanto tenho", "resumo financeiro", "quanto gastei" (sem mencionar IA).
+- consulta_uso_ia (11): é sobre CUSTO/CONSUMO acumulado das IAs que rodam o bot, tipicamente "no mês" ou "total". Palavras-chave: "gastei de IA", "custo de IA", "quanto custou", "consumo de tokens" (sem "hoje"/"agora"/"limite"/"Gemini").
+- consulta_limite_gemini (12): é sobre a COTA GRATUITA do Gemini especificamente, geralmente "hoje"/"agora"/"nesse minuto". Palavras-chave: "Gemini", "limite", "cota", "bateu 100%", "quanto ainda posso usar", "requisições", "tokens por minuto", "está saturado".
+Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica).
 
 Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 13), qual dos 13 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
@@ -129,7 +136,17 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
 
 Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_gemini e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
-Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
+Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
+
+Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de raciocínio, não copie os valores):
+- "gastei 50 no mercado" → tipo "gasto", categoria "Alimentação" (mercado não é categoria própria), faltando: [] (pessoa é inferida pelo remetente).
+- "uber pro trabalho, 23 reais" → tipo "gasto", categoria "Transporte" (Uber não é categoria própria).
+- "quanto gastei esse mês" → tipo "consulta_saldo", escopo "geral" (é sobre dinheiro da família, não sobre IA).
+- "quanto gastei de IA esse mês" → tipo "consulta_uso_ia" (menciona IA + "mês" = custo acumulado, não cota diária).
+- "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_gemini" (menciona Gemini + "hoje"/limite).
+- "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_gemini" (na dúvida entre 11 e 12, prefira 12).
+- "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
+- "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
 // Busca os cartões de crédito já cadastrados pela família, pra IA saber
 // quais opções reais existem (em vez de aceitar qualquer nome digitado).
