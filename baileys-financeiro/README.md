@@ -21,6 +21,7 @@ fly secrets set \
   ANTHROPIC_API_KEY="sk-ant-..." \
   SUPABASE_URL="https://smptdvscrudvclawdmla.supabase.co" \
   SUPABASE_SERVICE_KEY="sua-service-role-key" \
+  OPENAI_API_KEY="sk-..." \
   SEND_TOKEN="escolha-um-token-secreto" \
   -a sistema-financeiro-baileys
 ```
@@ -30,6 +31,7 @@ fly secrets set \
 | `ANTHROPIC_API_KEY` | Sim | Sua API key da Anthropic (console.anthropic.com) |
 | `SUPABASE_URL` | Sim | URL do projeto Supabase |
 | `SUPABASE_SERVICE_KEY` | Sim | Service role key (Project Settings > API) — bypassa RLS |
+| `OPENAI_API_KEY` | Não (mas sem ela, áudio é ignorado) | Usada só para transcrever mensagens de áudio (Whisper) |
 | `SEND_TOKEN` | Não (tem padrão) | Token do endpoint manual `/enviar` |
 | `NOME_GRUPO_ALVO` | Não (padrão "CONTROLE FINANCEIRO") | Nome exato do grupo monitorado |
 | `FAMILIA_ID` | Não (já tem padrão) | UUID da família no Supabase |
@@ -57,6 +59,8 @@ curl -X POST https://sistema-financeiro-baileys.fly.dev/enviar \
 
 ## Pendências conhecidas
 
-- Comprovante em foto e mensagem de áudio ainda não são interpretados
-  nessa versão (só texto). Dá para adicionar depois usando a API de
-  visão da Anthropic para imagens e um serviço de transcrição para áudio.
+- A transcrição de áudio (Whisper) recebe o arquivo no formato original
+  do WhatsApp (geralmente `.ogg`/opus). Na grande maioria dos casos isso
+  funciona direto, mas se algum áudio específico falhar na transcrição,
+  pode ser necessário converter o arquivo antes (ex: com `ffmpeg`) —
+  ainda não implementado nessa versão.

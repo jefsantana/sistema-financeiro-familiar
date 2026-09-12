@@ -22,12 +22,17 @@ const FUSO_HORARIO = process.env.FUSO_HORARIO || 'America/Sao_Paulo';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
+// Usada apenas para transcrever mensagens de áudio (Whisper). Se não configurada,
+// mensagens de áudio são ignoradas (texto e foto continuam funcionando normalmente).
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 // ==========================================================
 
 if (!ANTHROPIC_API_KEY) console.warn('⚠️  ANTHROPIC_API_KEY não configurada.');
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) console.warn('⚠️  SUPABASE_URL / SUPABASE_SERVICE_KEY não configuradas.');
+if (!OPENAI_API_KEY) console.warn('⚠️  OPENAI_API_KEY não configurada — mensagens de áudio serão ignoradas.');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -36,7 +41,9 @@ let servidorHttpIniciado = false;
 let socketAtual = null;
 
 // ===================== IA: interpretar a mensagem =====================
-const SYSTEM_PROMPT = `Você lê mensagens de um grupo de WhatsApp de um casal (Jeferson e Raquel) que registra as finanças da casa mandando mensagens curtas. Sua tarefa é identificar se a mensagem descreve uma transação financeira (um gasto ou uma entrada de dinheiro) e extrair os dados estruturados.
+const SYSTEM_PROMPT = `Você lê mensagens de um grupo de WhatsApp de um casal (Jeferson e Raquel) que registra as finanças da casa. A mensagem pode ser um texto curto OU uma foto de um comprovante de pagamento/compra (com ou sem legenda). Sua tarefa é identificar se ela descreve uma transação financeira (um gasto ou uma entrada de dinheiro) e extrair os dados estruturados.
+
+Se for uma imagem de comprovante, leia o valor total, o nome do estabelecimento/origem e infira a categoria a partir disso.
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
@@ -55,7 +62,7 @@ Se nenhuma categoria de gasto fizer sentido, use "Outros".
 
 Se a mensagem não for uma transação financeira, retorne ehTransacao: false e os demais campos vazios/zero.`;
 
-async function interpretarMensagem(texto, remetente) {
+async function chamarAnthropic(contentBlocks) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -67,9 +74,7 @@ async function interpretarMensagem(texto, remetente) {
       model: ANTHROPIC_MODEL,
       max_tokens: 500,
       system: SYSTEM_PROMPT,
-      messages: [
-        { role: 'user', content: `Mensagem do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
-      ],
+      messages: [{ role: 'user', content: contentBlocks }],
     }),
   });
 
@@ -82,6 +87,48 @@ async function interpretarMensagem(texto, remetente) {
   const textoResposta = data.content?.find((b) => b.type === 'text')?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
   return JSON.parse(jsonLimpo);
+}
+
+async function interpretarMensagem(texto, remetente) {
+  return chamarAnthropic([
+    { type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` },
+  ]);
+}
+
+async function interpretarImagem(base64, mimetype, legenda, remetente) {
+  return chamarAnthropic([
+    {
+      type: 'image',
+      source: { type: 'base64', media_type: mimetype, data: base64 },
+    },
+    {
+      type: 'text',
+      text: `Imagem enviada no WhatsApp (remetente: ${remetente}). Legenda: "${legenda || '(sem legenda)'}". Essa imagem é um comprovante de pagamento/compra — leia o valor total e o estabelecimento.`,
+    },
+  ]);
+}
+
+// ===================== Transcrição de áudio (Whisper) =====================
+async function transcreverAudio(buffer, mimetype) {
+  const extensao = mimetype.includes('ogg') ? 'ogg' : mimetype.includes('mp4') ? 'm4a' : 'oga';
+  const form = new FormData();
+  form.append('file', new Blob([buffer], { type: mimetype }), `audio.${extensao}`);
+  form.append('model', 'whisper-1');
+  form.append('language', 'pt');
+
+  const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: form,
+  });
+
+  if (!resp.ok) {
+    const erro = await resp.text();
+    throw new Error(`OpenAI Whisper ${resp.status}: ${erro}`);
+  }
+
+  const data = await resp.json();
+  return data.text || '';
 }
 
 // ===================== Supabase: gravar transação =====================
@@ -299,22 +346,55 @@ async function iniciar() {
     const nomeRemetente = msg.pushName || 'Desconhecido';
     const tipoMsg = Object.keys(msg.message)[0];
 
-    let texto = '';
-    if (tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage') {
-      texto = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-    } else {
-      // Imagem/áudio: suporte a interpretar mídia fica para uma próxima etapa.
-      return;
-    }
-    if (!texto.trim()) return;
-
-    console.log(`➡️  Interpretando mensagem de ${nomeRemetente}: "${texto}"`);
-
     let dados;
-    try {
-      dados = await interpretarMensagem(texto, nomeRemetente);
-    } catch (err) {
-      console.error('Erro ao chamar a IA:', err.message);
+
+    if (tipoMsg === 'conversation' || tipoMsg === 'extendedTextMessage') {
+      const texto = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      if (!texto.trim()) return;
+
+      console.log(`➡️  Interpretando texto de ${nomeRemetente}: "${texto}"`);
+      try {
+        dados = await interpretarMensagem(texto, nomeRemetente);
+      } catch (err) {
+        console.error('Erro ao chamar a IA (texto):', err.message);
+        return;
+      }
+    } else if (tipoMsg === 'imageMessage') {
+      const legenda = msg.message.imageMessage.caption || '';
+      const mimetype = msg.message.imageMessage.mimetype || 'image/jpeg';
+
+      console.log(`➡️  Interpretando imagem (comprovante) de ${nomeRemetente}`);
+      try {
+        const buffer = await downloadMediaMessage(msg, 'buffer', {});
+        const base64 = buffer.toString('base64');
+        dados = await interpretarImagem(base64, mimetype, legenda, nomeRemetente);
+      } catch (err) {
+        console.error('Erro ao processar imagem:', err.message);
+        return;
+      }
+    } else if (tipoMsg === 'audioMessage') {
+      if (!OPENAI_API_KEY) {
+        console.log('ℹ️  Áudio recebido, mas OPENAI_API_KEY não configurada — ignorando.');
+        return;
+      }
+      const mimetype = msg.message.audioMessage.mimetype || 'audio/ogg';
+
+      console.log(`➡️  Transcrevendo áudio de ${nomeRemetente}...`);
+      try {
+        const buffer = await downloadMediaMessage(msg, 'buffer', {});
+        const textoTranscrito = await transcreverAudio(buffer, mimetype);
+        if (!textoTranscrito.trim()) {
+          console.log('ℹ️  Transcrição veio vazia, ignorando.');
+          return;
+        }
+        console.log(`📝 Transcrito: "${textoTranscrito}"`);
+        dados = await interpretarMensagem(textoTranscrito, nomeRemetente);
+      } catch (err) {
+        console.error('Erro ao processar áudio:', err.message);
+        return;
+      }
+    } else {
+      // Outros tipos (figurinha, localização, etc.): sem suporte por enquanto.
       return;
     }
 
