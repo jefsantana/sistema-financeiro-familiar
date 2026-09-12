@@ -83,10 +83,11 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "escopo": "geral" ou "alimentacao" (só para consulta_saldo) ou null,
   "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
   "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
-  "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada)
+  "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada),
+  "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Se a mensagem não for sobre finanças (conversa comum, pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [] e pergunta: null.`;
+Se a mensagem não for sobre finanças (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
 
 // Busca os cartões de crédito já cadastrados pela família, pra IA saber
 // quais opções reais existem (em vez de aceitar qualquer nome digitado).
@@ -1008,7 +1009,8 @@ async function iniciar() {
     }
 
     if (!dados.ehTransacao) {
-      console.log('ℹ️  Mensagem não é uma transação financeira, ignorando.');
+      console.log('ℹ️  Mensagem não é uma transação financeira, respondendo de forma casual.');
+      await enviarNoGrupo(dados.respostaCasual || 'Oi! 😊');
       return;
     }
 
