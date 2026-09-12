@@ -826,7 +826,11 @@ cron.schedule(
 async function iniciar() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-  const sock = makeWASocket({ auth: state, printQRInTerminal: false });
+  // markOnlineOnConnect: false evita que o WhatsApp marque esse dispositivo
+  // vinculado como "online" o tempo todo — quando algum aparelho está online,
+  // o WhatsApp suprime as notificações push nos outros (inclusive de
+  // mensagens particulares), achando que você já está vendo por ali.
+  const sock = makeWASocket({ auth: state, printQRInTerminal: false, markOnlineOnConnect: false });
   socketAtual = sock;
 
   sock.ev.on('creds.update', saveCreds);
@@ -856,6 +860,11 @@ async function iniciar() {
       iniciar();
     } else if (connection === 'open') {
       console.log('✅ Conectado ao WhatsApp com sucesso!');
+      try {
+        await sock.sendPresenceUpdate('unavailable');
+      } catch (e) {
+        console.warn('Não foi possível marcar presença como indisponível:', e.message);
+      }
       resolverGrupoAlvo(sock);
       if (!servidorHttpIniciado) {
         iniciarServidorHttp();
