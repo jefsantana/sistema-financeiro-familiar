@@ -85,6 +85,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 8. "gasto_alimentacao" — um gasto pago com cartão alimentação/refeição (ex: Ticket, VR, Alelo, Sodexo). Desconta do saldo desse cartão em vez de ser um gasto comum. Campos: descricao, valor, categoria (normalmente "Alimentação"), pessoa.
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
 10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
+11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -94,12 +95,12 @@ Categorias de GASTO/CONTA FIXA/COMPRA NO CARTÃO/PARCELAMENTO/ORÇAMENTO/GASTO A
 Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras Entradas, Presentes Recebidos, Reembolso, Renda Extra, Rendimentos de Investimentos, Salário, Venda de Produtos/Bens.
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
 
-Sua tarefa: identificar se a mensagem é sobre finanças, qual dos 10 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, no caso do tipo 11), qual dos 11 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -117,7 +118,9 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Se a mensagem não for sobre finanças (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
+Mensagens do tipo consulta_saldo e consulta_uso_ia também devem ter ehTransacao: true (são pedidos de informação válidos pro bot, mesmo sem registrar nada novo).
+
+Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.`;
 
 // Busca os cartões de crédito já cadastrados pela família, pra IA saber
 // quais opções reais existem (em vez de aceitar qualquer nome digitado).
@@ -165,6 +168,23 @@ function contextoCartoes(cartoes, cartoesAlimentacao) {
   return partes.join(' ');
 }
 
+// Registra quantos tokens cada chamada de IA consumiu, pra dar pra consultar
+// depois via "consulta_uso_ia" no grupo. Isso é CONSUMO, não o saldo em R$/$
+// de cada conta — cada provedor só mostra o saldo real no próprio painel.
+async function registrarUsoIA(provedor, tokensEntrada, tokensSaida) {
+  try {
+    const { error } = await supabase.from('uso_ia').insert({
+      familia_id: FAMILIA_ID,
+      provedor,
+      tokens_entrada: tokensEntrada || 0,
+      tokens_saida: tokensSaida || 0,
+    });
+    if (error) console.warn('Não foi possível registrar uso de IA:', error.message);
+  } catch (err) {
+    console.warn('Não foi possível registrar uso de IA:', err.message);
+  }
+}
+
 async function chamarAnthropic(contentBlocks, tentativa = 1) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -199,6 +219,7 @@ async function chamarAnthropic(contentBlocks, tentativa = 1) {
     console.log(
       `💳 Tokens: entrada=${input_tokens || 0} saída=${output_tokens || 0} cache_lido=${cache_read_input_tokens || 0} cache_criado=${cache_creation_input_tokens || 0}`
     );
+    await registrarUsoIA('Anthropic', input_tokens, output_tokens);
   }
   const textoResposta = data.content?.find((b) => b.type === 'text')?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
@@ -253,6 +274,9 @@ async function chamarGemini(contentBlocks) {
   }
 
   const data = await resp.json();
+  if (data.usageMetadata) {
+    await registrarUsoIA('Gemini', data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount);
+  }
   const textoResposta = data.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
   return JSON.parse(jsonLimpo);
@@ -291,6 +315,9 @@ async function chamarOpenAI(contentBlocks) {
   }
 
   const data = await resp.json();
+  if (data.usage) {
+    await registrarUsoIA('OpenAI', data.usage.prompt_tokens, data.usage.completion_tokens);
+  }
   const textoResposta = data.choices?.[0]?.message?.content || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
   return JSON.parse(jsonLimpo);
@@ -298,7 +325,7 @@ async function chamarOpenAI(contentBlocks) {
 
 // Groq e Mistral usam formato "chat completions" (estilo OpenAI), só texto
 // (sem leitura de imagem nos modelos usados aqui).
-async function chamarChatCompletions({ url, apiKey, model, contentBlocks }) {
+async function chamarChatCompletions({ url, apiKey, model, contentBlocks, nomeProvedor }) {
   const textoUnico = contentBlocks
     .filter((b) => b.type === 'text')
     .map((b) => b.text)
@@ -326,6 +353,9 @@ async function chamarChatCompletions({ url, apiKey, model, contentBlocks }) {
   }
 
   const data = await resp.json();
+  if (data.usage) {
+    await registrarUsoIA(nomeProvedor, data.usage.prompt_tokens, data.usage.completion_tokens);
+  }
   const textoResposta = data.choices?.[0]?.message?.content || '';
   const jsonLimpo = textoResposta.replace(/```json|```/g, '').trim();
   return JSON.parse(jsonLimpo);
@@ -333,6 +363,7 @@ async function chamarChatCompletions({ url, apiKey, model, contentBlocks }) {
 
 async function chamarGroq(contentBlocks) {
   return chamarChatCompletions({
+    nomeProvedor: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
     apiKey: GROQ_API_KEY,
     model: GROQ_MODEL,
@@ -342,6 +373,7 @@ async function chamarGroq(contentBlocks) {
 
 async function chamarMistral(contentBlocks) {
   return chamarChatCompletions({
+    nomeProvedor: 'Mistral',
     url: 'https://api.mistral.ai/v1/chat/completions',
     apiKey: MISTRAL_API_KEY,
     model: MISTRAL_MODEL,
@@ -977,6 +1009,38 @@ async function gerarResumoCartaoAlimentacao() {
   return `📋 *Saldo do Cartão Alimentação*\n${linhas}`;
 }
 
+async function gerarResumoUsoIA() {
+  const inicioMes = DateTime.now().setZone(FUSO_HORARIO).startOf('month').toISO();
+  const { data, error } = await supabase
+    .from('uso_ia')
+    .select('provedor, tokens_entrada, tokens_saida')
+    .eq('familia_id', FAMILIA_ID)
+    .gte('criado_em', inicioMes);
+  if (error) throw new Error(error.message);
+
+  if (!data || data.length === 0) {
+    return '📊 Nenhum uso de IA registrado esse mês ainda.';
+  }
+
+  const porProvedor = {};
+  for (const linha of data) {
+    if (!porProvedor[linha.provedor]) porProvedor[linha.provedor] = { chamadas: 0, entrada: 0, saida: 0 };
+    porProvedor[linha.provedor].chamadas += 1;
+    porProvedor[linha.provedor].entrada += Number(linha.tokens_entrada) || 0;
+    porProvedor[linha.provedor].saida += Number(linha.tokens_saida) || 0;
+  }
+
+  const linhas = Object.entries(porProvedor).map(
+    ([nome, p]) =>
+      `🔹 *${nome}*: ${p.chamadas} chamada(s) — ${p.entrada.toLocaleString('pt-BR')} tokens entrada / ${p.saida.toLocaleString('pt-BR')} saída`
+  );
+
+  return (
+    `📊 *Uso de IA este mês*\n${linhas.join('\n')}\n\n` +
+    `ℹ️ Isso é consumo (tokens), não o saldo em R$/$ de cada conta. Pra ver o saldo real, confira o painel de cada provedor (console.anthropic.com, platform.openai.com, aistudio.google.com, console.groq.com, console.mistral.ai).`
+  );
+}
+
 // Todo dia às 20h: saldo do dia (entradas - gastos)
 cron.schedule(
   '0 20 * * *',
@@ -1247,6 +1311,17 @@ async function iniciar() {
         console.log('📊 Resumo enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo sob demanda:', err.message);
+      }
+      return;
+    }
+
+    // "Pergunta" sobre o consumo de IA do próprio bot (não é sobre dinheiro).
+    if (dados.tipo === 'consulta_uso_ia') {
+      try {
+        await enviarNoGrupo(await gerarResumoUsoIA());
+        console.log('📊 Resumo de uso de IA enviado sob demanda.');
+      } catch (err) {
+        console.error('Erro ao gerar resumo de uso de IA:', err.message);
       }
       return;
     }
