@@ -963,19 +963,48 @@ function tabelaDoTipo(tipo) {
 
 // Guarda o último lançamento salvo, tanto por quem mandou (pra "corrige, era
 // X") quanto pelo ID da mensagem de confirmação enviada (pra corrigir
-// respondendo/arrastando aquela mensagem específica no WhatsApp).
-const ultimoRegistroPorRemetente = new Map();
-const registrosPorMensagemId = new Map();
-function lembrarRegistro({ chaveRemetente, mensagemEnviada, tabela, registroId }) {
+// respondendo/arrastando aquela mensagem específica no WhatsApp). Fica no
+// Supabase, não em memória — um Map em RAM se perde toda vez que o bot
+// reinicia (o que acontece com frequência), e uma correção que caía nesse
+// buraco acabava sendo aplicada no lançamento errado (o mais recente da
+// pessoa) em vez do que ela realmente queria corrigir.
+async function lembrarRegistro({ chaveRemetente, mensagemEnviada, tabela, registroId }) {
   if (!tabela || !registroId) return;
-  const alvo = { tabela, registroId };
-  ultimoRegistroPorRemetente.set(chaveRemetente, alvo);
-  if (ultimoRegistroPorRemetente.size > 500) ultimoRegistroPorRemetente.clear();
-  const msgId = mensagemEnviada?.key?.id;
-  if (msgId) {
-    registrosPorMensagemId.set(msgId, alvo);
-    if (registrosPorMensagemId.size > 500) registrosPorMensagemId.clear();
+  try {
+    const { error } = await supabase.from('bot_correcoes_rastreadas').insert({
+      familia_id: FAMILIA_ID,
+      jid: chaveRemetente,
+      mensagem_id: mensagemEnviada?.key?.id || null,
+      tabela,
+      registro_id: registroId,
+    });
+    if (error) console.warn('Não foi possível lembrar registro pra correção:', error.message);
+  } catch (err) {
+    console.warn('Não foi possível lembrar registro pra correção:', err.message);
   }
+}
+
+// Busca o alvo de uma correção: primeiro tenta pelo ID exato da mensagem
+// respondida (reply), senão cai pro lançamento mais recente da pessoa.
+async function buscarAlvoCorrecao(stanzaId, chaveRemetente) {
+  if (stanzaId) {
+    const { data } = await supabase
+      .from('bot_correcoes_rastreadas')
+      .select('tabela, registro_id')
+      .eq('familia_id', FAMILIA_ID)
+      .eq('mensagem_id', stanzaId)
+      .maybeSingle();
+    if (data) return { tabela: data.tabela, registroId: data.registro_id, ehReply: true };
+  }
+  const { data } = await supabase
+    .from('bot_correcoes_rastreadas')
+    .select('tabela, registro_id')
+    .eq('familia_id', FAMILIA_ID)
+    .eq('jid', chaveRemetente)
+    .order('criado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ? { tabela: data.tabela, registroId: data.registro_id, ehReply: false } : null;
 }
 
 const CAMPOS_CORRIGIVEIS = [
@@ -1288,10 +1317,8 @@ async function iniciar() {
     // Se a mensagem é uma resposta (reply/arrastar) a uma confirmação nossa,
     // isso vira o alvo preferencial de uma eventual correção.
     const stanzaId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
-    const alvoCorrecao =
-      (stanzaId && registrosPorMensagemId.get(stanzaId)) || ultimoRegistroPorRemetente.get(chaveRemetente) || null;
-    const ehReplyRastreado = !!(stanzaId && registrosPorMensagemId.get(stanzaId));
-    const contextoCorrecao = ehReplyRastreado
+    const alvoCorrecao = await buscarAlvoCorrecao(stanzaId, chaveRemetente);
+    const contextoCorrecao = alvoCorrecao?.ehReply
       ? 'Esta mensagem é uma resposta direta (reply) a uma confirmação de lançamento anterior — é bem provável que seja uma correção daquele lançamento específico.'
       : null;
 
@@ -1486,7 +1513,7 @@ async function iniciar() {
 
       if (dados.comentario) await enviarNoGrupo(dados.comentario);
       const mensagemEnviada = await enviarNoGrupo(cartaoMsg);
-      lembrarRegistro({
+      await lembrarRegistro({
         chaveRemetente,
         mensagemEnviada,
         tabela: tabelaDoTipo(dados.tipo),
