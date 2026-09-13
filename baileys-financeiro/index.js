@@ -1052,6 +1052,27 @@ const PERGUNTAS_POR_CAMPO = {
   limite_mensal: 'Qual o limite mensal?',
 };
 
+// Segunda camada de validação específica pra gasto_alimentacao/recarga_alimentacao:
+// buscarOuCriarCartaoAlimentacao() CRIA um cartão novo (saldo 0) se o nome não
+// bater com nenhum cadastrado, e cai pra "Ticket" por padrão se a IA não
+// extrair nenhum nome — com só 1 cartão isso nunca importa, mas com 2+
+// cadastrados uma mensagem sem o nome citado (ou a IA falhando em perguntar)
+// creditava/debitava o cartão errado, ou criava um cartão fantasma, em
+// silêncio. Roda como rede de segurança independente do julgamento da IA,
+// igual ao padrão já usado em validarDados() pros outros campos obrigatórios.
+async function resolverCartaoAlimentacaoAmbiguo(dados) {
+  if (dados.tipo !== 'gasto_alimentacao' && dados.tipo !== 'recarga_alimentacao') return null;
+  const cartoes = await buscarCartoesAlimentacaoAtivos();
+  if (cartoes.length <= 1) {
+    if (cartoes.length === 1 && !dados.cartao) dados.cartao = cartoes[0].nome;
+    return null;
+  }
+  if (dados.cartao && cartoes.some((c) => c.nome.trim().toLowerCase() === dados.cartao.trim().toLowerCase())) {
+    return null;
+  }
+  return `Qual cartão alimentação foi usado? (${cartoes.map((c) => c.nome).join(', ')})`;
+}
+
 function validarDados(dados) {
   if (dados.tipo === 'consulta_saldo') return { valido: true, invalidos: [] };
   const camposObrigatorios = CAMPOS_OBRIGATORIOS_POR_TIPO[dados.tipo] || [];
@@ -2141,6 +2162,17 @@ async function iniciar() {
         await responder(chaveRemetente, '⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
       }
       return;
+    }
+
+    // Rede de segurança: gasto_alimentacao/recarga_alimentacao não podem cair
+    // no cartão alimentação errado quando há mais de um cadastrado (ver
+    // resolverCartaoAlimentacaoAmbiguo).
+    if ((!dados.faltando || dados.faltando.length === 0) && dados.tipo) {
+      const perguntaCartaoAlimentacao = await resolverCartaoAlimentacaoAmbiguo(dados);
+      if (perguntaCartaoAlimentacao) {
+        dados.faltando = ['cartao'];
+        dados.pergunta = perguntaCartaoAlimentacao;
+      }
     }
 
     // Ainda falta alguma informação: pergunta e guarda o estado pra continuar depois.
