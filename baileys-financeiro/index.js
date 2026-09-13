@@ -146,7 +146,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
 14. "pagamento_conta_fixa" — quando a pessoa avisa que PAGOU/QUITOU uma conta, ou acabou de realizar algum pagamento, e isso pode se referir a uma conta fixa JÁ cadastrada (ex: "paguei o financiamento", "já quitei a internet desse mês", "acabei de pagar o aluguel", ou até só "acabei de realizar o pagamento" sem dizer qual conta ainda). Isso só MARCA a conta existente como paga neste ciclo — NÃO cadastra uma conta nova (isso é tipo 3) nem lança um gasto avulso novo (isso é tipo 1). Campo obrigatório: descricao (o nome da conta, que deve casar com uma das contas fixas cadastradas informadas no contexto). Se a pessoa mencionar que pagou algo mas não disser qual conta, classifique mesmo assim como "pagamento_conta_fixa" com descricao null, faltando: ["descricao"] e pergunta pedindo qual conta cadastrada foi paga — NÃO responda isso como bate-papo casual (respostaCasual), porque é um pedido real que precisa ficar pendente até a pessoa completar. NUNCA confunda com "correcao": isso não é corrigir um valor errado de um lançamento, é confirmar que um pagamento recorrente já cadastrado foi feito.
 15. "cadastro_cartao" — quando a pessoa pede pra ADICIONAR/CADASTRAR um cartão de crédito NOVO no sistema (ex: "adiciona um cartão de crédito pra mim", "cadastra o cartão Nubank", "quero cadastrar um cartão novo, limite 3000, fecha dia 10"). Isso só REGISTRA o cartão em si — NÃO é uma compra (isso é compra_cartao, tipo 4). Campo obrigatório: cartao (o nome do cartão novo, ex: "Nubank", "Inter"). Campos opcionais: limite (valor numérico do limite de crédito), dia_fechamento (dia 1-31 que fecha a fatura), dia_vencimento (dia 1-31 que vence o pagamento da fatura) — não pergunte por esses três se a pessoa não mencionar, só o nome é realmente necessário; pode perguntar se quer informar limite/fechamento/vencimento, mas se ela disser "não" ou não responder isso, cadastra só com o nome mesmo.
-16. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo, limite_mensal, limite ou dia_fechamento) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+16. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo, limite_mensal, limite ou dia_fechamento) — deixe todos os outros null, MESMO que a mensagem mencione outras coisas de passagem (ex: "neste cartão, adiciona o limite de 200, no Nubank" — se o lançamento já é o cartão Nubank, "Nubank" ali é só contexto pra identificar do que se trata, NÃO é uma correção do nome do cartão; preencha só "limite": 200, deixe "cartao" null). Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 17. "exclusao" — quando a pessoa pede pra APAGAR/EXCLUIR/CANCELAR/REMOVER um lançamento que JÁ foi registrado por completo (diferente de "correcao", que só AJUSTA um campo errado — "exclusao" remove o lançamento inteiro). Ex: "apaga esse gasto", "cancela esse lançamento, foi engano", "exclui a meta de viagem", "remove esse cartão", "não era pra ter lançado isso, apaga". Igual à correção, geralmente vem como reply a uma confirmação anterior, ou se refere ao lançamento mais recente da pessoa. Não precisa de nenhum campo — todos os campos de dados ficam null, só o "tipo" e "ehTransacao": true importam.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
@@ -186,7 +186,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "descricao": "resumo curto" (ou, em pagamento_conta_fixa, o nome EXATO da conta fixa cadastrada) ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
-  "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber),
+  "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber) — EXCEÇÃO: em "correcao", deixe null a menos que a pessoa esteja especificamente corrigindo QUEM fez (ex: "não fui eu, foi a Raquel"); não preencha "pessoa" automaticamente numa correção que é sobre outro campo (valor, cartão, limite, etc.),
   "dia_vencimento": numero de 1 a 31 (conta_fixa obrigatório; parcelamento e cadastro_cartao opcional) ou null,
   "cartao": "nome do cartão" (compra_cartao e cadastro_cartao obrigatório; parcelamento opcional; gasto_alimentacao/recarga_alimentacao use o nome do cartão alimentação citado, ex: "Ticket") ou null,
   "numero_parcelas": numero inteiro (parcelamento obrigatório) ou null,
@@ -1314,11 +1314,21 @@ async function buscarAlvoCorrecao(stanzaId, chaveRemetente) {
   return data ? { tabela: data.tabela, registroId: data.registro_id, ehReply: false } : null;
 }
 
+// ORDEM IMPORTA: aplicarCorrecao() usa o primeiro campo desta lista que vier
+// preenchido em "dados" pra decidir o que corrigir. "pessoa" fica por ÚLTIMO
+// de propósito — a IA infere "pessoa" pelo remetente em TODA resposta (é uma
+// regra geral do prompt, não específica de correção), então ela quase sempre
+// vem preenchida mesmo quando a pessoa só quis corrigir outro campo (ex:
+// "adiciona limite de 200 no cartão"). Com "pessoa" antes de campos como
+// dia_vencimento/cartao/numero_parcelas/valor_total/valor_alvo/limite_mensal/
+// limite/dia_fechamento, a correção pretendida era ignorada e "pessoa" era
+// aplicada no lugar — inofensivo (e invisível) em tabelas que têm coluna
+// "pessoa", mas quebra com erro em tabelas que não têm (como "cartoes"), que
+// foi exatamente o bug visto ao tentar definir o limite de um cartão.
 const CAMPOS_CORRIGIVEIS = [
   'descricao',
   'valor',
   'categoria',
-  'pessoa',
   'dia_vencimento',
   'cartao',
   'numero_parcelas',
@@ -1327,6 +1337,7 @@ const CAMPOS_CORRIGIVEIS = [
   'limite_mensal',
   'limite',
   'dia_fechamento',
+  'pessoa',
 ];
 
 function rotuloCampo(campo) {
