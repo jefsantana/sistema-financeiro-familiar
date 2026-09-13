@@ -1,21 +1,29 @@
 import { useMemo, useState } from 'react';
-import { UtensilsCrossed, TrendingDown, TrendingUp } from 'lucide-react';
+import { UtensilsCrossed, TrendingDown, TrendingUp, Pencil, Trash2, Check, X } from 'lucide-react';
 import {
   Card,
   Badge,
+  Avatar,
   Input,
   Select,
   Button,
   EmptyState,
   InfoBanner,
   Table,
+  TableColunaAcoes,
   TableColunaNumerica,
+  TableBotaoAcao,
+  ConfirmDialog,
   SkeletonLinha,
 } from '../../components/ui/index.js';
 import { useCrudMock } from '../../hooks/useCrudMock.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { registrarMovimentoAlimentacao } from '../../utils/cartaoAlimentacao.js';
+import {
+  registrarMovimentoAlimentacao,
+  editarMovimentoAlimentacao,
+  excluirMovimentoAlimentacao,
+} from '../../utils/cartaoAlimentacao.js';
 import { parseValorMonetario, mascaraMoeda, nomeExibicao, formatarMoeda, formatarData } from '../../utils/formatadores.js';
 import formStyles from '../_shared/CrudPage.module.css';
 import styles from './CartaoAlimentacao.module.css';
@@ -31,6 +39,8 @@ export default function CartaoAlimentacao() {
   } = useCrudMock('MovimentosCartaoAlimentacao');
   const [valores, setValores] = useState(ESTADO_INICIAL);
   const [salvando, setSalvando] = useState(false);
+  const [edicao, setEdicao] = useState(null);
+  const [paraExcluir, setParaExcluir] = useState(null);
   const toast = useToast();
   const { perfil, usuario } = useAuth();
   const pessoaLogada = nomeExibicao(perfil, usuario).split(' ')[0];
@@ -84,6 +94,60 @@ export default function CartaoAlimentacao() {
       toast.erro('Não foi possível salvar. Tente novamente.');
     } finally {
       setSalvando(false);
+    }
+  }
+
+  function iniciarEdicao(mov) {
+    setEdicao({
+      id: mov.id,
+      descricao: mov.descricao || '',
+      valor: Number(mov.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    });
+  }
+
+  function cancelarEdicao() {
+    setEdicao(null);
+  }
+
+  function atualizarCampoEdicao(nome, valor) {
+    const valorLimpo = nome === 'valor' ? mascaraMoeda(valor) : valor;
+    setEdicao((atual) => ({ ...atual, [nome]: valorLimpo }));
+  }
+
+  async function salvarEdicao() {
+    const valorNumerico = parseValorMonetario(edicao.valor);
+    if (valorNumerico <= 0) {
+      toast.erro('Informe um valor maior que zero.');
+      return;
+    }
+    const movimentoAntigo = movimentos.find((m) => m.id === edicao.id);
+    const cartao = cartaoPorId[movimentoAntigo.cartaoAlimentacaoId];
+    try {
+      await editarMovimentoAlimentacao({
+        movimentoAntigo,
+        descricao: edicao.descricao.trim(),
+        valor: valorNumerico,
+        cartao,
+      });
+      await Promise.all([recarregarCartoes(), recarregarMovimentos()]);
+      toast.sucesso('Alterações salvas com sucesso');
+      setEdicao(null);
+    } catch {
+      toast.erro('Não foi possível salvar as alterações. Tente novamente.');
+    }
+  }
+
+  async function confirmarExclusao() {
+    const movimento = movimentos.find((m) => m.id === paraExcluir);
+    const cartao = cartaoPorId[movimento.cartaoAlimentacaoId];
+    try {
+      await excluirMovimentoAlimentacao({ movimento, cartao, pessoa: pessoaLogada });
+      await Promise.all([recarregarCartoes(), recarregarMovimentos()]);
+      toast.sucesso('Registro movido para a lixeira');
+    } catch {
+      toast.erro('Não foi possível excluir o registro. Tente novamente.');
+    } finally {
+      setParaExcluir(null);
     }
   }
 
@@ -193,16 +257,29 @@ export default function CartaoAlimentacao() {
               <th>Tipo</th>
               <th>Pessoa</th>
               <th>Valor</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {movimentosOrdenados.map((mov) => {
               const nomeCartao = cartaoPorId[mov.cartaoAlimentacaoId]?.nome || '-';
               const ehRecarga = mov.tipo === 'recarga';
+              const emEdicao = edicao?.id === mov.id;
               return (
                 <tr key={mov.id}>
                   <td data-rotulo="Data">{formatarData(mov.data)}</td>
-                  <td data-rotulo="Descrição">{mov.descricao}</td>
+                  <td data-rotulo="Descrição">
+                    {emEdicao ? (
+                      <Input
+                        aria-label="Descrição"
+                        value={edicao.descricao}
+                        onChange={(e) => atualizarCampoEdicao('descricao', e.target.value)}
+                        className={formStyles.campoInline}
+                      />
+                    ) : (
+                      mov.descricao
+                    )}
+                  </td>
                   <td data-rotulo="Cartão">{nomeCartao}</td>
                   <td data-rotulo="Tipo">
                     <Badge cor={ehRecarga ? 'sucesso' : 'perigo'}>
@@ -210,18 +287,70 @@ export default function CartaoAlimentacao() {
                       {ehRecarga ? 'Recarga' : 'Gasto'}
                     </Badge>
                   </td>
-                  <td data-rotulo="Pessoa">{mov.pessoa || '-'}</td>
+                  <td data-rotulo="Pessoa">
+                    {mov.pessoa ? <Avatar nome={mov.pessoa} tamanho="pequeno" /> : '-'}
+                  </td>
                   <TableColunaNumerica data-rotulo="Valor">
-                    <span className={ehRecarga ? 'valor-positivo' : 'valor-negativo'}>
-                      {ehRecarga ? '+' : '-'} {formatarMoeda(mov.valor)}
-                    </span>
+                    {emEdicao ? (
+                      <Input
+                        aria-label="Valor"
+                        inputMode="decimal"
+                        value={edicao.valor}
+                        onChange={(e) => atualizarCampoEdicao('valor', e.target.value)}
+                        className={formStyles.campoInline}
+                      />
+                    ) : (
+                      <span className={ehRecarga ? 'valor-positivo' : 'valor-negativo'}>
+                        {ehRecarga ? '+' : '-'} {formatarMoeda(mov.valor)}
+                      </span>
+                    )}
                   </TableColunaNumerica>
+                  <TableColunaAcoes>
+                    {emEdicao ? (
+                      <>
+                        <TableBotaoAcao title="Salvar" rotulo="Salvar" onClick={salvarEdicao}>
+                          <Check size={16} />
+                        </TableBotaoAcao>
+                        <TableBotaoAcao title="Cancelar" rotulo="Cancelar" onClick={cancelarEdicao}>
+                          <X size={16} />
+                        </TableBotaoAcao>
+                      </>
+                    ) : (
+                      <>
+                        <TableBotaoAcao
+                          title="Editar"
+                          rotulo="Editar"
+                          disabled={Boolean(edicao)}
+                          onClick={() => iniciarEdicao(mov)}
+                        >
+                          <Pencil size={16} />
+                        </TableBotaoAcao>
+                        <TableBotaoAcao
+                          title="Excluir"
+                          rotulo="Excluir"
+                          disabled={Boolean(edicao)}
+                          onClick={() => setParaExcluir(mov.id)}
+                        >
+                          <Trash2 size={16} />
+                        </TableBotaoAcao>
+                      </>
+                    )}
+                  </TableColunaAcoes>
                 </tr>
               );
             })}
           </tbody>
         </Table>
       )}
+
+      <ConfirmDialog
+        aberto={Boolean(paraExcluir)}
+        aoFechar={() => setParaExcluir(null)}
+        aoConfirmar={confirmarExclusao}
+        titulo="Excluir registro?"
+        mensagem="O registro vai para a Lixeira e pode ser restaurado a qualquer momento. O saldo do cartão será ajustado."
+        textoConfirmar="Excluir"
+      />
     </div>
   );
 }

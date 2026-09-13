@@ -1,4 +1,4 @@
-import { criar, atualizar } from '../services/dados.js';
+import { criar, atualizar, excluir } from '../services/dados.js';
 import { dataLocalDeHoje } from './formatadores.js';
 
 /**
@@ -41,4 +41,38 @@ export async function registrarMovimentoAlimentacao({
   );
 
   return { movimento, cartao: { ...cartao, saldoAtual: novoSaldo } };
+}
+
+/**
+ * Edita descrição/valor de um movimento já salvo, ajustando o saldo do
+ * cartão pela diferença (mesma lógica de aplicarCorrecao() no bot do
+ * WhatsApp). O tipo (gasto/recarga) e o cartão não mudam aqui — trocar de
+ * cartão exigiria mexer no saldo de dois cartões, então isso não é
+ * suportado por este formulário (nem pelo bot).
+ */
+export async function editarMovimentoAlimentacao({ movimentoAntigo, descricao, valor, cartao }) {
+  const valorNovo = Number(valor);
+  const delta = valorNovo - Number(movimentoAntigo.valor);
+  const ajusteSaldo = movimentoAntigo.tipo === 'gasto' ? -delta : delta;
+  const novoSaldo = Number(cartao.saldoAtual) + ajusteSaldo;
+
+  await atualizar('CartoesAlimentacao', cartao.id, { saldoAtual: novoSaldo });
+  const movimento = await atualizar('MovimentosCartaoAlimentacao', movimentoAntigo.id, { descricao, valor: valorNovo });
+
+  return { movimento, cartao: { ...cartao, saldoAtual: novoSaldo } };
+}
+
+/**
+ * Exclui (soft-delete) um movimento, desfazendo o efeito dele no saldo do
+ * cartão antes — senão o saldo ficaria errado pra sempre (um gasto excluído
+ * continuaria descontado, uma recarga excluída continuaria somada).
+ */
+export async function excluirMovimentoAlimentacao({ movimento, cartao, pessoa }) {
+  const ajusteSaldo = movimento.tipo === 'gasto' ? Number(movimento.valor) : -Number(movimento.valor);
+  const novoSaldo = Number(cartao.saldoAtual) + ajusteSaldo;
+
+  await atualizar('CartoesAlimentacao', cartao.id, { saldoAtual: novoSaldo });
+  await excluir('MovimentosCartaoAlimentacao', movimento.id, pessoa);
+
+  return { cartao: { ...cartao, saldoAtual: novoSaldo } };
 }
