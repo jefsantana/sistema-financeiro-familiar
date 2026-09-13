@@ -1569,21 +1569,11 @@ async function gerarResumoGeral() {
   for (const m of gastosAlimentacaoMes) {
     porCategoria['Alimentação'] = (porCategoria['Alimentação'] || 0) + Number(m.valor);
   }
-  // Barrinha + percentual do total, igual ao gráfico "Gastos por Categoria"
-  // do Dashboard do site (é uma proporção do total gasto, não um limite —
-  // por isso usa barraEmoji "cru", sem o critério de cor do orçamento).
   const categoriasOrdenadas = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]);
-  const totalCategorias = categoriasOrdenadas.reduce((acc, [, valor]) => acc + valor, 0);
   const linhasCategorias = categoriasOrdenadas
     .slice(0, 5)
-    .map(([cat, valor]) => {
-      const percentual = totalCategorias > 0 ? (valor / totalCategorias) * 100 : 0;
-      return (
-        `${emojiDaCategoria(cat)} ${cat}: R$ ${formatarReais(valor)} (${percentual.toFixed(0)}%)\n` +
-        `${barraEmoji(percentual)}`
-      );
-    })
-    .join('\n\n');
+    .map(([cat, valor]) => `${emojiDaCategoria(cat)} ${cat}: R$ ${formatarReais(valor)}`)
+    .join('\n');
 
   const porPessoa = {};
   for (const g of gastosMes) {
@@ -1594,14 +1584,10 @@ async function gerarResumoGeral() {
     const p = m.pessoa || 'Não informado';
     porPessoa[p] = (porPessoa[p] || 0) + Number(m.valor);
   }
-  const pessoasOrdenadas = Object.entries(porPessoa).sort((a, b) => b[1] - a[1]);
-  const totalPessoas = pessoasOrdenadas.reduce((acc, [, valor]) => acc + valor, 0);
-  const linhasPessoas = pessoasOrdenadas
-    .map(([p, valor]) => {
-      const percentual = totalPessoas > 0 ? (valor / totalPessoas) * 100 : 0;
-      return `👤 ${p}: R$ ${formatarReais(valor)} (${percentual.toFixed(0)}%)\n${barraEmoji(percentual)}`;
-    })
-    .join('\n\n');
+  const linhasPessoas = Object.entries(porPessoa)
+    .sort((a, b) => b[1] - a[1])
+    .map(([p, valor]) => `👤 ${p}: R$ ${formatarReais(valor)}`)
+    .join('\n');
 
   let blocoOrcamento = '';
   if (orcamentos && orcamentos.length > 0) {
