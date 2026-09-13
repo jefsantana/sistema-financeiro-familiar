@@ -512,13 +512,23 @@ async function interpretarImagem(base64, mimetype, legenda, remetente) {
 
 // Continua um lançamento que ficou faltando informação: junta o que já tinha
 // com a resposta nova do usuário e pede pra IA completar (ou perguntar de novo).
+// IMPORTANTE: a pessoa pode simplesmente mudar de assunto no meio de uma
+// pergunta pendente (ex: bot pergunta o valor de uma conta, e ela manda uma
+// mensagem completamente diferente, sem responder aquilo). Sem tratar esse
+// caso, a IA tentava "forçar" a resposta nova a preencher o campo que faltava
+// e o bot ficava girando em loop repetindo a mesma pergunta. Por isso o
+// prompt abaixo pede explicitamente pra IA reconhecer quando isso acontece e
+// classificar a mensagem do zero, como se a pergunta pendente nunca tivesse
+// existido.
 async function continuarComResposta(dadosParciais, resposta, remetente) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   const contexto =
     `Você estava preenchendo um lançamento financeiro e ainda faltava informação. Estado atual em JSON:\n${JSON.stringify(dadosParciais)}\n\n` +
     `Você perguntou: "${dadosParciais.pergunta}"\n` +
     `O usuário (${remetente}) respondeu: "${resposta}"\n\n` +
-    `Atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.`;
+    `PRIMEIRO decida: essa resposta realmente responde à pergunta acima (mesmo que de forma indireta), ou é um assunto novo, sem relação com o que foi perguntado (ex: perguntou o valor de uma conta e a pessoa mandou algo tipo "contas fixas", "me envia X", ou começou a falar de outro lançamento)?\n` +
+    `- Se FOR uma resposta válida à pergunta: atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.\n` +
+    `- Se NÃO FOR relacionada (mudou de assunto): IGNORE completamente o estado anterior e classifique "${resposta}" como se fosse uma mensagem nova, começando do zero, normalmente (pode virar qualquer um dos tipos, inclusive consulta ou conversa casual). Não tente encaixar à força no lançamento antigo.`;
   return chamarIA([
     { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
     { type: 'text', text: contexto },
