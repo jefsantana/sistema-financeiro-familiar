@@ -2231,6 +2231,33 @@ async function iniciar() {
       return;
     }
 
+    // Rede de segurança final: só entra no switch de salvar (mais abaixo) um
+    // tipo que o código realmente sabe gravar. Sem isso, qualquer tipo que a
+    // IA inventasse ou um caso não prontamente tratado cairia no "default" do
+    // switch, que salva como um "gasto" comum — ou seja, silenciosamente
+    // lançaria uma despesa errada em vez de admitir que não sabe fazer aquilo.
+    // Aqui o bot prefere dizer "não sei fazer isso" a fingir que entendeu.
+    const TIPOS_LANCAMENTO_SUPORTADOS = [
+      'gasto',
+      'entrada',
+      'conta_fixa',
+      'compra_cartao',
+      'parcelamento',
+      'meta',
+      'orcamento',
+      'gasto_alimentacao',
+      'recarga_alimentacao',
+      'cadastro_cartao',
+    ];
+    if (!TIPOS_LANCAMENTO_SUPORTADOS.includes(dados.tipo)) {
+      console.warn(`⚠️  Tipo não suportado retornado pela IA: ${JSON.stringify(dados.tipo)}`);
+      await responder(
+        chaveRemetente,
+        '🤔 Entendi que você quer registrar algo, mas isso ainda não é uma função que eu sei fazer no sistema. Pode descrever de outro jeito (ex: um gasto, uma conta fixa, um cartão, uma meta)?'
+      );
+      return;
+    }
+
     // A IA disse que está completo — ainda assim revalida antes de salvar (ela
     // pode errar). Se achar algo inválido, volta pro fluxo de pergunta. Se
     // estiver tudo certo, salva direto — corrigir depois é fácil (respondendo
