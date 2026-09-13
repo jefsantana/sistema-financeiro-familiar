@@ -145,7 +145,8 @@ O sistema deles tem estes tipos de lançamento possíveis:
 12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
 13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
 14. "pagamento_conta_fixa" — quando a pessoa avisa que PAGOU/QUITOU uma conta, ou acabou de realizar algum pagamento, e isso pode se referir a uma conta fixa JÁ cadastrada (ex: "paguei o financiamento", "já quitei a internet desse mês", "acabei de pagar o aluguel", ou até só "acabei de realizar o pagamento" sem dizer qual conta ainda). Isso só MARCA a conta existente como paga neste ciclo — NÃO cadastra uma conta nova (isso é tipo 3) nem lança um gasto avulso novo (isso é tipo 1). Campo obrigatório: descricao (o nome da conta, que deve casar com uma das contas fixas cadastradas informadas no contexto). Se a pessoa mencionar que pagou algo mas não disser qual conta, classifique mesmo assim como "pagamento_conta_fixa" com descricao null, faltando: ["descricao"] e pergunta pedindo qual conta cadastrada foi paga — NÃO responda isso como bate-papo casual (respostaCasual), porque é um pedido real que precisa ficar pendente até a pessoa completar. NUNCA confunda com "correcao": isso não é corrigir um valor errado de um lançamento, é confirmar que um pagamento recorrente já cadastrado foi feito.
-15. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+15. "cadastro_cartao" — quando a pessoa pede pra ADICIONAR/CADASTRAR um cartão de crédito NOVO no sistema (ex: "adiciona um cartão de crédito pra mim", "cadastra o cartão Nubank", "quero cadastrar um cartão novo, limite 3000, fecha dia 10"). Isso só REGISTRA o cartão em si — NÃO é uma compra (isso é compra_cartao, tipo 4). Campo obrigatório: cartao (o nome do cartão novo, ex: "Nubank", "Inter"). Campos opcionais: limite (valor numérico do limite de crédito), dia_fechamento (dia 1-31 que fecha a fatura), dia_vencimento (dia 1-31 que vence o pagamento da fatura) — não pergunte por esses três se a pessoa não mencionar, só o nome é realmente necessário; pode perguntar se quer informar limite/fechamento/vencimento, mas se ela disser "não" ou não responder isso, cadastra só com o nome mesmo.
+16. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo, limite_mensal, limite ou dia_fechamento) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -169,24 +170,28 @@ DESAMBIGUAÇÃO entre os tipos de consulta (10, 11, 12 e 14) — são os que mai
 - consulta_contas_fixas (14): é sobre a LISTA de contas recorrentes cadastradas (aluguel, internet, streaming, etc.) e seus vencimentos — não é um número de saldo, é "quais são" e "quando vencem". Palavras-chave: "contas fixas", "conta(s) para vencer", "quando vence", "contas cadastradas", "contas em aberto".
 Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica). Se a mensagem falar em "conta(s)" no sentido de conta recorrente (aluguel, internet, cartão, assinatura) e não em "saldo"/"quanto tenho", é tipo 13, não tipo 10.
 
-DESAMBIGUAÇÃO entre pagamento_conta_fixa (14) e correcao (15) — a pessoa dizer que "pagou" ou "quitou" algo é SEMPRE tipo 14 quando a conta bate com uma cadastrada, mesmo que venha logo após o bot ter perguntado outra coisa. Só é tipo 15 (correcao) se a pessoa estiver claramente apontando um ERRO num lançamento já feito (valor errado, categoria errada, cartão errado) — "confirmar que paguei" não é "corrigir um erro". Se a pessoa responder só o nome de uma conta cadastrada (ex: "financiamento") logo depois de o bot ter perguntado algo como "qual conta você pagou?", use o histórico da conversa pra entender que ela está completando a informação do pagamento, e classifique o conjunto como pagamento_conta_fixa com descricao = esse nome — não como correcao.
+DESAMBIGUAÇÃO entre pagamento_conta_fixa (14) e correcao (16) — a pessoa dizer que "pagou" ou "quitou" algo é SEMPRE tipo 14 quando a conta bate com uma cadastrada, mesmo que venha logo após o bot ter perguntado outra coisa. Só é tipo 16 (correcao) se a pessoa estiver claramente apontando um ERRO num lançamento já feito (valor errado, categoria errada, cartão errado) — "confirmar que paguei" não é "corrigir um erro". Se a pessoa responder só o nome de uma conta cadastrada (ex: "financiamento") logo depois de o bot ter perguntado algo como "qual conta você pagou?", use o histórico da conversa pra entender que ela está completando a informação do pagamento, e classifique o conjunto como pagamento_conta_fixa com descricao = esse nome — não como correcao.
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 15), qual dos 15 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+DESAMBIGUAÇÃO entre cadastro_cartao (15) e compra_cartao (4) — "cadastro_cartao" é sobre o CARTÃO em si existir no sistema (nome, limite, datas de fatura), sem nenhum valor de compra envolvido. "compra_cartao" é sempre uma despesa específica (tem descrição do que foi comprado e valor gasto) usando um cartão que JÁ deveria existir. "adiciona um cartão pra mim" / "cadastra o Nubank" → cadastro_cartao. "comprei uma blusa no Nubank, 80 reais" → compra_cartao.
+
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 16), qual dos 16 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "pagamento_conta_fixa" | "correcao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "pagamento_conta_fixa" | "cadastro_cartao" | "correcao" | null,
   "descricao": "resumo curto" (ou, em pagamento_conta_fixa, o nome EXATO da conta fixa cadastrada) ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
   "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber),
-  "dia_vencimento": numero de 1 a 31 (conta_fixa obrigatório; parcelamento opcional) ou null,
-  "cartao": "nome do cartão" (compra_cartao obrigatório; parcelamento opcional; gasto_alimentacao/recarga_alimentacao use o nome do cartão alimentação citado, ex: "Ticket") ou null,
+  "dia_vencimento": numero de 1 a 31 (conta_fixa obrigatório; parcelamento e cadastro_cartao opcional) ou null,
+  "cartao": "nome do cartão" (compra_cartao e cadastro_cartao obrigatório; parcelamento opcional; gasto_alimentacao/recarga_alimentacao use o nome do cartão alimentação citado, ex: "Ticket") ou null,
   "numero_parcelas": numero inteiro (parcelamento obrigatório) ou null,
   "valor_total": numero, valor cheio da compra parcelada (parcelamento obrigatório) ou null,
   "valor_alvo": numero (meta obrigatório) ou null,
   "limite_mensal": numero (orcamento obrigatório) ou null,
+  "limite": numero (cadastro_cartao opcional — limite de crédito do cartão) ou null,
+  "dia_fechamento": numero de 1 a 31 (cadastro_cartao opcional — dia que fecha a fatura) ou null,
   "escopo": "geral" ou "alimentacao" (só para consulta_saldo) ou null,
   "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
   "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
@@ -194,7 +199,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa, cadastro_cartao e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
 
@@ -209,6 +214,8 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "me envia as contas fixas" ou "qual conta está para vencer?" → tipo "consulta_contas_fixas" (é sobre a lista de contas recorrentes e vencimentos, não é um número de saldo).
 - "paguei o financiamento" (com "Financiamento" cadastrado nas contas fixas) → tipo "pagamento_conta_fixa", descricao "Financiamento", faltando: [] (não é correcao nem um gasto novo).
 - "acabei de realizar o pagamento" (sem dizer qual conta) → tipo "pagamento_conta_fixa", descricao null, faltando: ["descricao"], pergunta "Qual conta você pagou?" (fica pendente até a pessoa responder o nome da conta).
+- "adiciona um cartão de crédito pra mim" (sem dizer o nome) → tipo "cadastro_cartao", cartao null, faltando: ["cartao"], pergunta: "Qual o nome do cartão? (ex: Nubank, Inter)".
+- "cadastra o cartão Nubank, limite 3000, fecha dia 10" → tipo "cadastro_cartao", cartao "Nubank", limite 3000, dia_fechamento 10, faltando: [].
 - "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
 - "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
@@ -783,6 +790,25 @@ async function salvarPagamentoContaFixa(dados) {
   return { conta: alvo, vencimento, jaEstavaPago: false };
 }
 
+// Cadastra um cartão de crédito novo (só a "ficha" do cartão em si — nome,
+// limite, dia de fechamento/vencimento — nenhuma compra é lançada aqui).
+async function salvarCartao(dados) {
+  const { data, error } = await supabase
+    .from('cartoes')
+    .insert({
+      familia_id: FAMILIA_ID,
+      nome: dados.cartao,
+      limite: dados.limite || null,
+      dia_fechamento: dados.dia_fechamento || null,
+      dia_vencimento: dados.dia_vencimento || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Supabase insert (cartoes): ${error.message}`);
+  return data;
+}
+
 async function salvarCompraCartao(dados) {
   const hoje = DateTime.now().setZone(FUSO_HORARIO);
   const dataDeHoje = hoje.toFormat('yyyy-MM-dd');
@@ -1038,6 +1064,7 @@ const CAMPOS_OBRIGATORIOS_POR_TIPO = {
   gasto_alimentacao: ['descricao', 'valor'],
   recarga_alimentacao: ['valor'],
   pagamento_conta_fixa: ['descricao'],
+  cadastro_cartao: ['cartao'],
 };
 
 const PERGUNTAS_POR_CAMPO = {
@@ -1119,6 +1146,14 @@ function montarCartaoContaFixa(registro) {
     `🏷️ Categoria: ${registro.categoria || '-'}\n` +
     `🔁 Recorrência: Mensal`
   );
+}
+
+function montarCartaoCadastroCartao(registro) {
+  const linhas = [`📋 *Cartão de Crédito Cadastrado*`, `💳 Nome: ${registro.nome}`];
+  if (registro.limite) linhas.push(`💰 Limite: R$ ${formatarReais(registro.limite)}`);
+  if (registro.dia_fechamento) linhas.push(`📅 Fechamento: dia ${registro.dia_fechamento}`);
+  if (registro.dia_vencimento) linhas.push(`📅 Vencimento: dia ${registro.dia_vencimento}`);
+  return linhas.join('\n');
 }
 
 function montarCartaoCompraCartao(registro) {
@@ -1221,6 +1256,8 @@ function tabelaDoTipo(tipo) {
     case 'gasto_alimentacao':
     case 'recarga_alimentacao':
       return 'movimentos_cartao_alimentacao';
+    case 'cadastro_cartao':
+      return 'cartoes';
     default:
       return null;
   }
@@ -1283,6 +1320,8 @@ const CAMPOS_CORRIGIVEIS = [
   'valor_total',
   'valor_alvo',
   'limite_mensal',
+  'limite',
+  'dia_fechamento',
 ];
 
 function rotuloCampo(campo) {
@@ -1297,12 +1336,14 @@ function rotuloCampo(campo) {
     valor_total: '💵 Valor total',
     valor_alvo: '🎯 Valor alvo',
     limite_mensal: '💵 Limite mensal',
+    limite: '💰 Limite do cartão',
+    dia_fechamento: '📅 Dia de fechamento',
   };
   return rotulos[campo] || campo;
 }
 
 function formatarValorCampo(campo, valor) {
-  const camposMonetarios = ['valor', 'valor_total', 'valor_alvo', 'limite_mensal'];
+  const camposMonetarios = ['valor', 'valor_total', 'valor_alvo', 'limite_mensal', 'limite'];
   return camposMonetarios.includes(campo) ? `R$ ${formatarReais(valor)}` : valor;
 }
 
@@ -1337,9 +1378,14 @@ async function aplicarCorrecao(alvo, dados) {
     if (errUpdateSaldo) throw new Error(errUpdateSaldo.message);
   }
 
+  // Na tabela "cartoes" (cadastro_cartao) o nome do cartão fica na coluna
+  // "nome", não "cartao" (esse é o nome do CAMPO no JSON da IA, reaproveitado
+  // do resto do sistema pra evitar mais um nome de campo).
+  const colunaReal = alvo.tabela === 'cartoes' && campo === 'cartao' ? 'nome' : campo;
+
   const { data, error } = await supabase
     .from(alvo.tabela)
-    .update({ [campo]: novoValor })
+    .update({ [colunaReal]: novoValor })
     .eq('id', alvo.registroId)
     .select()
     .single();
@@ -2231,6 +2277,10 @@ async function iniciar() {
         case 'recarga_alimentacao':
           registro = await salvarRecargaAlimentacao(dados);
           cartaoMsg = montarCartaoRecargaAlimentacao(registro);
+          break;
+        case 'cadastro_cartao':
+          registro = await salvarCartao(dados);
+          cartaoMsg = montarCartaoCadastroCartao(registro);
           break;
         default: // 'gasto' ou 'entrada'
           registro = await salvarTransacao(dados);
