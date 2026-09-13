@@ -143,7 +143,8 @@ O sistema deles tem estes tipos de lançamento possíveis:
 10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
 12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
-13. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
+14. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -154,18 +155,19 @@ Categorias de ENTRADA: Aluguel Recebido, Benefícios, Estorno, Freelance, Outras
 Gasto no cartão alimentação normalmente é categoria "Alimentação".
 REGRA DE CATEGORIA: use SEMPRE uma destas categorias, escrita exatamente como está na lista (mesma acentuação/maiúsculas). NUNCA invente uma categoria nova nem crie uma variação (ex: "Mercado", "Supermercado" não existem — isso é "Alimentação"; "Uber", "99", "Combustível" não existem — isso é "Transporte"). Se a mensagem descrever algo que não se encaixa claramente em nenhuma categoria da lista, use "Outros" em vez de inventar.
 
-DESAMBIGUAÇÃO entre os tipos de consulta (10, 11 e 12) — são os que mais se confundem:
-- consulta_saldo (10): é sobre DINHEIRO da família (entradas, gastos, saldo, cartão alimentação). Palavras-chave: "saldo", "quanto tenho", "resumo financeiro", "quanto gastei" (sem mencionar IA).
+DESAMBIGUAÇÃO entre os tipos de consulta (10, 11, 12 e 14) — são os que mais se confundem:
+- consulta_saldo (10): é sobre DINHEIRO da família (entradas, gastos, saldo, cartão alimentação) — um NÚMERO. Palavras-chave: "saldo", "quanto tenho", "resumo financeiro", "quanto gastei" (sem mencionar IA).
 - consulta_uso_ia (11): é sobre CUSTO/CONSUMO acumulado das IAs que rodam o bot, tipicamente "no mês" ou "total". Palavras-chave: "gastei de IA", "custo de IA", "quanto custou", "consumo de tokens" (sem "hoje"/"agora"/"limite"/"Gemini").
 - consulta_limite_provedores (12): é sobre a COTA GRATUITA do Gemini especificamente, geralmente "hoje"/"agora"/"nesse minuto". Palavras-chave: "Gemini", "limite", "cota", "bateu 100%", "quanto ainda posso usar", "requisições", "tokens por minuto", "está saturado".
-Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica).
+- consulta_contas_fixas (14): é sobre a LISTA de contas recorrentes cadastradas (aluguel, internet, streaming, etc.) e seus vencimentos — não é um número de saldo, é "quais são" e "quando vencem". Palavras-chave: "contas fixas", "conta(s) para vencer", "quando vence", "contas cadastradas", "contas em aberto".
+Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica). Se a mensagem falar em "conta(s)" no sentido de conta recorrente (aluguel, internet, cartão, assinatura) e não em "saldo"/"quanto tenho", é tipo 14, não tipo 10.
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 13), qual dos 13 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 14), qual dos 14 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "correcao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "correcao" | null,
   "descricao": "resumo curto" ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -183,7 +185,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
 
@@ -194,6 +196,7 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "quanto gastei de IA esse mês" → tipo "consulta_uso_ia" (menciona IA + "mês" = custo acumulado, não cota diária).
 - "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_provedores" (menciona Gemini + "hoje"/limite).
 - "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_provedores" (na dúvida entre 11 e 12, prefira 12).
+- "me envia as contas fixas" ou "qual conta está para vencer?" → tipo "consulta_contas_fixas" (é sobre a lista de contas recorrentes e vencimentos, não é um número de saldo).
 - "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
 - "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
@@ -1222,7 +1225,56 @@ async function aplicarCorrecao(alvo, dados) {
 
 // ===================== Tarefas agendadas =====================
 
+// Dado o dia de vencimento cadastrado (1-31) de uma conta fixa, acha a próxima
+// data de vencimento a partir de "hoje" (podendo ser hoje mesmo), lidando com
+// meses mais curtos (ex: dia_vencimento 31 em fevereiro vira o último dia do mês).
+function calcularProximoVencimento(diaVencimento, hoje = DateTime.now().setZone(FUSO_HORARIO).startOf('day')) {
+  for (const deltaMes of [0, 1]) {
+    const inicioMes = hoje.plus({ months: deltaMes }).startOf('month');
+    const ultimoDia = inicioMes.endOf('month').day;
+    const dia = Math.min(diaVencimento, ultimoDia);
+    const vencimento = inicioMes.set({ day: dia });
+    if (vencimento >= hoje) return vencimento;
+  }
+  return null;
+}
+
 // ===================== Resumos (usados no agendado e sob demanda) =====================
+// Lista as contas fixas cadastradas com o próximo vencimento e se já foi paga
+// nesse mês — respondendo perguntas tipo "me envia as contas fixas" ou "qual
+// conta está para vencer", que são sobre a LISTA de contas, não sobre saldo.
+async function gerarResumoContasFixas() {
+  const hoje = DateTime.now().setZone(FUSO_HORARIO).startOf('day');
+  const [{ data: contas, error: e1 }, { data: pagamentos, error: e2 }] = await Promise.all([
+    supabase.from('contas_fixas').select('*').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('pagamentos_contas_fixas').select('*').eq('familia_id', FAMILIA_ID),
+  ]);
+  if (e1 || e2) throw new Error((e1 || e2).message);
+  if (!contas || contas.length === 0) return '📋 Nenhuma conta fixa cadastrada ainda.';
+
+  const itens = contas
+    .map((conta) => {
+      const vencimento = calcularProximoVencimento(conta.dia_vencimento, hoje);
+      const mesAno = vencimento ? vencimento.toFormat('yyyy-MM') : null;
+      const jaPaga = mesAno ? (pagamentos || []).some((p) => p.conta_fixa_id === conta.id && p.mes_ano === mesAno) : false;
+      return { conta, vencimento, jaPaga };
+    })
+    .sort((a, b) => (a.vencimento && b.vencimento ? a.vencimento.toMillis() - b.vencimento.toMillis() : 0));
+
+  const linhas = itens.map(({ conta, vencimento, jaPaga }) => {
+    const status = jaPaga ? '✅ paga' : '🔴 em aberto';
+    const dataFmt = vencimento ? vencimento.toFormat('dd/MM') : `dia ${conta.dia_vencimento}`;
+    return `• *${conta.descricao}* — R$ ${formatarReais(conta.valor)} (${conta.categoria})\n  Vence: ${dataFmt} — ${status}`;
+  });
+
+  const proximaEmAberto = itens.find((i) => !i.jaPaga && i.vencimento);
+  const destaque = proximaEmAberto
+    ? `\n\n⏰ Próxima a vencer: *${proximaEmAberto.conta.descricao}* em ${proximaEmAberto.vencimento.toFormat('dd/MM')}.`
+    : '';
+
+  return `📋 *Contas fixas cadastradas*\n\n${linhas.join('\n\n')}${destaque}`;
+}
+
 async function gerarResumoGeral() {
   const [{ data: entradas, error: e1 }, { data: gastos, error: e2 }] = await Promise.all([
     supabase.from('entradas').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
@@ -1675,24 +1727,20 @@ cron.schedule(
       const avisos = [];
 
       for (const conta of contas) {
-        for (const deltaMes of [0, 1]) {
-          const inicioMes = hoje.plus({ months: deltaMes }).startOf('month');
-          const ultimoDia = inicioMes.endOf('month').day;
-          const dia = Math.min(conta.dia_vencimento, ultimoDia);
-          const vencimento = inicioMes.set({ day: dia });
-          const diff = vencimento.diff(hoje, 'days').days;
+        const vencimento = calcularProximoVencimento(conta.dia_vencimento, hoje);
+        if (!vencimento) continue;
+        const diff = vencimento.diff(hoje, 'days').days;
 
-          if (diff === 5) {
-            const mesAno = vencimento.toFormat('yyyy-MM');
-            const jaPago = pagamentos.some((p) => p.conta_fixa_id === conta.id && p.mes_ano === mesAno);
-            if (!jaPago) {
-              avisos.push({
-                descricao: conta.descricao,
-                valor: conta.valor,
-                categoria: conta.categoria,
-                vencimento: vencimento.toFormat('dd/MM'),
-              });
-            }
+        if (diff === 5) {
+          const mesAno = vencimento.toFormat('yyyy-MM');
+          const jaPago = pagamentos.some((p) => p.conta_fixa_id === conta.id && p.mes_ano === mesAno);
+          if (!jaPago) {
+            avisos.push({
+              descricao: conta.descricao,
+              valor: conta.valor,
+              categoria: conta.categoria,
+              vencimento: vencimento.toFormat('dd/MM'),
+            });
           }
         }
       }
@@ -1932,6 +1980,17 @@ async function iniciar() {
         console.log('📊 Resumo de limite dos provedores enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo de limite dos provedores:', err.message);
+      }
+      return;
+    }
+
+    // "Pergunta" sobre a lista de contas fixas cadastradas e seus vencimentos.
+    if (dados.tipo === 'consulta_contas_fixas') {
+      try {
+        await responder(chaveRemetente, await gerarResumoContasFixas());
+        console.log('📋 Resumo de contas fixas enviado sob demanda.');
+      } catch (err) {
+        console.error('Erro ao gerar resumo de contas fixas:', err.message);
       }
       return;
     }
