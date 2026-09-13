@@ -140,7 +140,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 7. "orcamento" — um limite de gasto mensal para uma categoria (ex: "quero limitar 800 por mês em alimentação"). Campos: categoria, limite_mensal.
 8. "gasto_alimentacao" — um gasto pago com cartão alimentação/refeição (ex: Ticket, VR, Alelo, Sodexo). Desconta do saldo desse cartão em vez de ser um gasto comum. Campos: descricao, valor, categoria (normalmente "Alimentação"), pessoa.
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
-10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "quanto tenho no Ticket"). Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (saldo geral de entradas menos gastos) ou "alimentacao" (saldo do cartão alimentação) — use "geral" se não ficar claro.
+10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "me manda um resumo", "quanto tenho no Ticket"). Com escopo "geral" isso retorna um resumo completo do mês (saldo, gastos por categoria, por pessoa, orçamento, metas, cartão alimentação e a próxima conta a vencer) — o mesmo tanto de informação do Dashboard do site, não só um número. Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (resumo completo do mês) ou "alimentacao" (só o saldo do cartão alimentação) — use "geral" se não ficar claro.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
 12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
 13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
@@ -1503,22 +1503,150 @@ async function gerarResumoContasFixas() {
   return `📋 *Contas fixas cadastradas*\n\n${linhas.join('\n\n')}${destaque}`;
 }
 
+// Resumo completo da conta — "resumo"/"como está minha conta" merecem mais
+// que um número só, no mesmo espírito do Dashboard do site: saldo do mês,
+// gastos por categoria e por pessoa, orçamento, metas, cartão alimentação e
+// a próxima conta a vencer. Gastos do cartão alimentação entram nas
+// quebras por categoria/pessoa (informativo) mas NÃO no saldo/gastos do mês
+// — mesma regra do site: esse dinheiro já saiu da conta quando o cartão foi
+// recarregado, contar de novo aqui inflaria o gasto sem uma recarga
+// correspondente pra compensar.
 async function gerarResumoGeral() {
-  const [{ data: entradas, error: e1 }, { data: gastos, error: e2 }] = await Promise.all([
-    supabase.from('entradas').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
-    supabase.from('gastos').select('valor').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
-  ]);
-  if (e1 || e2) throw new Error((e1 || e2).message);
+  const agora = DateTime.now().setZone(FUSO_HORARIO);
+  const inicioMesISO = agora.startOf('month').toFormat('yyyy-MM-dd');
+  const hojeISO = agora.toFormat('yyyy-MM-dd');
 
-  const somaEntradas = entradas.reduce((acc, i) => acc + Number(i.valor), 0);
-  const somaGastos = gastos.reduce((acc, i) => acc + Number(i.valor), 0);
-  const saldo = somaEntradas - somaGastos;
+  const [
+    { data: entradasMes, error: e1 },
+    { data: gastosMes, error: e2 },
+    { data: movimentosAlimentacao, error: e3 },
+    { data: cartoesAlimentacao, error: e4 },
+    { data: metas, error: e5 },
+    { data: orcamentos, error: e6 },
+    { data: contas, error: e7 },
+    { data: pagamentosContas, error: e8 },
+  ] = await Promise.all([
+    supabase
+      .from('entradas')
+      .select('valor')
+      .eq('familia_id', FAMILIA_ID)
+      .is('excluido_em', null)
+      .gte('data', inicioMesISO)
+      .lte('data', hojeISO),
+    supabase
+      .from('gastos')
+      .select('valor, categoria, pessoa')
+      .eq('familia_id', FAMILIA_ID)
+      .is('excluido_em', null)
+      .gte('data', inicioMesISO)
+      .lte('data', hojeISO),
+    supabase
+      .from('movimentos_cartao_alimentacao')
+      .select('valor, tipo, pessoa, data')
+      .eq('familia_id', FAMILIA_ID)
+      .is('excluido_em', null)
+      .gte('data', inicioMesISO)
+      .lte('data', hojeISO),
+    supabase.from('cartoes_alimentacao').select('nome, saldo_atual').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('metas').select('descricao, valor_alvo, valor_atual').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('orcamentos').select('categoria, limite_mensal').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('contas_fixas').select('*').eq('familia_id', FAMILIA_ID).is('excluido_em', null),
+    supabase.from('pagamentos_contas_fixas').select('*').eq('familia_id', FAMILIA_ID),
+  ]);
+  const primeiroErro = e1 || e2 || e3 || e4 || e5 || e6 || e7 || e8;
+  if (primeiroErro) throw new Error(primeiroErro.message);
+
+  const totalEntradas = entradasMes.reduce((acc, e) => acc + Number(e.valor), 0);
+  const totalGastos = gastosMes.reduce((acc, g) => acc + Number(g.valor), 0);
+  const saldoMes = totalEntradas - totalGastos;
+  const gastosAlimentacaoMes = (movimentosAlimentacao || []).filter((m) => m.tipo === 'gasto');
+
+  const porCategoria = {};
+  for (const g of gastosMes) {
+    const cat = g.categoria || 'Outros';
+    porCategoria[cat] = (porCategoria[cat] || 0) + Number(g.valor);
+  }
+  for (const m of gastosAlimentacaoMes) {
+    porCategoria['Alimentação'] = (porCategoria['Alimentação'] || 0) + Number(m.valor);
+  }
+  const categoriasOrdenadas = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]);
+  const linhasCategorias = categoriasOrdenadas
+    .slice(0, 5)
+    .map(([cat, valor]) => `${emojiDaCategoria(cat)} ${cat}: R$ ${formatarReais(valor)}`)
+    .join('\n');
+
+  const porPessoa = {};
+  for (const g of gastosMes) {
+    const p = g.pessoa || 'Não informado';
+    porPessoa[p] = (porPessoa[p] || 0) + Number(g.valor);
+  }
+  for (const m of gastosAlimentacaoMes) {
+    const p = m.pessoa || 'Não informado';
+    porPessoa[p] = (porPessoa[p] || 0) + Number(m.valor);
+  }
+  const linhasPessoas = Object.entries(porPessoa)
+    .sort((a, b) => b[1] - a[1])
+    .map(([p, valor]) => `👤 ${p}: R$ ${formatarReais(valor)}`)
+    .join('\n');
+
+  let blocoOrcamento = '';
+  if (orcamentos && orcamentos.length > 0) {
+    const linhas = orcamentos
+      .map((o) => {
+        const usado = porCategoria[o.categoria] || 0;
+        const percentual = o.limite_mensal > 0 ? (usado / o.limite_mensal) * 100 : 0;
+        return `${statusEmojiPercentual(percentual)} ${o.categoria}: R$ ${formatarReais(usado)} de R$ ${formatarReais(o.limite_mensal)} (${percentual.toFixed(0)}%)`;
+      })
+      .join('\n');
+    blocoOrcamento = `\n\n🎯 *Orçamento*\n${linhas}`;
+  }
+
+  let blocoMetas = '';
+  if (metas && metas.length > 0) {
+    const linhas = metas
+      .map((m) => {
+        const percentual = m.valor_alvo > 0 ? (Number(m.valor_atual) / Number(m.valor_alvo)) * 100 : 0;
+        return `🏆 ${m.descricao}: R$ ${formatarReais(m.valor_atual)} de R$ ${formatarReais(m.valor_alvo)} (${percentual.toFixed(0)}%)`;
+      })
+      .join('\n');
+    blocoMetas = `\n\n🏆 *Metas*\n${linhas}`;
+  }
+
+  let blocoAlimentacao = '';
+  if (cartoesAlimentacao && cartoesAlimentacao.length > 0) {
+    const linhas = cartoesAlimentacao
+      .map((c) => `${Number(c.saldo_atual) < 0 ? '⚠️' : '💳'} ${c.nome}: R$ ${formatarReais(c.saldo_atual)}`)
+      .join('\n');
+    blocoAlimentacao = `\n\n🍽️ *Cartão Alimentação*\n${linhas}`;
+  }
+
+  let blocoProximaConta = '';
+  const hoje = agora.startOf('day');
+  const proximas = (contas || [])
+    .map((conta) => {
+      const vencimento = calcularProximoVencimento(conta.dia_vencimento, hoje);
+      const mesAno = vencimento ? vencimento.toFormat('yyyy-MM') : null;
+      const jaPaga = mesAno ? (pagamentosContas || []).some((p) => p.conta_fixa_id === conta.id && p.mes_ano === mesAno) : false;
+      return { conta, vencimento, jaPaga };
+    })
+    .filter((i) => !i.jaPaga && i.vencimento)
+    .sort((a, b) => a.vencimento.toMillis() - b.vencimento.toMillis());
+  if (proximas.length > 0) {
+    const p = proximas[0];
+    blocoProximaConta = `\n\n📅 *Próxima conta a vencer*\n${p.conta.descricao} — R$ ${formatarReais(p.conta.valor)} em ${p.vencimento.toFormat('dd/MM')}`;
+  }
 
   return (
-    `📊 *Saldo do dia*\n` +
-    `💚 Entradas: R$ ${formatarReais(somaEntradas)}\n` +
-    `💸 Gastos: R$ ${formatarReais(somaGastos)}\n` +
-    `${saldo >= 0 ? '✅' : '⚠️'} Saldo atual: R$ ${formatarReais(saldo)}`
+    `📊 *Resumo da sua conta — ${agora.setLocale('pt-BR').toFormat('LLLL/yyyy')}*\n\n` +
+    `💚 Entradas: R$ ${formatarReais(totalEntradas)}\n` +
+    `💸 Gastos: R$ ${formatarReais(totalGastos)}\n` +
+    `${saldoMes >= 0 ? '✅' : '⚠️'} Saldo do mês: R$ ${formatarReais(saldoMes)}\n\n` +
+    `🛒 *Gastos por categoria*\n${linhasCategorias || 'Nenhum gasto este mês.'}\n\n` +
+    `👤 *Gastos por pessoa*\n${linhasPessoas || 'Nenhum gasto este mês.'}` +
+    blocoOrcamento +
+    blocoMetas +
+    blocoAlimentacao +
+    blocoProximaConta
   );
 }
 
