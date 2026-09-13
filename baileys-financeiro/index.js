@@ -1620,6 +1620,9 @@ async function gerarResumoGeral() {
     blocoAlimentacao = `\n\n🍽️ *Cartão Alimentação*\n${linhas}`;
   }
 
+  // Lista TODAS as contas fixas em aberto (não só a mais próxima) — mostrar
+  // só uma escondia as outras pendentes, dando a impressão de que só existia
+  // uma conta a vencer quando na real havia mais.
   let blocoProximaConta = '';
   const hoje = agora.startOf('day');
   const proximas = (contas || [])
@@ -1632,8 +1635,11 @@ async function gerarResumoGeral() {
     .filter((i) => !i.jaPaga && i.vencimento)
     .sort((a, b) => a.vencimento.toMillis() - b.vencimento.toMillis());
   if (proximas.length > 0) {
-    const p = proximas[0];
-    blocoProximaConta = `\n\n📅 *Próxima conta a vencer*\n${p.conta.descricao} — R$ ${formatarReais(p.conta.valor)} em ${p.vencimento.toFormat('dd/MM')}`;
+    const linhas = proximas
+      .map((p) => `📌 ${p.conta.descricao} — R$ ${formatarReais(p.conta.valor)} em ${p.vencimento.toFormat('dd/MM')}`)
+      .join('\n');
+    const titulo = proximas.length === 1 ? 'Conta a vencer' : `Contas a vencer (${proximas.length})`;
+    blocoProximaConta = `\n\n📅 *${titulo}*\n${linhas}`;
   }
 
   return (
