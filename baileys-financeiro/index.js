@@ -144,7 +144,8 @@ O sistema deles tem estes tipos de lançamento possíveis:
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
 12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
 13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
-14. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+14. "pagamento_conta_fixa" — quando a pessoa avisa que PAGOU/QUITOU uma conta, ou acabou de realizar algum pagamento, e isso pode se referir a uma conta fixa JÁ cadastrada (ex: "paguei o financiamento", "já quitei a internet desse mês", "acabei de pagar o aluguel", ou até só "acabei de realizar o pagamento" sem dizer qual conta ainda). Isso só MARCA a conta existente como paga neste ciclo — NÃO cadastra uma conta nova (isso é tipo 3) nem lança um gasto avulso novo (isso é tipo 1). Campo obrigatório: descricao (o nome da conta, que deve casar com uma das contas fixas cadastradas informadas no contexto). Se a pessoa mencionar que pagou algo mas não disser qual conta, classifique mesmo assim como "pagamento_conta_fixa" com descricao null, faltando: ["descricao"] e pergunta pedindo qual conta cadastrada foi paga — NÃO responda isso como bate-papo casual (respostaCasual), porque é um pedido real que precisa ficar pendente até a pessoa completar. NUNCA confunda com "correcao": isso não é corrigir um valor errado de um lançamento, é confirmar que um pagamento recorrente já cadastrado foi feito.
+15. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo ou limite_mensal) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -160,15 +161,17 @@ DESAMBIGUAÇÃO entre os tipos de consulta (10, 11, 12 e 14) — são os que mai
 - consulta_uso_ia (11): é sobre CUSTO/CONSUMO acumulado das IAs que rodam o bot, tipicamente "no mês" ou "total". Palavras-chave: "gastei de IA", "custo de IA", "quanto custou", "consumo de tokens" (sem "hoje"/"agora"/"limite"/"Gemini").
 - consulta_limite_provedores (12): é sobre a COTA GRATUITA do Gemini especificamente, geralmente "hoje"/"agora"/"nesse minuto". Palavras-chave: "Gemini", "limite", "cota", "bateu 100%", "quanto ainda posso usar", "requisições", "tokens por minuto", "está saturado".
 - consulta_contas_fixas (14): é sobre a LISTA de contas recorrentes cadastradas (aluguel, internet, streaming, etc.) e seus vencimentos — não é um número de saldo, é "quais são" e "quando vencem". Palavras-chave: "contas fixas", "conta(s) para vencer", "quando vence", "contas cadastradas", "contas em aberto".
-Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica). Se a mensagem falar em "conta(s)" no sentido de conta recorrente (aluguel, internet, cartão, assinatura) e não em "saldo"/"quanto tenho", é tipo 14, não tipo 10.
+Se a mensagem citar "Gemini" ou "limite"/"cota" + "hoje"/"agora", é tipo 12. Se falar em custo/dinheiro gasto com IA sem mencionar limite, é tipo 11. Na dúvida entre 11 e 12, prefira 12 (é a pergunta mais comum e mais específica). Se a mensagem falar em "conta(s)" no sentido de conta recorrente (aluguel, internet, cartão, assinatura) e não em "saldo"/"quanto tenho", é tipo 13, não tipo 10.
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 14), qual dos 14 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+DESAMBIGUAÇÃO entre pagamento_conta_fixa (14) e correcao (15) — a pessoa dizer que "pagou" ou "quitou" algo é SEMPRE tipo 14 quando a conta bate com uma cadastrada, mesmo que venha logo após o bot ter perguntado outra coisa. Só é tipo 15 (correcao) se a pessoa estiver claramente apontando um ERRO num lançamento já feito (valor errado, categoria errada, cartão errado) — "confirmar que paguei" não é "corrigir um erro". Se a pessoa responder só o nome de uma conta cadastrada (ex: "financiamento") logo depois de o bot ter perguntado algo como "qual conta você pagou?", use o histórico da conversa pra entender que ela está completando a informação do pagamento, e classifique o conjunto como pagamento_conta_fixa com descricao = esse nome — não como correcao.
+
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 15), qual dos 15 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "correcao" | null,
-  "descricao": "resumo curto" ou null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "pagamento_conta_fixa" | "correcao" | null,
+  "descricao": "resumo curto" (ou, em pagamento_conta_fixa, o nome EXATO da conta fixa cadastrada) ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
   "pessoa": "Jeferson" ou "Raquel" (infira pelo remetente informado; vazio se não souber),
@@ -185,7 +188,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
 
@@ -197,6 +200,8 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_provedores" (menciona Gemini + "hoje"/limite).
 - "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_provedores" (na dúvida entre 11 e 12, prefira 12).
 - "me envia as contas fixas" ou "qual conta está para vencer?" → tipo "consulta_contas_fixas" (é sobre a lista de contas recorrentes e vencimentos, não é um número de saldo).
+- "paguei o financiamento" (com "Financiamento" cadastrado nas contas fixas) → tipo "pagamento_conta_fixa", descricao "Financiamento", faltando: [] (não é correcao nem um gasto novo).
+- "acabei de realizar o pagamento" (sem dizer qual conta) → tipo "pagamento_conta_fixa", descricao null, faltando: ["descricao"], pergunta "Qual conta você pagou?" (fica pendente até a pessoa responder o nome da conta).
 - "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
 - "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
@@ -226,6 +231,32 @@ async function buscarCartoesAlimentacaoAtivos() {
     return [];
   }
   return data || [];
+}
+
+// Busca as contas fixas já cadastradas, pra IA conseguir casar "paguei o
+// financiamento" com o registro real (nome exato) em vez de chutar, e pra
+// saber diferenciar "pagar uma conta existente" de "cadastrar uma conta nova".
+async function buscarContasFixasAtivas() {
+  const { data, error } = await supabase
+    .from('contas_fixas')
+    .select('id, descricao, valor, dia_vencimento')
+    .eq('familia_id', FAMILIA_ID)
+    .is('excluido_em', null);
+  if (error) {
+    console.warn('Não foi possível buscar as contas fixas cadastradas:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+function contextoContasFixas(contasFixas) {
+  if (!contasFixas.length) {
+    return 'Nenhuma conta fixa cadastrada ainda (se a pessoa disser que pagou alguma conta, não tem o que marcar como paga — trate como cadastro de conta_fixa nova, se fizer sentido, ou pergunte).';
+  }
+  const lista = contasFixas.map((c) => `"${c.descricao}" (vence dia ${c.dia_vencimento})`).join(', ');
+  return (
+    `Contas fixas já cadastradas: ${lista}. Se a mensagem disser que uma DESSAS contas foi paga/quitada (ex: "paguei o financiamento", "já quitei a internet"), use o tipo "pagamento_conta_fixa" e preencha "descricao" com o nome EXATO cadastrado que mais se parece (aceite pequenas variações de grafia/maiúsculas — não precisa bater 100%). Se a pessoa mencionar uma conta que não está nessa lista, pergunte o nome certo, listando as opções cadastradas.`
+  );
 }
 
 function contextoCartoes(cartoes, cartoesAlimentacao) {
@@ -540,8 +571,15 @@ async function chamarIA(contentBlocks) {
 }
 
 async function interpretarMensagem(texto, remetente, contextoExtra = null, chaveRemetente = null) {
-  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
-  const blocos = [{ type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) }];
+  const [cartoes, cartoesAlimentacao, contasFixas] = await Promise.all([
+    buscarCartoesAtivos(),
+    buscarCartoesAlimentacaoAtivos(),
+    buscarContasFixasAtivas(),
+  ]);
+  const blocos = [
+    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
+    { type: 'text', text: contextoContasFixas(contasFixas) },
+  ];
   if (contextoExtra) blocos.push({ type: 'text', text: contextoExtra });
   const historico = chaveRemetente ? formatarHistorico(chaveRemetente) : null;
   if (historico) blocos.push({ type: 'text', text: historico });
@@ -550,9 +588,14 @@ async function interpretarMensagem(texto, remetente, contextoExtra = null, chave
 }
 
 async function interpretarImagem(base64, mimetype, legenda, remetente) {
-  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
+  const [cartoes, cartoesAlimentacao, contasFixas] = await Promise.all([
+    buscarCartoesAtivos(),
+    buscarCartoesAlimentacaoAtivos(),
+    buscarContasFixasAtivas(),
+  ]);
   return chamarIA([
     { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
+    { type: 'text', text: contextoContasFixas(contasFixas) },
     {
       type: 'image',
       source: { type: 'base64', media_type: mimetype, data: base64 },
@@ -575,7 +618,11 @@ async function interpretarImagem(base64, mimetype, legenda, remetente) {
 // classificar a mensagem do zero, como se a pergunta pendente nunca tivesse
 // existido.
 async function continuarComResposta(dadosParciais, resposta, remetente, chaveRemetente = null) {
-  const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
+  const [cartoes, cartoesAlimentacao, contasFixas] = await Promise.all([
+    buscarCartoesAtivos(),
+    buscarCartoesAlimentacaoAtivos(),
+    buscarContasFixasAtivas(),
+  ]);
   const contexto =
     `Você estava preenchendo um lançamento financeiro e ainda faltava informação. Estado atual em JSON:\n${JSON.stringify(dadosParciais)}\n\n` +
     `Você perguntou: "${dadosParciais.pergunta}"\n` +
@@ -584,7 +631,10 @@ async function continuarComResposta(dadosParciais, resposta, remetente, chaveRem
     `- Se FOR uma resposta válida à pergunta: atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.\n` +
     `- Se NÃO FOR relacionada (mudou de assunto): IGNORE completamente o estado anterior e classifique "${resposta}" como se fosse uma mensagem nova, começando do zero, normalmente (pode virar qualquer um dos tipos, inclusive consulta ou conversa casual). Não tente encaixar à força no lançamento antigo.`;
   const historico = chaveRemetente ? formatarHistorico(chaveRemetente) : null;
-  const blocos = [{ type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) }];
+  const blocos = [
+    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
+    { type: 'text', text: contextoContasFixas(contasFixas) },
+  ];
   if (historico) blocos.push({ type: 'text', text: historico });
   blocos.push({ type: 'text', text: contexto });
   return chamarIA(blocos);
@@ -678,6 +728,52 @@ async function salvarContaFixa(dados) {
 
   if (error) throw new Error(`Supabase insert (contas_fixas): ${error.message}`);
   return data;
+}
+
+// Marca uma conta fixa já cadastrada como paga no ciclo (mês) atual dela. Usa
+// a MESMA lógica de "próximo vencimento" que o resumo (gerarResumoContasFixas)
+// e o aviso automático das 8h usam — assim, marcar como pago aqui reflete
+// imediatamente no resumo e evita o aviso de "vencendo" repetir à toa.
+async function salvarPagamentoContaFixa(dados) {
+  const { data: contas, error: erroBusca } = await supabase
+    .from('contas_fixas')
+    .select('id, descricao, valor, dia_vencimento, categoria')
+    .eq('familia_id', FAMILIA_ID)
+    .is('excluido_em', null);
+  if (erroBusca) throw new Error(`Supabase select (contas_fixas): ${erroBusca.message}`);
+
+  const alvo = (contas || []).find(
+    (c) => c.descricao.trim().toLowerCase() === (dados.descricao || '').trim().toLowerCase()
+  );
+  if (!alvo) {
+    throw new Error(`Conta fixa "${dados.descricao}" não encontrada entre as cadastradas.`);
+  }
+
+  const vencimento = calcularProximoVencimento(alvo.dia_vencimento);
+  const mesAno = vencimento.toFormat('yyyy-MM');
+
+  const { data: existente, error: erroExistente } = await supabase
+    .from('pagamentos_contas_fixas')
+    .select('id')
+    .eq('familia_id', FAMILIA_ID)
+    .eq('conta_fixa_id', alvo.id)
+    .eq('mes_ano', mesAno)
+    .maybeSingle();
+  if (erroExistente) throw new Error(`Supabase select (pagamentos_contas_fixas): ${erroExistente.message}`);
+
+  if (existente) {
+    return { conta: alvo, vencimento, jaEstavaPago: true };
+  }
+
+  const { error: erroInsert } = await supabase.from('pagamentos_contas_fixas').insert({
+    familia_id: FAMILIA_ID,
+    conta_fixa_id: alvo.id,
+    mes_ano: mesAno,
+    pessoa: dados.pessoa || null,
+  });
+  if (erroInsert) throw new Error(`Supabase insert (pagamentos_contas_fixas): ${erroInsert.message}`);
+
+  return { conta: alvo, vencimento, jaEstavaPago: false };
 }
 
 async function salvarCompraCartao(dados) {
@@ -934,6 +1030,7 @@ const CAMPOS_OBRIGATORIOS_POR_TIPO = {
   orcamento: ['categoria', 'limite_mensal'],
   gasto_alimentacao: ['descricao', 'valor'],
   recarga_alimentacao: ['valor'],
+  pagamento_conta_fixa: ['descricao'],
 };
 
 const PERGUNTAS_POR_CAMPO = {
@@ -1991,6 +2088,30 @@ async function iniciar() {
         console.log('📋 Resumo de contas fixas enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo de contas fixas:', err.message);
+      }
+      return;
+    }
+
+    // Confirmação de pagamento de uma conta fixa já cadastrada (marca o ciclo
+    // atual como pago — não cria gasto novo nem conta nova).
+    if (dados.tipo === 'pagamento_conta_fixa') {
+      try {
+        const resultado = await salvarPagamentoContaFixa(dados);
+        if (resultado.jaEstavaPago) {
+          await responder(chaveRemetente, `✅ *${resultado.conta.descricao}* já estava marcada como paga esse mês.`);
+        } else {
+          await responder(
+            chaveRemetente,
+            `✅ *${resultado.conta.descricao}* marcada como paga!\n📅 Referente ao vencimento de ${resultado.vencimento.toFormat('dd/MM')}.`
+          );
+        }
+        console.log(`💰 Pagamento de conta fixa registrado: ${resultado.conta.descricao}`);
+      } catch (err) {
+        console.error('Erro ao registrar pagamento de conta fixa:', err.message);
+        await responder(
+          chaveRemetente,
+          `🤔 Não encontrei "${dados.descricao}" entre as contas fixas cadastradas. Pode confirmar o nome certo?`
+        );
       }
       return;
     }
