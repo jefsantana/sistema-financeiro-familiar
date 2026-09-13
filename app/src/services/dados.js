@@ -108,7 +108,12 @@ export async function listarHistoricoAcessos(limite = 5) {
 // ordem respeita as referências entre tabelas (pagamentos antes das
 // contas/parcelamentos que apontam).
 export async function limparDadosFamilia(familiaId) {
-  const tabelasDependentes = ['pagamentos_contas_fixas', 'pagamentos_parcelamentos', 'compras_cartao'];
+  const tabelasDependentes = [
+    'pagamentos_contas_fixas',
+    'pagamentos_parcelamentos',
+    'compras_cartao',
+    'movimentos_cartao_alimentacao',
+  ];
   const tabelasPrincipais = [
     'entradas',
     'gastos',
@@ -116,6 +121,7 @@ export async function limparDadosFamilia(familiaId) {
     'contas_fixas',
     'parcelamentos',
     'cartoes',
+    'cartoes_alimentacao',
     'metas',
     'orcamentos',
   ];
