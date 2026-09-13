@@ -147,6 +147,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 14. "pagamento_conta_fixa" — quando a pessoa avisa que PAGOU/QUITOU uma conta, ou acabou de realizar algum pagamento, e isso pode se referir a uma conta fixa JÁ cadastrada (ex: "paguei o financiamento", "já quitei a internet desse mês", "acabei de pagar o aluguel", ou até só "acabei de realizar o pagamento" sem dizer qual conta ainda). Isso só MARCA a conta existente como paga neste ciclo — NÃO cadastra uma conta nova (isso é tipo 3) nem lança um gasto avulso novo (isso é tipo 1). Campo obrigatório: descricao (o nome da conta, que deve casar com uma das contas fixas cadastradas informadas no contexto). Se a pessoa mencionar que pagou algo mas não disser qual conta, classifique mesmo assim como "pagamento_conta_fixa" com descricao null, faltando: ["descricao"] e pergunta pedindo qual conta cadastrada foi paga — NÃO responda isso como bate-papo casual (respostaCasual), porque é um pedido real que precisa ficar pendente até a pessoa completar. NUNCA confunda com "correcao": isso não é corrigir um valor errado de um lançamento, é confirmar que um pagamento recorrente já cadastrado foi feito.
 15. "cadastro_cartao" — quando a pessoa pede pra ADICIONAR/CADASTRAR um cartão de crédito NOVO no sistema (ex: "adiciona um cartão de crédito pra mim", "cadastra o cartão Nubank", "quero cadastrar um cartão novo, limite 3000, fecha dia 10"). Isso só REGISTRA o cartão em si — NÃO é uma compra (isso é compra_cartao, tipo 4). Campo obrigatório: cartao (o nome do cartão novo, ex: "Nubank", "Inter"). Campos opcionais: limite (valor numérico do limite de crédito), dia_fechamento (dia 1-31 que fecha a fatura), dia_vencimento (dia 1-31 que vence o pagamento da fatura) — não pergunte por esses três se a pessoa não mencionar, só o nome é realmente necessário; pode perguntar se quer informar limite/fechamento/vencimento, mas se ela disser "não" ou não responder isso, cadastra só com o nome mesmo.
 16. "correcao" — quando a pessoa está corrigindo um lançamento que JÁ foi registrado antes (ex: "corrige, era 45 não 50", "errei a categoria, é Saúde", "não foi no Nubank, foi no Inter", "o valor certo é 120"). Você pode receber um aviso no contexto dizendo que essa mensagem é uma resposta direta a uma confirmação anterior — nesse caso é quase certo que seja uma correção daquele lançamento específico. Preencha APENAS o campo que está sendo corrigido, usando o MESMO nome de campo das outras categorias (descricao, valor, categoria, pessoa, dia_vencimento, cartao, numero_parcelas, valor_total, valor_alvo, limite_mensal, limite ou dia_fechamento) — deixe todos os outros null. Se não ficar claro qual valor é o correto (ex: "45 não 50" pode gerar dúvida), assuma que o ÚLTIMO número mencionado, ou o que vier depois de "é"/"na verdade é"/"o certo é", é o valor correto.
+17. "exclusao" — quando a pessoa pede pra APAGAR/EXCLUIR/CANCELAR/REMOVER um lançamento que JÁ foi registrado por completo (diferente de "correcao", que só AJUSTA um campo errado — "exclusao" remove o lançamento inteiro). Ex: "apaga esse gasto", "cancela esse lançamento, foi engano", "exclui a meta de viagem", "remove esse cartão", "não era pra ter lançado isso, apaga". Igual à correção, geralmente vem como reply a uma confirmação anterior, ou se refere ao lançamento mais recente da pessoa. Não precisa de nenhum campo — todos os campos de dados ficam null, só o "tipo" e "ehTransacao": true importam.
 
 A data de gasto/entrada/compra_cartao/gasto_alimentacao é preenchida automaticamente pelo sistema com a data de hoje — nunca pergunte por ela nem tente adivinhá-la.
 
@@ -174,12 +175,14 @@ DESAMBIGUAÇÃO entre pagamento_conta_fixa (14) e correcao (16) — a pessoa diz
 
 DESAMBIGUAÇÃO entre cadastro_cartao (15) e compra_cartao (4) — "cadastro_cartao" é sobre o CARTÃO em si existir no sistema (nome, limite, datas de fatura), sem nenhum valor de compra envolvido. "compra_cartao" é sempre uma despesa específica (tem descrição do que foi comprado e valor gasto) usando um cartão que JÁ deveria existir. "adiciona um cartão pra mim" / "cadastra o Nubank" → cadastro_cartao. "comprei uma blusa no Nubank, 80 reais" → compra_cartao.
 
-Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção, tipo 16), qual dos 16 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
+DESAMBIGUAÇÃO entre correcao (16) e exclusao (17) — "correcao" AJUSTA um campo de um lançamento que continua existindo (valor errado, categoria errada, cartão errado). "exclusao" REMOVE o lançamento inteiro (a pessoa não queria aquilo registrado, foi engano, quer cancelar). Palavras como "apaga", "exclui", "remove", "cancela [algo já registrado]", "não era pra ter lançado" → exclusao. Palavras como "corrige", "era", "na verdade é", "o certo é" → correcao.
+
+Sua tarefa: identificar se a mensagem é sobre finanças (ou sobre o uso técnico do bot, nos tipos 11 e 12, ou uma correção/exclusão, tipos 16 e 17), qual dos 17 tipos é, e extrair os campos daquele tipo. NUNCA invente ou "chute" um valor, categoria, cartão, número de parcelas ou dia de vencimento que não esteja claro na mensagem — se um campo obrigatório do tipo identificado estiver faltando, ou se nem for possível saber qual dos tipos é, deixe esse(s) campo(s) como null e explique o que falta em "faltando" e "pergunta". Pergunte só UMA coisa de cada vez, a mais importante primeiro (o tipo, se não estiver claro; senão o próximo campo que falta).
 
 Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no formato:
 {
   "ehTransacao": true ou false,
-  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "pagamento_conta_fixa" | "cadastro_cartao" | "correcao" | null,
+  "tipo": "gasto" | "entrada" | "conta_fixa" | "compra_cartao" | "parcelamento" | "meta" | "orcamento" | "gasto_alimentacao" | "recarga_alimentacao" | "consulta_saldo" | "consulta_uso_ia" | "consulta_limite_provedores" | "consulta_contas_fixas" | "pagamento_conta_fixa" | "cadastro_cartao" | "correcao" | "exclusao" | null,
   "descricao": "resumo curto" (ou, em pagamento_conta_fixa, o nome EXATO da conta fixa cadastrada) ou null,
   "valor": numero (gasto/entrada/compra_cartao/gasto_alimentacao/recarga_alimentacao) ou null,
   "categoria": "categoria mais adequada" ou null,
@@ -199,7 +202,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
 }
 
-Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa, cadastro_cartao e correcao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
+Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa, cadastro_cartao, correcao e exclusao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
 
 Se a mensagem não for sobre finanças nem sobre o uso do bot (conversa comum, cumprimento tipo "oi"/"bom dia", pergunta não relacionada, etc.), retorne ehTransacao: false, os demais campos null/vazio, faltando: [], pergunta: null, e preencha "respostaCasual" com uma resposta breve e humana à mensagem (ex: para "oie" responda algo como "Oi! 😊 Tudo bem por aí?"; para um cumprimento de bom dia, responda o cumprimento de volta). NUNCA deixe "respostaCasual" vazio quando ehTransacao for false — o bot sempre precisa responder alguma coisa, mesmo que seja só um bate-papo casual.
 
@@ -217,6 +220,8 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "adiciona um cartão de crédito pra mim" (sem dizer o nome) → tipo "cadastro_cartao", cartao null, faltando: ["cartao"], pergunta: "Qual o nome do cartão? (ex: Nubank, Inter)".
 - "cadastra o cartão Nubank, limite 3000, fecha dia 10" → tipo "cadastro_cartao", cartao "Nubank", limite 3000, dia_fechamento 10, faltando: [].
 - "corrige, o valor certo é 80" (logo após uma confirmação de lançamento) → tipo "correcao", campo "valor", valor 80, todos os outros campos null.
+- "apaga esse lançamento, foi engano" (respondendo/logo após uma confirmação) → tipo "exclusao", todos os campos null (não precisa de nenhum dado, só remove o que foi identificado como alvo).
+- "cancela a meta de viagem" → tipo "exclusao" (quer remover a meta inteira, não ajustar um valor dela).
 - "bom dia" → ehTransacao: false, respostaCasual: "Bom dia! ☀️ Tudo certo por aí?".`;
 
 // Busca os cartões de crédito já cadastrados pela família, pra IA saber
@@ -1394,6 +1399,47 @@ async function aplicarCorrecao(alvo, dados) {
   return { campo, novoValor, registro: data };
 }
 
+// Exclui (soft-delete, igual ao "excluir" do site — vai pra lixeira, dá pra
+// restaurar) um lançamento já salvo, usando o mesmo alvo (reply ou mais
+// recente da pessoa) que a correção já resolve. Se for um movimento de
+// cartão alimentação, desfaz o efeito no saldo ANTES de excluir — senão o
+// saldo do cartão ficaria errado pra sempre (um gasto excluído continuaria
+// descontado, uma recarga excluída continuaria somada).
+async function excluirRegistro(alvo, pessoa) {
+  if (alvo.tabela === 'movimentos_cartao_alimentacao') {
+    const { data: movimento, error: errBusca } = await supabase
+      .from('movimentos_cartao_alimentacao')
+      .select('*')
+      .eq('id', alvo.registroId)
+      .single();
+    if (errBusca) throw new Error(errBusca.message);
+
+    const { data: cartao, error: errCartao } = await supabase
+      .from('cartoes_alimentacao')
+      .select('*')
+      .eq('id', movimento.cartao_alimentacao_id)
+      .single();
+    if (errCartao) throw new Error(errCartao.message);
+
+    const ajusteSaldo = movimento.tipo === 'gasto' ? Number(movimento.valor) : -Number(movimento.valor);
+    const { error: errUpdateSaldo } = await supabase
+      .from('cartoes_alimentacao')
+      .update({ saldo_atual: Number(cartao.saldo_atual) + ajusteSaldo })
+      .eq('id', cartao.id);
+    if (errUpdateSaldo) throw new Error(errUpdateSaldo.message);
+  }
+
+  const { data, error } = await supabase
+    .from(alvo.tabela)
+    .update({ excluido_em: new Date().toISOString(), excluido_por: pessoa || null })
+    .eq('id', alvo.registroId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
 // ===================== Tarefas agendadas =====================
 
 // Dado o dia de vencimento cadastrado (1-31) de uma conta fixa, acha a próxima
@@ -2206,6 +2252,28 @@ async function iniciar() {
       } catch (err) {
         console.error('Erro ao aplicar correção:', err.message);
         await responder(chaveRemetente, '⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
+      }
+      return;
+    }
+
+    // Exclusão de um lançamento já salvo (por reply ou "apaga esse lançamento").
+    // Vai pra lixeira (soft-delete), igual ao botão excluir do site — dá pra
+    // restaurar lá se for engano.
+    if (dados.tipo === 'exclusao') {
+      if (!alvoCorrecao) {
+        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu pra excluir. Pode responder à mensagem de confirmação dele?');
+        return;
+      }
+      try {
+        const registro = await excluirRegistro(alvoCorrecao, nomeRemetente);
+        await responder(
+          chaveRemetente,
+          `🗑️ *Lançamento excluído!*${registro?.descricao ? `\n📝 ${registro.descricao}` : ''}\n_(foi pra lixeira — dá pra restaurar no site se foi engano)_`
+        );
+        console.log('🗑️  Lançamento excluído via WhatsApp.');
+      } catch (err) {
+        console.error('Erro ao excluir lançamento:', err.message);
+        await responder(chaveRemetente, '⚠️ Entendi que você quer excluir, mas tive um problema. Pode tentar de novo?');
       }
       return;
     }
