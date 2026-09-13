@@ -140,7 +140,7 @@ O sistema deles tem estes tipos de lançamento possíveis:
 7. "orcamento" — um limite de gasto mensal para uma categoria (ex: "quero limitar 800 por mês em alimentação"). Campos: categoria, limite_mensal.
 8. "gasto_alimentacao" — um gasto pago com cartão alimentação/refeição (ex: Ticket, VR, Alelo, Sodexo). Desconta do saldo desse cartão em vez de ser um gasto comum. Campos: descricao, valor, categoria (normalmente "Alimentação"), pessoa.
 9. "recarga_alimentacao" — quando o cartão alimentação recebe crédito/recarga (ex: "recarreguei o Ticket com 600", "caiu o vale alimentação"). Adiciona ao saldo em vez de descontar. Campos: valor.
-10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "me manda um resumo", "quanto tenho no Ticket"). Com escopo "geral" isso retorna um resumo completo do mês (saldo, gastos por categoria, por pessoa, orçamento, metas, cartão alimentação e a próxima conta a vencer) — o mesmo tanto de informação do Dashboard do site, não só um número. Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (resumo completo do mês) ou "alimentacao" (só o saldo do cartão alimentação) — use "geral" se não ficar claro.
+10. "consulta_saldo" — quando a pessoa PERGUNTA sobre o saldo atual ou pede um resumo, sem estar registrando nada novo (ex: "qual meu saldo", "como está minha conta", "resumo financeiro", "me manda um resumo", "gastos do mês passado", "quanto tenho no Ticket"). Com escopo "geral" isso retorna um resumo completo do mês (saldo, gastos por categoria, por pessoa, orçamento, metas, cartão alimentação e a próxima conta a vencer) — o mesmo tanto de informação do Dashboard do site, não só um número. Não precisa de nenhum campo obrigatório, nunca fica faltando nada. Campo opcional "escopo": "geral" (resumo completo do mês) ou "alimentacao" (só o saldo do cartão alimentação) — use "geral" se não ficar claro. Campo opcional "periodo": "atual" (padrão, do dia 1 até hoje) ou "anterior" (o mês passado inteiro) — use "anterior" quando a mensagem disser "mês passado", "mês anterior", "o mês retrasado" (não suportado, use "anterior" mesmo assim) ou citar o nome de um mês que não é o atual.
 11. "consulta_uso_ia" — quando a pessoa pergunta sobre o CONSUMO/USO das IAs que rodam o bot em si (ex: "quanto usei de IA esse mês", "consumo de tokens", "estatísticas de IA", "quantas chamadas cada IA fez"). NÃO confundir com consulta_saldo (que é sobre dinheiro/finanças da família) — essa é sobre o funcionamento técnico do próprio bot. Não precisa de nenhum campo obrigatório.
 12. "consulta_limite_provedores" — quando a pessoa pergunta sobre o LIMITE/COTA GRATUITA dos provedores de IA que rodam o bot (Gemini, Groq, Mistral) — ex: "quanto ainda posso usar do Gemini hoje", "o Gemini já bateu o limite?", "status dos provedores", "quanto falta de cota". Diferente de consulta_uso_ia (que é sobre custo/tokens acumulados no mês). Não precisa de nenhum campo obrigatório.
 13. "consulta_contas_fixas" — quando a pessoa pergunta pela LISTA de contas fixas cadastradas, ou qual delas está próxima do vencimento (ex: "me envia as contas fixas", "quais contas tenho cadastradas", "qual conta está para vencer", "quando vence o aluguel", "quais contas ainda não paguei"). Diferente de consulta_saldo (que é sobre saldo/entradas/gastos, não sobre a lista de contas recorrentes). Não precisa de nenhum campo obrigatório.
@@ -196,6 +196,7 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "limite": numero (cadastro_cartao opcional — limite de crédito do cartão) ou null,
   "dia_fechamento": numero de 1 a 31 (cadastro_cartao opcional — dia que fecha a fatura) ou null,
   "escopo": "geral" ou "alimentacao" (só para consulta_saldo) ou null,
+  "periodo": "atual" ou "anterior" (só para consulta_saldo, escopo geral — "anterior" quando a mensagem falar em mês passado) ou null,
   "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
   "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
   "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada),
@@ -211,6 +212,7 @@ Alguns exemplos de como classificar mensagens parecidas (siga esse padrão de ra
 - "gastei 50 no mercado no pix" → tipo "gasto", categoria "Alimentação", faltando: [] (pix não é cartão de crédito nem vale-alimentação, então já dá pra decidir).
 - "uber pro trabalho, 23 reais, no débito" → tipo "gasto", categoria "Transporte" (Uber não é categoria própria; débito já deixa a forma de pagamento clara).
 - "quanto gastei esse mês" → tipo "consulta_saldo", escopo "geral" (é sobre dinheiro da família, não sobre IA).
+- "quais foram meus gastos do mês passado" ou "resumo do mês anterior" → tipo "consulta_saldo", escopo "geral", periodo "anterior".
 - "quanto gastei de IA esse mês" → tipo "consulta_uso_ia" (menciona IA + "mês" = custo acumulado, não cota diária).
 - "o Gemini já bateu o limite de hoje?" → tipo "consulta_limite_provedores" (menciona Gemini + "hoje"/limite).
 - "quanto ainda posso usar de IA" (sem dizer "mês" nem citar um provedor) → tipo "consulta_limite_provedores" (na dúvida entre 11 e 12, prefira 12).
@@ -1511,10 +1513,15 @@ async function gerarResumoContasFixas() {
 // — mesma regra do site: esse dinheiro já saiu da conta quando o cartão foi
 // recarregado, contar de novo aqui inflaria o gasto sem uma recarga
 // correspondente pra compensar.
-async function gerarResumoGeral() {
+async function gerarResumoGeral(periodo = 'atual') {
   const agora = DateTime.now().setZone(FUSO_HORARIO);
-  const inicioMesISO = agora.startOf('month').toFormat('yyyy-MM-dd');
-  const hojeISO = agora.toFormat('yyyy-MM-dd');
+  // "anterior" = mês passado inteiro (de dia 1 ao último dia); "atual" = do
+  // dia 1 até hoje. Vencimentos de contas continuam sempre olhando pra
+  // frente a partir de hoje de verdade, independente do período escolhido —
+  // não faz sentido mostrar "próxima conta a vencer" do mês passado.
+  const baseMes = periodo === 'anterior' ? agora.minus({ months: 1 }) : agora;
+  const inicioMesISO = baseMes.startOf('month').toFormat('yyyy-MM-dd');
+  const hojeISO = periodo === 'anterior' ? baseMes.endOf('month').toFormat('yyyy-MM-dd') : agora.toFormat('yyyy-MM-dd');
 
   const [
     { data: entradasMes, error: e1 },
@@ -1643,7 +1650,7 @@ async function gerarResumoGeral() {
   }
 
   return (
-    `📊 *Resumo da sua conta — ${agora.setLocale('pt-BR').toFormat('LLLL/yyyy')}*\n\n` +
+    `📊 *Resumo da sua conta — ${baseMes.setLocale('pt-BR').toFormat('LLLL/yyyy')}*\n\n` +
     `💚 Entradas: R$ ${formatarReais(totalEntradas)}\n` +
     `💸 Gastos: R$ ${formatarReais(totalGastos)}\n` +
     `${saldoMes >= 0 ? '✅' : '⚠️'} Saldo do mês: R$ ${formatarReais(saldoMes)}\n\n` +
@@ -2315,7 +2322,9 @@ async function iniciar() {
     if (dados.tipo === 'consulta_saldo') {
       try {
         const texto =
-          dados.escopo === 'alimentacao' ? await gerarResumoCartaoAlimentacao() : await gerarResumoGeral();
+          dados.escopo === 'alimentacao'
+            ? await gerarResumoCartaoAlimentacao()
+            : await gerarResumoGeral(dados.periodo === 'anterior' ? 'anterior' : 'atual');
         await responder(chaveRemetente, texto);
         console.log('📊 Resumo enviado sob demanda.');
       } catch (err) {
