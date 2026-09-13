@@ -255,6 +255,33 @@ export function agruparPorPessoa(lista) {
     .sort((a, b) => b.valor - a.valor);
 }
 
+// Converte movimentos do cartão alimentação (tipo "gasto") pro mesmo formato
+// de um item de "gastos" comum, só pra entrar nos gráficos/listas
+// informativos (categoria, pessoa, últimos lançamentos, orçamento) — NUNCA
+// usar o resultado disso nos totais de Saldo/Gastos do mês, porque essa
+// despesa não sai da conta corrente na hora (o dinheiro já tinha saído
+// quando o cartão foi recarregado); misturar contaria esse gasto duas vezes
+// e o Saldo do Mês pareceria pior do que o dinheiro que realmente saiu do
+// banco. A categoria não é gravada no banco pra esses movimentos, então
+// entra fixa como "Alimentação" (é sempre isso na prática).
+export function mapearGastosAlimentacao(movimentos, cartoes) {
+  const nomePorCartaoId = {};
+  cartoes.forEach((c) => {
+    nomePorCartaoId[c.id] = c.nome;
+  });
+  return movimentos
+    .filter((m) => m.tipo === 'gasto')
+    .map((m) => ({
+      id: m.id,
+      descricao: m.descricao,
+      valor: m.valor,
+      data: m.data,
+      categoria: 'Alimentação',
+      cartao: nomePorCartaoId[m.cartaoAlimentacaoId] || 'Cartão Alimentação',
+      pessoa: m.pessoa,
+    }));
+}
+
 export function nomeDoMes(mesAno, formato) {
   const [ano, mes] = mesAno.split('-');
   const data = new Date(Number(ano), Number(mes) - 1, 1);

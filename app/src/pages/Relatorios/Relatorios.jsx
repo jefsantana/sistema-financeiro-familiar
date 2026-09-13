@@ -14,6 +14,7 @@ import {
   somar,
   calcularTendencia,
   calcularResumoMensal,
+  mapearGastosAlimentacao,
 } from '../../utils/financeiro.js';
 import { formatarData, formatarMoeda, nomeMesAno } from '../../utils/formatadores.js';
 import { exportarExcel, exportarCsv, exportarPdf } from '../../utils/exportarRelatorio.js';
@@ -22,13 +23,26 @@ import styles from './Relatorios.module.css';
 export default function Relatorios() {
   const { registros: entradas, carregando: carregandoEntradas } = useCrudMock('Entradas');
   const { registros: gastos, carregando: carregandoGastos } = useCrudMock('Gastos');
+  const { registros: movimentosCartaoAlimentacao, carregando: carregandoMovAlimentacao } = useCrudMock(
+    'MovimentosCartaoAlimentacao'
+  );
+  const { registros: cartoesAlimentacao, carregando: carregandoCartoesAlimentacao } = useCrudMock('CartoesAlimentacao');
   const { pessoas } = useAuth();
   const toast = useToast();
 
   const [periodo, setPeriodo] = useState('tudo');
   const [filtroPessoa, setFiltroPessoa] = useState('todos');
 
-  if (carregandoEntradas || carregandoGastos) return <Loading texto="Carregando relatórios..." />;
+  if (carregandoEntradas || carregandoGastos || carregandoMovAlimentacao || carregandoCartoesAlimentacao) {
+    return <Loading texto="Carregando relatórios..." />;
+  }
+
+  // Gastos do cartão alimentação — só entram nos gráficos de categoria abaixo
+  // (visão informativa "quanto foi gasto em quê"), nunca nos totais de
+  // Gastos/Saldo: esse dinheiro já saiu da conta quando o cartão foi
+  // recarregado, então contá-lo de novo aqui inflaria os gastos da conta sem
+  // uma recarga correspondente pra compensar.
+  const gastosAlimentacao = mapearGastosAlimentacao(movimentosCartaoAlimentacao, cartoesAlimentacao);
 
   const hoje = new Date();
   const mesAtual = mesAnoDe(hoje);
@@ -44,8 +58,9 @@ export default function Relatorios() {
 
   const entradasFiltradas = entradas.filter(porPessoa).filter(porPeriodo);
   const gastosFiltrados = gastos.filter(porPessoa).filter(porPeriodo);
+  const gastosAlimentacaoFiltrados = gastosAlimentacao.filter(porPessoa).filter(porPeriodo);
 
-  const gastosPorCategoria = agruparPorCategoria(gastosFiltrados, Infinity);
+  const gastosPorCategoria = agruparPorCategoria([...gastosFiltrados, ...gastosAlimentacaoFiltrados], Infinity);
   const entradasPorCategoria = agruparPorCategoria(entradasFiltradas, Infinity);
 
   const subtituloPeriodo = periodo === 'tudo' ? 'histórico completo' : periodo === 'atual' ? 'este mês' : 'mês passado';
@@ -65,6 +80,7 @@ export default function Relatorios() {
     ? pessoas.map((pessoa) => {
         const entradasPessoa = entradas.filter((e) => e.pessoa === pessoa).filter(porPeriodo);
         const gastosPessoa = gastos.filter((g) => g.pessoa === pessoa).filter(porPeriodo);
+        const gastosAlimentacaoPessoa = gastosAlimentacao.filter((g) => g.pessoa === pessoa).filter(porPeriodo);
         const totalEntradasPessoa = somar(entradasPessoa);
         const totalGastosPessoa = somar(gastosPessoa);
         return {
@@ -72,7 +88,7 @@ export default function Relatorios() {
           totalEntradas: totalEntradasPessoa,
           totalGastos: totalGastosPessoa,
           saldo: totalEntradasPessoa - totalGastosPessoa,
-          principaisCategorias: agruparPorCategoria(gastosPessoa, 3),
+          principaisCategorias: agruparPorCategoria([...gastosPessoa, ...gastosAlimentacaoPessoa], 3),
         };
       })
     : [];

@@ -13,6 +13,8 @@ const TABELAS = [
   'Orcamentos',
   'Cartoes',
   'ComprasCartao',
+  'MovimentosCartaoAlimentacao',
+  'CartoesAlimentacao',
 ];
 
 export function useDashboardData() {
@@ -36,6 +38,8 @@ export function useDashboardData() {
         orcamentos,
         cartoes,
         comprasCartao,
+        movimentosCartaoAlimentacao,
+        cartoesAlimentacao,
       ] = await Promise.all(TABELAS.map((tabela) => listar(tabela)));
       setDados({
         entradas,
@@ -48,6 +52,8 @@ export function useDashboardData() {
         orcamentos,
         cartoes,
         comprasCartao,
+        movimentosCartaoAlimentacao,
+        cartoesAlimentacao,
       });
     } catch (falha) {
       setErro(falha);

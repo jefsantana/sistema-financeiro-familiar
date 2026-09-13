@@ -45,6 +45,7 @@ import {
   calcularTendencia,
   calcularResumoMensal,
   montarUltimosLancamentos,
+  mapearGastosAlimentacao,
   gerarInsights,
 } from '../../utils/financeiro.js';
 import styles from './Dashboard.module.css';
@@ -157,8 +158,20 @@ export default function Dashboard() {
   if (carregando || !dados) return <Loading texto="Carregando seu painel financeiro..." />;
 
   const nomeUsuario = nomeExibicao(perfil, usuario).split(' ')[0] || 'por aí';
-  const { entradas, gastos, contasFixas, pagamentos, parcelamentos, pagamentosParcelamentos, metas, orcamentos, cartoes, comprasCartao } =
-    dados;
+  const {
+    entradas,
+    gastos,
+    contasFixas,
+    pagamentos,
+    parcelamentos,
+    pagamentosParcelamentos,
+    metas,
+    orcamentos,
+    cartoes,
+    comprasCartao,
+    movimentosCartaoAlimentacao,
+    cartoesAlimentacao,
+  } = dados;
 
   const hoje = new Date();
   const ehPeriodoAtualReal = !intervaloPersonalizado && mesAnoDe(dataReferencia) === mesAnoDe(hoje);
@@ -178,10 +191,23 @@ export default function Dashboard() {
   const entradasFiltradas = entradas.filter(porPessoa);
   const gastosFiltrados = gastos.filter(porPessoa);
 
+  // Gastos do cartão alimentação (Ticket etc.) — só entram nos gráficos e
+  // listas informativos abaixo (categoria, pessoa, últimos lançamentos,
+  // orçamento). NUNCA entram em totalSaidasMes/saldoAtual/saldoMes: esse
+  // dinheiro não sai da conta corrente na hora da compra, já tinha saído
+  // quando o cartão foi recarregado — misturar contaria a despesa duas vezes
+  // e o Saldo do Mês pareceria pior do que o dinheiro real que saiu do banco.
+  const gastosAlimentacao = mapearGastosAlimentacao(movimentosCartaoAlimentacao, cartoesAlimentacao);
+  const gastosAlimentacaoFiltrados = gastosAlimentacao.filter(porPessoa);
+
   const entradasMes = entradasFiltradas.filter((e) => e.data >= dataInicioEfetiva && e.data <= dataFimEfetiva);
   const gastosMes = gastosFiltrados.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
+  const gastosAlimentacaoMes = gastosAlimentacaoFiltrados.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
   const entradasMesAnterior = entradasFiltradas.filter((e) => e.data >= dataInicioAnterior && e.data <= dataFimAnterior);
   const gastosMesAnterior = gastosFiltrados.filter((g) => g.data >= dataInicioAnterior && g.data <= dataFimAnterior);
+  const gastosAlimentacaoMesAnterior = gastosAlimentacaoFiltrados.filter(
+    (g) => g.data >= dataInicioAnterior && g.data <= dataFimAnterior
+  );
 
   const totalEntradasMes = somar(entradasMes);
   const totalSaidasMes = somar(gastosMes);
@@ -198,13 +224,16 @@ export default function Dashboard() {
   const alertasFaturas = calcularAlertasFaturas(comprasCartao, cartoes);
   const vencimentos = [...alertasContas, ...alertasParcelas, ...alertasFaturas].sort((a, b) => a.diasRestantes - b.diasRestantes);
 
-  const categoriasMes = agruparPorCategoria(gastosMes);
-  const categoriasMesAnterior = agruparPorCategoria(gastosMesAnterior);
-  const gastosPorCategoriaMapa = Object.fromEntries(agruparPorCategoria(gastosMes, 999).map((c) => [c.label, c.valor]));
+  const categoriasMes = agruparPorCategoria([...gastosMes, ...gastosAlimentacaoMes]);
+  const categoriasMesAnterior = agruparPorCategoria([...gastosMesAnterior, ...gastosAlimentacaoMesAnterior]);
+  const gastosPorCategoriaMapa = Object.fromEntries(
+    agruparPorCategoria([...gastosMes, ...gastosAlimentacaoMes], 999).map((c) => [c.label, c.valor])
+  );
   const resumoMensal = calcularResumoMensal(entradasFiltradas, gastosFiltrados);
-  const ultimosLancamentos = montarUltimosLancamentos(entradasFiltradas, gastosFiltrados);
+  const ultimosLancamentos = montarUltimosLancamentos(entradasFiltradas, [...gastosFiltrados, ...gastosAlimentacaoFiltrados]);
   const gastosMesTodos = gastos.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
-  const pessoasGasto = agruparPorPessoa(gastosMesTodos);
+  const gastosAlimentacaoMesTodos = gastosAlimentacao.filter((g) => g.data >= dataInicioEfetiva && g.data <= dataFimEfetiva);
+  const pessoasGasto = agruparPorPessoa([...gastosMesTodos, ...gastosAlimentacaoMesTodos]);
 
   const subtituloMes =
     (ehPeriodoAtualReal ? 'este mês' : `${formatarData(dataInicioEfetiva)} a ${formatarData(dataFimEfetiva)}`) +
