@@ -77,6 +77,55 @@ function jaProcessada(id) {
   return false;
 }
 
+// ===================== Memória de conversa recente (Nível 1) =====================
+// Antes, a IA só via a mensagem atual isolada (ou, no máximo, um único estado de
+// "pendência" que ela era forçada a tentar completar). Isso fazia o bot "se
+// perder" quando a pessoa mudava de assunto no meio de uma pergunta, ou mandava
+// uma resposta curta (tipo "sim") que só faz sentido lendo a mensagem anterior.
+// Aqui guardamos, por pessoa (chaveRemetente), as últimas mensagens trocadas —
+// só em memória (não sobrevive a um restart do bot, mas contexto de conversa é
+// coisa efêmera mesmo; o que precisa sobreviver a restart, como um lançamento
+// pela metade, continua na tabela bot_pendencias). Isso é passado pra IA em toda
+// chamada, pra ela raciocinar com o histórico de verdade em vez do código tentar
+// adivinhar regra por regra o que é continuação e o que é assunto novo.
+const HISTORICO_POR_REMETENTE = new Map(); // jid -> [{ papel: 'usuario'|'bot', texto, quando }]
+const HISTORICO_MAX_ENTRADAS = 8; // ~4 idas e voltas
+const HISTORICO_VALIDADE_MS = 30 * 60 * 1000; // 30min sem mensagens = contexto "esfria"
+
+function registrarHistorico(jid, papel, texto) {
+  if (!jid || !texto) return;
+  const lista = HISTORICO_POR_REMETENTE.get(jid) || [];
+  lista.push({ papel, texto, quando: Date.now() });
+  while (lista.length > HISTORICO_MAX_ENTRADAS) lista.shift();
+  HISTORICO_POR_REMETENTE.set(jid, lista);
+}
+
+// Retorna o histórico recente já formatado como texto pra IA, ou null se não
+// houver nada relevante (evita gastar tokens à toa numa conversa nova).
+function formatarHistorico(jid) {
+  const lista = HISTORICO_POR_REMETENTE.get(jid);
+  if (!lista || lista.length === 0) return null;
+  const agora = Date.now();
+  const recentes = lista.filter((m) => agora - m.quando <= HISTORICO_VALIDADE_MS);
+  HISTORICO_POR_REMETENTE.set(jid, recentes);
+  if (recentes.length === 0) return null;
+  const linhas = recentes.map((m) => `[${m.papel === 'bot' ? 'bot' : 'pessoa'}]: ${m.texto}`).join('\n');
+  return (
+    `Histórico recente da conversa com essa pessoa (mais antiga primeiro — use isso só como CONTEXTO ` +
+    `pra entender referências e continuidade; a mensagem atual, informada à parte, é o que você precisa classificar agora):\n${linhas}`
+  );
+}
+
+// Envia uma mensagem no grupo E registra no histórico de quem originou a troca
+// (a mensagem em si sempre vai pro grupo inteiro — isso só controla de quem é
+// "a conversa" pra fins de contexto da IA). Usar no lugar de enviarNoGrupo()
+// direto sempre que a resposta for reação a uma mensagem de alguém específico.
+async function responder(chaveRemetente, texto) {
+  const resultado = await enviarNoGrupo(texto);
+  registrarHistorico(chaveRemetente, 'bot', texto);
+  return resultado;
+}
+
 // ===================== IA: interpretar a mensagem =====================
 const SYSTEM_PROMPT = `Você é o assistente financeiro de um casal (Jeferson e Raquel) que controla as finanças da casa pelo WhatsApp. A mensagem pode ser um texto curto OU uma foto de comprovante de pagamento/compra (com ou sem legenda).
 
@@ -487,10 +536,12 @@ async function chamarIA(contentBlocks) {
   throw ultimoErro || new Error('Nenhum provedor de IA configurado.');
 }
 
-async function interpretarMensagem(texto, remetente, contextoExtra = null) {
+async function interpretarMensagem(texto, remetente, contextoExtra = null, chaveRemetente = null) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   const blocos = [{ type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) }];
   if (contextoExtra) blocos.push({ type: 'text', text: contextoExtra });
+  const historico = chaveRemetente ? formatarHistorico(chaveRemetente) : null;
+  if (historico) blocos.push({ type: 'text', text: historico });
   blocos.push({ type: 'text', text: `Mensagem de texto do WhatsApp (remetente: ${remetente}):\n"${texto}"` });
   return chamarIA(blocos);
 }
@@ -520,7 +571,7 @@ async function interpretarImagem(base64, mimetype, legenda, remetente) {
 // prompt abaixo pede explicitamente pra IA reconhecer quando isso acontece e
 // classificar a mensagem do zero, como se a pergunta pendente nunca tivesse
 // existido.
-async function continuarComResposta(dadosParciais, resposta, remetente) {
+async function continuarComResposta(dadosParciais, resposta, remetente, chaveRemetente = null) {
   const [cartoes, cartoesAlimentacao] = await Promise.all([buscarCartoesAtivos(), buscarCartoesAlimentacaoAtivos()]);
   const contexto =
     `Você estava preenchendo um lançamento financeiro e ainda faltava informação. Estado atual em JSON:\n${JSON.stringify(dadosParciais)}\n\n` +
@@ -529,10 +580,11 @@ async function continuarComResposta(dadosParciais, resposta, remetente) {
     `PRIMEIRO decida: essa resposta realmente responde à pergunta acima (mesmo que de forma indireta), ou é um assunto novo, sem relação com o que foi perguntado (ex: perguntou o valor de uma conta e a pessoa mandou algo tipo "contas fixas", "me envia X", ou começou a falar de outro lançamento)?\n` +
     `- Se FOR uma resposta válida à pergunta: atualize o JSON combinando o que já tinha com essa resposta nova. Se ainda faltar algo, pergunte de novo (preencha 'faltando' e 'pergunta'). Se já estiver tudo completo, deixe 'faltando' como array vazio, 'pergunta' como null, e preencha o 'comentario'.\n` +
     `- Se NÃO FOR relacionada (mudou de assunto): IGNORE completamente o estado anterior e classifique "${resposta}" como se fosse uma mensagem nova, começando do zero, normalmente (pode virar qualquer um dos tipos, inclusive consulta ou conversa casual). Não tente encaixar à força no lançamento antigo.`;
-  return chamarIA([
-    { type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) },
-    { type: 'text', text: contexto },
-  ]);
+  const historico = chaveRemetente ? formatarHistorico(chaveRemetente) : null;
+  const blocos = [{ type: 'text', text: contextoCartoes(cartoes, cartoesAlimentacao) }];
+  if (historico) blocos.push({ type: 'text', text: historico });
+  blocos.push({ type: 'text', text: contexto });
+  return chamarIA(blocos);
 }
 
 // ===================== Transcrição de áudio (Whisper) =====================
@@ -1772,16 +1824,18 @@ async function iniciar() {
 
       if (/^cancela(r)?$/i.test(resposta)) {
         await apagarPendencia(chaveRemetente);
-        await enviarNoGrupo('Ok, cancelado.');
+        registrarHistorico(chaveRemetente, 'usuario', resposta);
+        await responder(chaveRemetente, 'Ok, cancelado.');
         return;
       }
       console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
       try {
-        dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente);
+        dados = await continuarComResposta(pendente.dados, resposta, nomeRemetente, chaveRemetente);
+        registrarHistorico(chaveRemetente, 'usuario', resposta);
         await apagarPendencia(chaveRemetente);
       } catch (err) {
         console.error('Erro ao continuar lançamento pendente:', err.message);
-        await enviarNoGrupo('🤔 Não entendi sua resposta. Pode tentar de novo, com outras palavras?');
+        await responder(chaveRemetente, '🤔 Não entendi sua resposta. Pode tentar de novo, com outras palavras?');
         return; // mantém a pendência ativa pra pessoa poder tentar de novo
       }
     } else if (ehTexto) {
@@ -1790,10 +1844,11 @@ async function iniciar() {
 
       console.log(`➡️  Interpretando texto de ${nomeRemetente}: "${texto}"`);
       try {
-        dados = await interpretarMensagem(texto, nomeRemetente, contextoCorrecao);
+        dados = await interpretarMensagem(texto, nomeRemetente, contextoCorrecao, chaveRemetente);
+        registrarHistorico(chaveRemetente, 'usuario', texto);
       } catch (err) {
         console.error('Erro ao chamar a IA (texto):', err.message);
-        await enviarNoGrupo('🤔 Não consegui entender essa mensagem. Pode tentar reformular, tipo "gastei 50 no mercado"?');
+        await responder(chaveRemetente, '🤔 Não consegui entender essa mensagem. Pode tentar reformular, tipo "gastei 50 no mercado"?');
         return;
       }
     } else if (tipoMsg === 'imageMessage') {
@@ -1805,9 +1860,10 @@ async function iniciar() {
         const buffer = await downloadMediaMessage(msg, 'buffer', {});
         const base64 = buffer.toString('base64');
         dados = await interpretarImagem(base64, mimetype, legenda, nomeRemetente);
+        registrarHistorico(chaveRemetente, 'usuario', `[enviou uma foto de comprovante]${legenda ? ` legenda: ${legenda}` : ''}`);
       } catch (err) {
         console.error('Erro ao processar imagem:', err.message);
-        await enviarNoGrupo('🤔 Não consegui ler essa imagem direito. Pode mandar de novo, ou digitar o gasto por texto?');
+        await responder(chaveRemetente, '🤔 Não consegui ler essa imagem direito. Pode mandar de novo, ou digitar o gasto por texto?');
         return;
       }
     } else if (tipoMsg === 'audioMessage') {
@@ -1823,14 +1879,15 @@ async function iniciar() {
         const textoTranscrito = await transcreverAudio(buffer, mimetype);
         if (!textoTranscrito.trim()) {
           console.log('ℹ️  Transcrição veio vazia, ignorando.');
-          await enviarNoGrupo('🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
+          await responder(chaveRemetente, '🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
           return;
         }
         console.log(`📝 Transcrito: "${textoTranscrito}"`);
-        dados = await interpretarMensagem(textoTranscrito, nomeRemetente);
+        dados = await interpretarMensagem(textoTranscrito, nomeRemetente, null, chaveRemetente);
+        registrarHistorico(chaveRemetente, 'usuario', textoTranscrito);
       } catch (err) {
         console.error('Erro ao processar áudio:', err.message);
-        await enviarNoGrupo('🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
+        await responder(chaveRemetente, '🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
         return;
       }
     } else {
@@ -1840,7 +1897,7 @@ async function iniciar() {
 
     if (!dados.ehTransacao) {
       console.log('ℹ️  Mensagem não é uma transação financeira, respondendo de forma casual.');
-      await enviarNoGrupo(dados.respostaCasual || 'Oi! 😊');
+      await responder(chaveRemetente, dados.respostaCasual || 'Oi! 😊');
       return;
     }
 
@@ -1849,7 +1906,7 @@ async function iniciar() {
       try {
         const texto =
           dados.escopo === 'alimentacao' ? await gerarResumoCartaoAlimentacao() : await gerarResumoGeral();
-        await enviarNoGrupo(texto);
+        await responder(chaveRemetente, texto);
         console.log('📊 Resumo enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo sob demanda:', err.message);
@@ -1860,7 +1917,7 @@ async function iniciar() {
     // "Pergunta" sobre o consumo de IA do próprio bot (não é sobre dinheiro).
     if (dados.tipo === 'consulta_uso_ia') {
       try {
-        await enviarNoGrupo(await gerarResumoUsoIA());
+        await responder(chaveRemetente, await gerarResumoUsoIA());
         console.log('📊 Resumo de uso de IA enviado sob demanda.');
       } catch (err) {
         console.error('Erro ao gerar resumo de uso de IA:', err.message);
@@ -1868,13 +1925,13 @@ async function iniciar() {
       return;
     }
 
-    // "Pergunta" sobre o limite diário gratuito do Gemini (cota da API, não custo).
+    // "Pergunta" sobre o limite diário gratuito dos provedores (cota da API, não custo).
     if (dados.tipo === 'consulta_limite_provedores') {
       try {
-        await enviarNoGrupo(await gerarResumoLimitesGratuitos());
-        console.log('📊 Resumo de limite do Gemini enviado sob demanda.');
+        await responder(chaveRemetente, await gerarResumoLimitesGratuitos());
+        console.log('📊 Resumo de limite dos provedores enviado sob demanda.');
       } catch (err) {
-        console.error('Erro ao gerar resumo de limite do Gemini:', err.message);
+        console.error('Erro ao gerar resumo de limite dos provedores:', err.message);
       }
       return;
     }
@@ -1882,18 +1939,19 @@ async function iniciar() {
     // Correção de um lançamento já salvo (por reply ou "corrige, era X").
     if (dados.tipo === 'correcao') {
       if (!alvoCorrecao) {
-        await enviarNoGrupo('🤔 Não encontrei nenhum lançamento recente seu pra corrigir. Pode mandar os dados completos de novo?');
+        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu pra corrigir. Pode mandar os dados completos de novo?');
         return;
       }
       try {
         const resultado = await aplicarCorrecao(alvoCorrecao, dados);
-        await enviarNoGrupo(
+        await responder(
+          chaveRemetente,
           `✏️ *Lançamento corrigido!*\n${rotuloCampo(resultado.campo)}: ${formatarValorCampo(resultado.campo, resultado.novoValor)}`
         );
         console.log(`✏️  Correção aplicada: ${resultado.campo} → ${resultado.novoValor}`);
       } catch (err) {
         console.error('Erro ao aplicar correção:', err.message);
-        await enviarNoGrupo('⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
+        await responder(chaveRemetente, '⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
       }
       return;
     }
@@ -1903,7 +1961,7 @@ async function iniciar() {
       console.log(`❓ Faltando [${dados.faltando.join(', ')}], perguntando: "${dados.pergunta}"`);
       await salvarPendencia(chaveRemetente, 'aguardando_campos', dados);
       if (dados.pergunta) {
-        await enviarNoGrupo(dados.pergunta);
+        await responder(chaveRemetente, dados.pergunta);
       }
       return;
     }
@@ -1918,7 +1976,7 @@ async function iniciar() {
       dados.faltando = invalidos;
       dados.pergunta = PERGUNTAS_POR_CAMPO[invalidos[0]] || `Pode confirmar: ${invalidos.join(', ')}?`;
       await salvarPendencia(chaveRemetente, 'aguardando_campos', dados);
-      await enviarNoGrupo(dados.pergunta);
+      await responder(chaveRemetente, dados.pergunta);
       return;
     }
 
@@ -1960,8 +2018,8 @@ async function iniciar() {
           cartaoMsg = montarCartao(registro, dados.tipo);
       }
 
-      if (dados.comentario) await enviarNoGrupo(dados.comentario);
-      const mensagemEnviada = await enviarNoGrupo(cartaoMsg);
+      if (dados.comentario) await responder(chaveRemetente, dados.comentario);
+      const mensagemEnviada = await responder(chaveRemetente, cartaoMsg);
       await lembrarRegistro({
         chaveRemetente,
         mensagemEnviada,
@@ -1972,7 +2030,7 @@ async function iniciar() {
     } catch (err) {
       console.error('Erro ao salvar/confirmar lançamento:', err.message);
       try {
-        await enviarNoGrupo('⚠️ Entendi o lançamento, mas tive um problema ao salvar no sistema. Pode tentar de novo em instantes?');
+        await responder(chaveRemetente, '⚠️ Entendi o lançamento, mas tive um problema ao salvar no sistema. Pode tentar de novo em instantes?');
       } catch (e2) {
         console.error('Erro ao avisar sobre falha ao salvar:', e2.message);
       }
