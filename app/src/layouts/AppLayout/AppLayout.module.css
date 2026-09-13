@@ -14,6 +14,7 @@
   padding: var(--espaco-xl);
   padding-bottom: calc(56px + var(--espaco-xl) * 2);
   max-width: 1400px;
+  margin: 0 auto;
 }
 
 .fabDesktop {
