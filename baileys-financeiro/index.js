@@ -127,7 +127,9 @@ async function responder(chaveRemetente, texto) {
 }
 
 // ===================== IA: interpretar a mensagem =====================
-const SYSTEM_PROMPT = `Você é o assistente financeiro de um casal (Jeferson e Raquel) que controla as finanças da casa pelo WhatsApp. A mensagem pode ser um texto curto OU uma foto de comprovante de pagamento/compra (com ou sem legenda).
+const SYSTEM_PROMPT = `Você é o assistente financeiro de um casal (Jeferson e Raquel) que controla as finanças da casa pelo WhatsApp, respondendo dentro do grupo "CONTROLE FINANCEIRO". A mensagem pode ser um texto curto OU uma foto de comprovante de pagamento/compra (com ou sem legenda).
+
+TOM DE VOZ (vale para todo texto que você escrever para as pessoas — "comentario", "pergunta" e "respostaCasual"): seja sempre cordial e educado, mesmo em respostas curtas. Trate as pessoas com gentileza, evite frases secas ou imperativas ("manda de novo") — prefira um tom cordial ("você poderia me enviar de novo, por favor?"). Isso vale inclusive quando algo deu errado ou falta informação: reconheça com educação antes de pedir o que falta, nunca soe seco ou robótico. Continua podendo ser natural, breve e usar emoji com moderação — cordialidade não é formalidade excessiva nem é bajulação, é tratar bem quem está do outro lado.
 
 O sistema deles tem estes tipos de lançamento possíveis:
 
@@ -197,10 +199,10 @@ Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, no format
   "dia_fechamento": numero de 1 a 31 (cadastro_cartao opcional — dia que fecha a fatura) ou null,
   "escopo": "geral" ou "alimentacao" (só para consulta_saldo) ou null,
   "periodo": "atual" ou "anterior" (só para consulta_saldo, escopo geral — "anterior" quando a mensagem falar em mês passado) ou null,
-  "comentario": "reação curta, espontânea e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
+  "comentario": "reação curta, cordial e bem-humorada (máx 10 palavras, 1-2 emojis) — só preencha se o lançamento estiver completo (não usar em consulta_saldo)",
   "faltando": ["nomes dos campos que ainda faltam"] (array vazio se completo),
-  "pergunta": "pergunta curta e natural em português pedindo exatamente o que falta" ou null (se não faltar nada),
-  "respostaCasual": "resposta curta, natural e simpática em português" (só quando ehTransacao for false) ou null
+  "pergunta": "pergunta curta, cordial e educada em português pedindo exatamente o que falta (ex: \"Você poderia me dizer o valor, por favor?\")" ou null (se não faltar nada),
+  "respostaCasual": "resposta curta, cordial e educada em português" (só quando ehTransacao for false) ou null
 }
 
 Mensagens do tipo consulta_saldo, consulta_uso_ia, consulta_limite_provedores, consulta_contas_fixas, pagamento_conta_fixa, cadastro_cartao, correcao e exclusao também devem ter ehTransacao: true (são pedidos válidos pro bot, mesmo sem registrar um lançamento novo).
@@ -1075,15 +1077,15 @@ const CAMPOS_OBRIGATORIOS_POR_TIPO = {
 };
 
 const PERGUNTAS_POR_CAMPO = {
-  descricao: 'Pode descrever melhor do que se trata?',
-  valor: 'Qual o valor?',
-  valor_total: 'Qual o valor total da compra?',
-  categoria: 'Qual categoria usar?',
-  cartao: 'Qual cartão foi usado?',
+  descricao: 'Você poderia descrever melhor do que se trata, por favor?',
+  valor: 'Qual é o valor, por favor?',
+  valor_total: 'Qual é o valor total da compra, por favor?',
+  categoria: 'Qual categoria você gostaria de usar?',
+  cartao: 'Qual cartão foi usado, por favor?',
   dia_vencimento: 'Todo dia do mês essa conta vence?',
-  numero_parcelas: 'Em quantas parcelas?',
-  valor_alvo: 'Qual o valor da meta?',
-  limite_mensal: 'Qual o limite mensal?',
+  numero_parcelas: 'Em quantas parcelas, por favor?',
+  valor_alvo: 'Qual é o valor da meta, por favor?',
+  limite_mensal: 'Qual é o limite mensal, por favor?',
 };
 
 // Segunda camada de validação específica pra gasto_alimentacao/recarga_alimentacao:
@@ -1104,7 +1106,7 @@ async function resolverCartaoAlimentacaoAmbiguo(dados) {
   if (dados.cartao && cartoes.some((c) => c.nome.trim().toLowerCase() === dados.cartao.trim().toLowerCase())) {
     return null;
   }
-  return `Qual cartão alimentação foi usado? (${cartoes.map((c) => c.nome).join(', ')})`;
+  return `Qual cartão alimentação foi usado, por favor? (${cartoes.map((c) => c.nome).join(', ')})`;
 }
 
 function validarDados(dados) {
@@ -2163,7 +2165,12 @@ async function iniciar() {
           console.error('Erro ao limpar sessão antiga:', e.message);
         }
       }
-      iniciar();
+      // Espera antes de reconectar: reconectar na hora, em rajada, agrava a
+      // dessincronia de sessão do Signal (erros "Bad MAC"/"No matching sessions"
+      // vistos nos logs) em vez de dar tempo do socket anterior fechar de vez.
+      setTimeout(() => {
+        iniciar();
+      }, 5000);
     } else if (connection === 'open') {
       console.log('✅ Conectado ao WhatsApp com sucesso!');
       try {
@@ -2242,7 +2249,7 @@ async function iniciar() {
       if (/^cancela(r)?$/i.test(resposta)) {
         await apagarPendencia(chaveRemetente);
         registrarHistorico(chaveRemetente, 'usuario', resposta);
-        await responder(chaveRemetente, 'Ok, cancelado.');
+        await responder(chaveRemetente, 'Certo, cancelado! 👍');
         return;
       }
       console.log(`➡️  Continuando lançamento pendente de ${nomeRemetente}: "${resposta}"`);
@@ -2252,7 +2259,7 @@ async function iniciar() {
         await apagarPendencia(chaveRemetente);
       } catch (err) {
         console.error('Erro ao continuar lançamento pendente:', err.message);
-        await responder(chaveRemetente, '🤔 Não entendi sua resposta. Pode tentar de novo, com outras palavras?');
+        await responder(chaveRemetente, '🤔 Desculpe, não entendi bem sua resposta. Você poderia tentar novamente, com outras palavras, por favor?');
         return; // mantém a pendência ativa pra pessoa poder tentar de novo
       }
     } else if (ehTexto) {
@@ -2265,7 +2272,7 @@ async function iniciar() {
         registrarHistorico(chaveRemetente, 'usuario', texto);
       } catch (err) {
         console.error('Erro ao chamar a IA (texto):', err.message);
-        await responder(chaveRemetente, '🤔 Não consegui entender essa mensagem. Pode tentar reformular, tipo "gastei 50 no mercado"?');
+        await responder(chaveRemetente, '🤔 Desculpe, não consegui entender essa mensagem. Você poderia reformular, por gentileza? Por exemplo: "gastei 50 no mercado".');
         return;
       }
     } else if (tipoMsg === 'imageMessage') {
@@ -2280,7 +2287,7 @@ async function iniciar() {
         registrarHistorico(chaveRemetente, 'usuario', `[enviou uma foto de comprovante]${legenda ? ` legenda: ${legenda}` : ''}`);
       } catch (err) {
         console.error('Erro ao processar imagem:', err.message);
-        await responder(chaveRemetente, '🤔 Não consegui ler essa imagem direito. Pode mandar de novo, ou digitar o gasto por texto?');
+        await responder(chaveRemetente, '🤔 Desculpe, não consegui ler essa imagem direito. Você poderia enviá-la novamente, por favor, ou digitar o gasto por texto?');
         return;
       }
     } else if (tipoMsg === 'audioMessage') {
@@ -2296,7 +2303,7 @@ async function iniciar() {
         const textoTranscrito = await transcreverAudio(buffer, mimetype);
         if (!textoTranscrito.trim()) {
           console.log('ℹ️  Transcrição veio vazia, ignorando.');
-          await responder(chaveRemetente, '🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
+          await responder(chaveRemetente, '🤔 Desculpe, não consegui entender o áudio. Você poderia falar novamente, por favor, ou mandar por texto?');
           return;
         }
         console.log(`📝 Transcrito: "${textoTranscrito}"`);
@@ -2304,7 +2311,7 @@ async function iniciar() {
         registrarHistorico(chaveRemetente, 'usuario', textoTranscrito);
       } catch (err) {
         console.error('Erro ao processar áudio:', err.message);
-        await responder(chaveRemetente, '🤔 Não consegui entender o áudio. Pode tentar falar de novo, ou mandar por texto?');
+        await responder(chaveRemetente, '🤔 Desculpe, não consegui entender o áudio. Você poderia falar novamente, por favor, ou mandar por texto?');
         return;
       }
     } else {
@@ -2384,7 +2391,7 @@ async function iniciar() {
         console.error('Erro ao registrar pagamento de conta fixa:', err.message);
         await responder(
           chaveRemetente,
-          `🤔 Não encontrei "${dados.descricao}" entre as contas fixas cadastradas. Pode confirmar o nome certo?`
+          `🤔 Não encontrei "${dados.descricao}" entre as contas fixas cadastradas. Você poderia confirmar o nome certo, por favor?`
         );
       }
       return;
@@ -2393,7 +2400,7 @@ async function iniciar() {
     // Correção de um lançamento já salvo (por reply ou "corrige, era X").
     if (dados.tipo === 'correcao') {
       if (!alvoCorrecao) {
-        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu pra corrigir. Pode mandar os dados completos de novo?');
+        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu para corrigir. Você poderia me enviar os dados completos novamente, por favor?');
         return;
       }
       try {
@@ -2405,7 +2412,7 @@ async function iniciar() {
         console.log(`✏️  Correção aplicada: ${resultado.campo} → ${resultado.novoValor}`);
       } catch (err) {
         console.error('Erro ao aplicar correção:', err.message);
-        await responder(chaveRemetente, '⚠️ Entendi a correção, mas tive um problema ao salvar. Pode tentar de novo?');
+        await responder(chaveRemetente, '⚠️ Entendi a correção, mas tive um problema ao salvar. Você poderia tentar novamente, por favor?');
       }
       return;
     }
@@ -2415,7 +2422,7 @@ async function iniciar() {
     // restaurar lá se for engano.
     if (dados.tipo === 'exclusao') {
       if (!alvoCorrecao) {
-        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu pra excluir. Pode responder à mensagem de confirmação dele?');
+        await responder(chaveRemetente, '🤔 Não encontrei nenhum lançamento recente seu para excluir. Você poderia responder à mensagem de confirmação dele, por favor?');
         return;
       }
       try {
@@ -2427,7 +2434,7 @@ async function iniciar() {
         console.log('🗑️  Lançamento excluído via WhatsApp.');
       } catch (err) {
         console.error('Erro ao excluir lançamento:', err.message);
-        await responder(chaveRemetente, '⚠️ Entendi que você quer excluir, mas tive um problema. Pode tentar de novo?');
+        await responder(chaveRemetente, '⚠️ Entendi que você quer excluir, mas tive um problema. Você poderia tentar novamente, por favor?');
       }
       return;
     }
@@ -2475,7 +2482,7 @@ async function iniciar() {
       console.warn(`⚠️  Tipo não suportado retornado pela IA: ${JSON.stringify(dados.tipo)}`);
       await responder(
         chaveRemetente,
-        '🤔 Entendi que você quer registrar algo, mas isso ainda não é uma função que eu sei fazer no sistema. Pode descrever de outro jeito (ex: um gasto, uma conta fixa, um cartão, uma meta)?'
+        '🤔 Entendi que você quer registrar algo, mas isso ainda não é uma função que eu sei fazer no sistema. Você poderia descrever de outro jeito, por favor (ex: um gasto, uma conta fixa, um cartão, uma meta)?'
       );
       return;
     }
@@ -2488,7 +2495,7 @@ async function iniciar() {
     if (!valido) {
       console.log(`⚠️  Validação encontrou campo(s) inválido(s): ${invalidos.join(', ')}`);
       dados.faltando = invalidos;
-      dados.pergunta = PERGUNTAS_POR_CAMPO[invalidos[0]] || `Pode confirmar: ${invalidos.join(', ')}?`;
+      dados.pergunta = PERGUNTAS_POR_CAMPO[invalidos[0]] || `Você poderia confirmar, por favor: ${invalidos.join(', ')}?`;
       await salvarPendencia(chaveRemetente, 'aguardando_campos', dados);
       await responder(chaveRemetente, dados.pergunta);
       return;
@@ -2548,7 +2555,7 @@ async function iniciar() {
     } catch (err) {
       console.error('Erro ao salvar/confirmar lançamento:', err.message);
       try {
-        await responder(chaveRemetente, '⚠️ Entendi o lançamento, mas tive um problema ao salvar no sistema. Pode tentar de novo em instantes?');
+        await responder(chaveRemetente, '⚠️ Entendi o lançamento, mas tive um problema ao salvar no sistema. Você poderia tentar novamente em instantes, por favor?');
       } catch (e2) {
         console.error('Erro ao avisar sobre falha ao salvar:', e2.message);
       }
